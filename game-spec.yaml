@@ -1,0 +1,457 @@
+# game-spec.yaml
+
+project:
+name: Dawn Dashers
+version: 0.2.0
+
+game_jam:
+name: DEV June Solstice Game Jam
+
+theme:
+primary:
+- June Solstice
+- Australian Winter
+- Longest Night
+- Light versus Darkness
+
+secondary:
+- Alan Turing
+- Computational Thinking
+- Exploration
+- Treasure Hunting
+
+vision:
+
+elevator_pitch: >
+A rogue machine called the Turing Engine has hidden seven Sun Fragments
+across Australia on the longest night of the year.
+Play as Australian animals, solve logic-inspired challenges,
+explore iconic landscapes, and restore sunrise.
+
+pillars:
+- Fun First
+- Australian Identity
+- Exploration Rewarded
+- Accessible Logic Puzzles
+- Short Complete Adventure
+- Game Jam Friendly Scope
+
+technology:
+
+engine: Unity 6
+
+language: C#
+
+rendering:
+pipeline: URP
+
+target_platforms:
+- WebGL
+
+development:
+ide:
+- VS Code
+- GitHub Copilot Agent
+
+source_control:
+- GitHub
+
+deployment:
+- itch.io
+- GitHub Pages
+
+optional_ai:
+
+```
+mcp:
+  framework: FastMCP
+
+llm:
+  provider: Gemini
+
+use_cases:
+  - NPC Dialogue
+  - Dynamic Clues
+  - Puzzle Hints
+```
+
+world:
+
+map_type: Connected Regions
+
+progression:
+style: Metroidvania Lite
+
+regions:
+
+* id: outback
+
+  title: Outback Observatory
+
+  biome:
+
+  * Desert
+  * Highways
+  * Solar Ruins
+
+  fragment_count: 2
+
+  gameplay:
+
+  * Exploration
+  * Speed Challenges
+
+* id: bushland
+
+  title: Whispering Bush
+
+  biome:
+
+  * Forest
+  * Wildlife Habitat
+
+  fragment_count: 1
+
+  gameplay:
+
+  * Platforming
+  * Secret Discovery
+
+* id: servo
+
+  title: Midnight Servo
+
+  biome:
+
+  * Rural Service Station
+
+  fragment_count: 1
+
+  gameplay:
+
+  * Mini Games
+  * NPC Interaction
+  * Upgrades
+
+* id: coast
+
+  title: Lighthouse Coast
+
+  biome:
+
+  * Beaches
+  * Cliffs
+
+  fragment_count: 1
+
+  gameplay:
+
+  * Wind Puzzles
+  * Gliding
+
+* id: tasmania
+
+  title: Southern Lights
+
+  biome:
+
+  * Mountains
+  * Snow
+  * Aurora Australis
+
+  fragment_count: 2
+
+  gameplay:
+
+  * Advanced Exploration
+  * Final Challenges
+
+characters:
+
+starting_character:
+- Emu
+
+unlockable:
+
+```
+wombat:
+  role: Tank
+
+  ability:
+    name: Charge
+
+  unlocks:
+    - Break Walls
+    - Clear Obstacles
+
+possum:
+  role: Traversal
+
+  ability:
+    name: Glide
+
+  unlocks:
+    - Cross Gaps
+    - Reach High Areas
+
+echidna:
+  role: Explorer
+
+  ability:
+    name: Sense Clues
+
+  unlocks:
+    - Reveal Hidden Paths
+    - Reveal Treasure Locations
+```
+
+playable:
+
+```
+emu:
+  role: Explorer
+
+  ability:
+    name: Sprint
+```
+
+core_gameplay_loop:
+
+* Explore
+* Discover Clue
+* Solve Puzzle
+* Find Fragment
+* Unlock Ability
+* Access New Region
+* Repeat
+
+sun_fragments:
+
+total: 7
+
+effects:
+- Increase Light Radius
+- Unlock Regions
+- Weaken Darkness
+- Advance Story
+
+visual_feedback:
+- Brighter World
+- More Wildlife
+- Clearer Sky
+- Stronger Aurora
+
+treasure_hunts:
+
+clue_types:
+- Environmental
+- Riddles
+- NPC Stories
+- Logic Clues
+
+examples:
+
+```
+- clue: >
+    The light sleeps where ships once searched for home.
+
+  solution:
+    Lighthouse Coast
+
+- clue: >
+    Follow the stars where winter paints the sky green.
+
+  solution:
+    Tasmania
+```
+
+logic_challenges:
+
+inspiration:
+- Alan Turing
+- Early Computing
+- Pattern Recognition
+
+design_rules:
+- Fun
+- Visual
+- Less Than 60 Seconds
+- No Advanced Maths
+
+challenge_types:
+
+```
+- Binary Switches
+
+- Pattern Completion
+
+- Route Optimization
+
+- Signal Decoding
+
+- Logic Gate Activation
+```
+
+combat:
+
+style:
+Simple Action Adventure
+
+player_actions:
+- Dash
+- Stomp
+- Charge
+- Light Burst
+
+enemies:
+
+```
+darkness_creature:
+  health: 1
+
+shadow_bird:
+  health: 2
+
+turing_drone:
+  health: 3
+```
+
+progression:
+
+collectibles:
+
+```
+light_fragment
+
+lantern_energy
+
+upgrade_token
+```
+
+upgrades:
+
+```
+- Increased Sprint
+- Increased Glide
+- Larger Light Radius
+- Faster Recharge
+```
+
+npcs:
+
+traveller:
+provides:
+- Clues
+- Stories
+- Upgrades
+
+wildlife:
+provides:
+- Secrets
+- Hidden Paths
+
+boss:
+
+name: Turing Engine
+
+location:
+Aurora Core
+
+phases:
+
+```
+- Collect Solar Energy
+
+- Avoid Drone Swarms
+
+- Disable Logic Nodes
+
+- Final Logic Challenge
+
+- Restore Sunrise
+```
+
+ui:
+
+screens:
+- Main Menu
+- Region Map
+- Gameplay HUD
+- Puzzle Interface
+- Upgrade Screen
+- Victory Screen
+
+hud:
+
+```
+- Health
+
+- Light Radius
+
+- Fragment Count
+
+- Current Objective
+```
+
+art_direction:
+
+style:
+Stylized Low Poly
+
+inspirations:
+- Journey
+- Firewatch
+- Untitled Goose Game
+- Zelda Wind Waker
+
+colours:
+
+```
+darkness:
+  - Deep Blue
+  - Purple
+
+light:
+  - Orange
+  - Gold
+
+aurora:
+  - Green
+  - Cyan
+```
+
+audio:
+
+ambience:
+- Wind
+- Crickets
+- Night Birds
+
+music:
+- Atmospheric Synth
+- Australian Folk Influences
+
+acceptance_criteria:
+
+gameplay:
+- Player can explore all regions
+- Seven fragments collectible
+- At least four playable animals
+- At least five puzzle types
+- At least ten treasure clues
+- Boss battle completable
+
+technical:
+- WebGL build succeeds
+- Average FPS above 60
+- No critical bugs
+
+definition_of_done:
+
+* Complete beginning-middle-end adventure
+* Distinctly Australian setting
+* Clear June Solstice connection
+* Alan Turing-inspired gameplay
+* Fun exploration loop
+* Browser playable
+* Demo video ready for DEV submission

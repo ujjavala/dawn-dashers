@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "checkJs": true
+  },
+  "include": [
+    "web/**/*.js"
+  ],
+  "exclude": [
+    "Dawn Dashers Game UI Design/**",
+    "node_modules/**"
+  ]
+}

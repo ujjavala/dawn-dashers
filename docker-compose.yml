@@ -1,0 +1,20 @@
+name: dawn-dashers
+
+services:
+  api:
+    build:
+      context: ./backend
+    container_name: dawn-dashers-api
+    ports:
+      - "8000:8000"
+
+  web:
+    image: nginx:1.27-alpine
+    container_name: dawn-dashers-web
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+    volumes:
+      - ./web:/usr/share/nginx/html:ro
+      - ./web/nginx.conf:/etc/nginx/conf.d/default.conf:ro

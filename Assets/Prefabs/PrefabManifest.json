@@ -1,0 +1,11 @@
+{
+  "prefabs": [
+    "PlayerPrototype",
+    "LightFragmentPickup",
+    "SunFragmentPickup",
+    "DarknessCreature",
+    "RunnerSegmentA",
+    "RunnerSegmentB"
+  ],
+  "generation": "Tools/Dawn Dashers/Generate Jam Content"
+}

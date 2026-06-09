@@ -1,0 +1,13 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:Style src="GameTheme.uss" />
+    <ui:VisualElement class="screen">
+        <ui:VisualElement class="panel">
+            <ui:VisualElement class="hud-row">
+                <ui:Label name="HealthLabel" text="Health: 3" />
+                <ui:Label name="FragmentsLabel" text="Fragments: 0/7" />
+            </ui:VisualElement>
+            <ui:Label name="ObjectiveLabel" class="subtitle" text="Objective: Recover the first Sun Fragment" />
+            <ui:Label name="AbilityLabel" text="Ability: READY" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,21 @@
+{
+  "corePalette": {
+    "desertSand": "#D2B48C",
+    "dryClayBrown": "#8B5E3C",
+    "deepRockBrown": "#5C4033",
+    "sunFadedGold": "#D4A373",
+    "ancientPaperBeige": "#F3E5C0"
+  },
+  "accentPalette": {
+    "sunFragmentGlow": "#FFD166",
+    "torchFire": "#FF6B35",
+    "dangerDark": "#2B2B2B"
+  },
+  "specialAurora": {
+    "emerald": "#52B788",
+    "softCyan": "#4EA8DE",
+    "usage": "Tasmania and endgame only"
+  },
+  "style": "WarmDustyAdventure",
+  "visualRule": "Keep warm earthy tones dominant and use aurora sparingly for high-value reveal moments."
+}

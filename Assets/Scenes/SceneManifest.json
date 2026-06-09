@@ -1,0 +1,20 @@
+{
+  "scenes": [
+    "MainMenu",
+    "CharacterSelect",
+    "OutbackRunner",
+    "ServoCheckpoint",
+    "AuroraFlight",
+    "TuringBoss",
+    "Victory"
+  ],
+  "buildOrder": [
+    "MainMenu",
+    "CharacterSelect",
+    "OutbackRunner",
+    "ServoCheckpoint",
+    "AuroraFlight",
+    "TuringBoss",
+    "Victory"
+  ]
+}

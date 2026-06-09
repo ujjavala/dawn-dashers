@@ -1,0 +1,3250 @@
+
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const threeRoot = document.getElementById('threeRoot');
+  const scoreEl = document.getElementById('score');
+  const energyEl = document.getElementById('energy');
+  const foodEl = document.getElementById('food');
+  const livesEl = document.getElementById('lives');
+  const fragmentEl = document.getElementById('fragments');
+  const regionEl = document.getElementById('region');
+  const objectiveEl = document.getElementById('objective');
+  const messageEl = document.getElementById('message');
+  const startBtn = document.getElementById('startBtn');
+  const roadEventBtn = document.getElementById('roadEventBtn');
+  const hintBtn = document.getElementById('hintBtn');
+  const buyFoodBtn = document.getElementById('buyFoodBtn');
+  const hudEl = document.querySelector('.hud');
+  const missionEl = document.querySelector('.mission');
+  const dockEl = document.querySelector('.dock');
+  const landingOverlay = document.getElementById('landingOverlay');
+  const playNowBtn = document.getElementById('playNowBtn');
+  const landingSettingsBtn = document.getElementById('landingSettingsBtn');
+  const pastGamesBtn = document.getElementById('pastGamesBtn');
+  const landingHelpBtn = document.getElementById('landingHelpBtn');
+  const levelCompleteOverlay = document.getElementById('levelCompleteOverlay');
+  const lcEmoji = document.getElementById('lcEmoji');
+  const lcCongrats = document.getElementById('lcCongrats');
+  const lcTeaser = document.getElementById('lcTeaser');
+  const lcBonus = document.getElementById('lcBonus');
+  const lcContinueBtn = document.getElementById('lcContinueBtn');
+  const settingsModal = document.getElementById('settingsModal');
+  const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+  const superModeSelect = document.getElementById('superModeSelect');
+  const difficultySelect = document.getElementById('difficultySelect');
+  const terrain3dSelect = document.getElementById('terrain3dSelect');
+  const musicToggleSelect = document.getElementById('musicToggleSelect');
+  const musicVolumeRange = document.getElementById('musicVolumeRange');
+  const sfxVolumeRange = document.getElementById('sfxVolumeRange');
+  const pastGamesModal = document.getElementById('pastGamesModal');
+  const closePastGamesBtn = document.getElementById('closePastGamesBtn');
+  const pastGamesList = document.getElementById('pastGamesList');
+  const helpModal = document.getElementById('helpModal');
+  const closeHelpBtn = document.getElementById('closeHelpBtn');
+  const walkthroughModal = document.getElementById('walkthroughModal');
+  const walkthroughTitle = document.getElementById('walkthroughTitle');
+  const walkthroughText = document.getElementById('walkthroughText');
+  const walkthroughVisual = document.getElementById('walkthroughVisual');
+  const walkthroughStep = document.getElementById('walkthroughStep');
+  const walkthroughNextBtn = document.getElementById('walkthroughNextBtn');
+  const walkthroughBeginBtn = document.getElementById('walkthroughBeginBtn');
+  const walkthroughSkipBtn = document.getElementById('walkthroughSkipBtn');
+  const characterPanel = document.getElementById('characterPanel');
+  const characterTitleEl = document.querySelector('.character-title');
+  const characterPower = document.getElementById('characterPower');
+  const characterBackBtn = document.getElementById('characterBackBtn');
+  const characterStartBtn = document.getElementById('characterStartBtn');
+  const characterButtons = Array.from(document.querySelectorAll('.character-btn'));
+  const clueModal = document.getElementById('clueModal');
+  const puzzleModal = document.getElementById('puzzleModal');
+  const closeClueBtn = document.getElementById('closeClueBtn');
+  const closePuzzleBtn = document.getElementById('closePuzzleBtn');
+  const puzzleTopHintBtn = document.getElementById('puzzleTopHintBtn');
+  const clueTerrain = document.getElementById('clueTerrain');
+  const puzzleTerrain = document.getElementById('puzzleTerrain');
+  const puzzleTitle = document.getElementById('puzzleTitle');
+  const puzzleInstruction = document.getElementById('puzzleInstruction');
+  const puzzleQuestion = document.getElementById('puzzleQuestion');
+  const puzzleAnswerInput = document.getElementById('puzzleAnswerInput');
+  const puzzleCheckBtn = document.getElementById('puzzleCheckBtn');
+  const puzzleStatus = document.getElementById('puzzleStatus');
+  const puzzleLearnLink = document.getElementById('puzzleLearnLink');
+  const clueText = document.getElementById('clueText');
+  const clueSolveBtn = document.getElementById('clueSolveBtn');
+  const clueHintBtn = document.getElementById('clueHintBtn');
+  const puzzleSubmitBtn = document.getElementById('puzzleSubmitBtn');
+  const puzzleHintBtn = document.getElementById('puzzleHintBtn');
+  const puzzleSkipBtn = document.getElementById('puzzleSkipBtn');
+  const RUNS_KEY = 'dawn_dashers_runs_v1';
+  const WALKTHROUGH_KEY = 'dawn_dashers_walkthrough_seen';
+  const DIFFICULTY_KEY = 'dawn_dashers_difficulty_v1';
+  const SUPER_MODE_KEY = 'dawn_dashers_super_mode_v1';
+  const MUSIC_ENABLED_KEY = 'dawn_dashers_music_enabled_v1';
+  const MUSIC_VOLUME_KEY = 'dawn_dashers_music_volume_v1';
+  const SFX_VOLUME_KEY = 'dawn_dashers_sfx_volume_v1';
+  const TERRAIN_3D_KEY = 'dawn_dashers_terrain_3d_v1';
+  const difficultyMultipliers = {
+    easy: 0.75,
+    medium: 1,
+    hard: 1.35
+  };
+  let gameDifficulty = localStorage.getItem(DIFFICULTY_KEY) || 'medium';
+  if (!difficultyMultipliers[gameDifficulty]) {
+    gameDifficulty = 'medium';
+  }
+  let superModeEnabled = localStorage.getItem(SUPER_MODE_KEY) === 'on';
+  let musicEnabled = localStorage.getItem(MUSIC_ENABLED_KEY) !== 'off';
+  let musicVolume = Number.parseFloat(localStorage.getItem(MUSIC_VOLUME_KEY) || '0.7');
+  let sfxVolume = Number.parseFloat(localStorage.getItem(SFX_VOLUME_KEY) || '0.75');
+  let terrain3dEnabled = localStorage.getItem(TERRAIN_3D_KEY) !== 'off';
+  musicVolume = Number.isFinite(musicVolume) ? Math.max(0, Math.min(1, musicVolume)) : 0.7;
+  sfxVolume = Number.isFinite(sfxVolume) ? Math.max(0, Math.min(1, sfxVolume)) : 0.75;
+  const terrainTextureCache = new Map();
+  const hasPerlinNoise = globalThis.noise !== undefined && typeof globalThis.noise.perlin2 === 'function';
+  if (hasPerlinNoise) {
+    globalThis.noise.seed(0.417);
+  }
+  const hasThree = globalThis.THREE !== undefined;
+  const threeState = {
+    ready: false,
+    renderer: null,
+    scene: null,
+    camera: null,
+    ambient: null,
+    terrain: null,
+    terrainGeo: null,
+    terrainBase: null,
+    sun: null,
+    sky: null,
+    t: 0,
+    baseCamX: 0,
+    baseCamY: 11.8,
+    baseCamZ: 17.2,
+    lookX: 0,
+    lookY: 0,
+    lookZ: -7,
+    terrainType: null
+  };
+  const audioState = {
+    ctx: null,
+    master: null,
+    music: null,
+    sfx: null,
+    padA: null,
+    padB: null,
+    windSource: null,
+    windFilter: null,
+    started: false
+  };
+
+  function terrainTheme(terrain) {
+    if (terrain === 'dunes') {
+      return {
+        base: 0xb47a4d,
+        emissive: 0x3c2411,
+        fog: 0x5f3a23,
+        sky: 0x28170f,
+        amp: 2.9,
+        freq: 0.18,
+        speed: 0.23,
+        fogNear: 14,
+        fogFar: 52,
+        gradeTop: [242, 176, 108],
+        gradeBottom: [76, 43, 25],
+        gradeStrength: 0.26,
+        sunIntensity: 1.22,
+        ambientIntensity: 0.52
+      };
+    }
+    if (terrain === 'forest') {
+      return {
+        base: 0x4b6a3d,
+        emissive: 0x132014,
+        fog: 0x1f3022,
+        sky: 0x111c16,
+        amp: 2.2,
+        freq: 0.22,
+        speed: 0.18,
+        fogNear: 13,
+        fogFar: 48,
+        gradeTop: [148, 188, 126],
+        gradeBottom: [31, 52, 34],
+        gradeStrength: 0.22,
+        sunIntensity: 1.02,
+        ambientIntensity: 0.58
+      };
+    }
+    if (terrain === 'beach') {
+      return {
+        base: 0x7693a0,
+        emissive: 0x132633,
+        fog: 0x29485f,
+        sky: 0x132d40,
+        amp: 1.7,
+        freq: 0.16,
+        speed: 0.31,
+        fogNear: 15,
+        fogFar: 56,
+        gradeTop: [150, 198, 224],
+        gradeBottom: [42, 78, 108],
+        gradeStrength: 0.2,
+        sunIntensity: 1.08,
+        ambientIntensity: 0.62
+      };
+    }
+    if (terrain === 'industrial') {
+      return {
+        base: 0x355579,
+        emissive: 0x04111c,
+        fog: 0x0b1f34,
+        sky: 0x0a1426,
+        amp: 1.4,
+        freq: 0.27,
+        speed: 0.37,
+        fogNear: 16,
+        fogFar: 62,
+        gradeTop: [96, 170, 224],
+        gradeBottom: [8, 19, 35],
+        gradeStrength: 0.24,
+        sunIntensity: 1.1,
+        ambientIntensity: 0.48
+      };
+    }
+    return {
+      base: 0x6f7e9f,
+      emissive: 0x0f1422,
+      fog: 0x1a2439,
+      sky: 0x101728,
+      amp: 2.8,
+      freq: 0.19,
+      speed: 0.16,
+      fogNear: 12,
+      fogFar: 46,
+      gradeTop: [176, 198, 230],
+      gradeBottom: [32, 45, 72],
+      gradeStrength: 0.23,
+      sunIntensity: 1.16,
+      ambientIntensity: 0.56
+    };
+  }
+
+  function initThreeTerrain() {
+    if (!hasThree || !threeRoot || threeState.ready) {
+      return;
+    }
+    const w = canvas.clientWidth || window.innerWidth;
+    const h = canvas.clientHeight || window.innerHeight;
+    const renderer = new globalThis.THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(w, h);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = globalThis.THREE.PCFSoftShadowMap;
+    renderer.domElement.style.width = '100%';
+    renderer.domElement.style.height = '100%';
+    threeRoot.appendChild(renderer.domElement);
+
+    const scene = new globalThis.THREE.Scene();
+    const camera = new globalThis.THREE.PerspectiveCamera(56, w / h, 0.1, 260);
+    camera.position.set(0, 11.8, 17.2);
+    camera.lookAt(0, 0, -7);
+
+    const ambient = new globalThis.THREE.AmbientLight(0xa8bfd6, 0.55);
+    scene.add(ambient);
+
+    const sun = new globalThis.THREE.DirectionalLight(0xffe0b8, 1.15);
+    sun.position.set(9, 13, 8);
+    sun.castShadow = true;
+    sun.shadow.mapSize.width = 1024;
+    sun.shadow.mapSize.height = 1024;
+    scene.add(sun);
+
+    const skyGeo = new globalThis.THREE.SphereGeometry(90, 24, 16);
+    const skyMat = new globalThis.THREE.MeshBasicMaterial({ color: 0x1a2439, side: globalThis.THREE.BackSide });
+    const sky = new globalThis.THREE.Mesh(skyGeo, skyMat);
+    scene.add(sky);
+
+    const terrainGeo = new globalThis.THREE.PlaneGeometry(28, 56, 96, 160);
+    terrainGeo.rotateX(-Math.PI / 2.25);
+    const terrainMat = new globalThis.THREE.MeshStandardMaterial({
+      color: 0x6f7e9f,
+      roughness: 0.92,
+      metalness: 0.08,
+      emissive: 0x0f1422,
+      emissiveIntensity: 0.3
+    });
+    const terrain = new globalThis.THREE.Mesh(terrainGeo, terrainMat);
+    terrain.position.set(0, -2.1, -7.8);
+    terrain.receiveShadow = true;
+    scene.add(terrain);
+
+    const pos = terrainGeo.attributes.position;
+    const base = new Float32Array(pos.count * 3);
+    for (let i = 0; i < pos.count; i++) {
+      base[i * 3] = pos.getX(i);
+      base[i * 3 + 1] = pos.getY(i);
+      base[i * 3 + 2] = pos.getZ(i);
+    }
+
+    threeState.ready = true;
+    threeState.renderer = renderer;
+    threeState.scene = scene;
+    threeState.camera = camera;
+    threeState.ambient = ambient;
+    threeState.terrain = terrain;
+    threeState.terrainGeo = terrainGeo;
+    threeState.terrainBase = base;
+    threeState.sun = sun;
+    threeState.sky = sky;
+    applyRegionThreeTheme(regions[state.regionIndex]);
+    updateThreeVisibility();
+  }
+
+  function updateThreeVisibility() {
+    if (!threeState.ready || !threeState.renderer) {
+      return;
+    }
+    threeState.renderer.domElement.style.display = terrain3dEnabled ? 'block' : 'none';
+  }
+
+  function applyRegionThreeTheme(region) {
+    if (!threeState.ready || !region) {
+      return;
+    }
+    const theme = terrainTheme(region.terrain);
+    threeState.terrain.material.color.setHex(theme.base);
+    threeState.terrain.material.emissive.setHex(theme.emissive);
+    threeState.scene.fog = new globalThis.THREE.Fog(theme.fog, 16, 58);
+    threeState.sky.material.color.setHex(theme.sky);
+    threeState.sun.color.setHex(region.terrain === 'industrial' ? 0x8de4ff : 0xffdfbe);
+    threeState.terrainType = region.terrain;
+  }
+
+  function updateThreeTerrain(dt) {
+    if (!threeState.ready || !terrain3dEnabled) {
+      return;
+    }
+    const terrain = regions[state.regionIndex]?.terrain || 'dunes';
+    if (terrain !== threeState.terrainType) {
+      applyRegionThreeTheme(regions[state.regionIndex]);
+    }
+    const theme = terrainTheme(terrain);
+    threeState.t += dt;
+
+    const pos = threeState.terrainGeo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const bx = threeState.terrainBase[i * 3];
+      const by = threeState.terrainBase[i * 3 + 1];
+      const bz = threeState.terrainBase[i * 3 + 2];
+      const nA = octaveNoise(bx * theme.freq + threeState.t * theme.speed, bz * theme.freq - 7.7);
+      const nB = octaveNoise(bx * (theme.freq * 2.4) - 11.3, bz * (theme.freq * 2.1) + threeState.t * theme.speed * 0.7);
+      const lift = (nA * 0.72 + nB * 0.28) * theme.amp;
+      pos.setXYZ(i, bx, by + lift, bz);
+    }
+    pos.needsUpdate = true;
+    threeState.terrainGeo.computeVertexNormals();
+    threeState.renderer.render(threeState.scene, threeState.camera);
+  }
+
+  function resizeThreeTerrain() {
+    if (!threeState.ready) {
+      return;
+    }
+    const w = canvas.clientWidth || window.innerWidth;
+    const h = canvas.clientHeight || window.innerHeight;
+    threeState.renderer.setSize(w, h);
+    threeState.camera.aspect = w / h;
+    threeState.camera.updateProjectionMatrix();
+  }
+
+  function ensureAudioContext() {
+    if (audioState.ctx) {
+      return;
+    }
+    const ACtx = globalThis.AudioContext || globalThis.webkitAudioContext;
+    if (!ACtx) {
+      return;
+    }
+    const ctx = new ACtx();
+    const master = ctx.createGain();
+    const music = ctx.createGain();
+    const sfx = ctx.createGain();
+
+    master.gain.value = 0.9;
+    music.gain.value = musicVolume * (musicEnabled ? 1 : 0);
+    sfx.gain.value = sfxVolume;
+
+    music.connect(master);
+    sfx.connect(master);
+    master.connect(ctx.destination);
+
+    audioState.ctx = ctx;
+    audioState.master = master;
+    audioState.music = music;
+    audioState.sfx = sfx;
+  }
+
+  function createNoiseBuffer(ctx, seconds = 2) {
+    const sampleCount = Math.floor(ctx.sampleRate * seconds);
+    const buffer = ctx.createBuffer(1, sampleCount, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < sampleCount; i++) {
+      data[i] = (Math.random() * 2 - 1) * 0.35;
+    }
+    return buffer;
+  }
+
+  function startAmbientAudio() {
+    ensureAudioContext();
+    if (!audioState.ctx || audioState.started) {
+      return;
+    }
+    const ctx = audioState.ctx;
+
+    const padA = ctx.createOscillator();
+    const padB = ctx.createOscillator();
+    const padAGain = ctx.createGain();
+    const padBGain = ctx.createGain();
+    const musicFilter = ctx.createBiquadFilter();
+    musicFilter.type = 'lowpass';
+    musicFilter.frequency.value = 680;
+    musicFilter.Q.value = 0.6;
+
+    padA.type = 'triangle';
+    padB.type = 'sine';
+    padA.frequency.value = 92;
+    padB.frequency.value = 138;
+    padAGain.gain.value = 0.045;
+    padBGain.gain.value = 0.028;
+
+    padA.connect(padAGain);
+    padB.connect(padBGain);
+    padAGain.connect(musicFilter);
+    padBGain.connect(musicFilter);
+    musicFilter.connect(audioState.music);
+
+    const windSource = ctx.createBufferSource();
+    windSource.buffer = createNoiseBuffer(ctx, 3);
+    windSource.loop = true;
+    const windFilter = ctx.createBiquadFilter();
+    windFilter.type = 'bandpass';
+    windFilter.frequency.value = 430;
+    windFilter.Q.value = 0.85;
+    const windGain = ctx.createGain();
+    windGain.gain.value = 0.04;
+    windSource.connect(windFilter);
+    windFilter.connect(windGain);
+    windGain.connect(audioState.music);
+
+    padA.start();
+    padB.start();
+    windSource.start();
+
+    audioState.padA = padA;
+    audioState.padB = padB;
+    audioState.windSource = windSource;
+    audioState.windFilter = windFilter;
+    audioState.started = true;
+    syncAudioToRegion();
+  }
+
+  function ensureAudioStarted() {
+    ensureAudioContext();
+    if (!audioState.ctx) {
+      return;
+    }
+    if (audioState.ctx.state === 'suspended') {
+      audioState.ctx.resume();
+    }
+    startAmbientAudio();
+  }
+
+  function syncAudioToRegion() {
+    if (!audioState.ctx || !audioState.started) {
+      return;
+    }
+    const terrain = regions[state.regionIndex]?.terrain || 'dunes';
+    const now = audioState.ctx.currentTime;
+    const musicGainTarget = musicEnabled ? musicVolume : 0;
+    audioState.music.gain.cancelScheduledValues(now);
+    audioState.music.gain.linearRampToValueAtTime(musicGainTarget, now + 0.18);
+    audioState.sfx.gain.cancelScheduledValues(now);
+    audioState.sfx.gain.linearRampToValueAtTime(sfxVolume, now + 0.1);
+
+    let fA = 92;
+    let fB = 138;
+    let windF = 420;
+    if (terrain === 'forest') {
+      fA = 98;
+      fB = 147;
+      windF = 370;
+    } else if (terrain === 'beach') {
+      fA = 82;
+      fB = 124;
+      windF = 760;
+    } else if (terrain === 'industrial') {
+      fA = 112;
+      fB = 168;
+      windF = 980;
+    } else if (terrain === 'mountains') {
+      fA = 76;
+      fB = 114;
+      windF = 540;
+    }
+
+    audioState.padA.frequency.setTargetAtTime(fA, now, 0.32);
+    audioState.padB.frequency.setTargetAtTime(fB, now, 0.32);
+    audioState.windFilter.frequency.setTargetAtTime(windF, now, 0.24);
+  }
+
+  function playSfx(kind) {
+    if (!audioState.ctx || !audioState.sfx) {
+      return;
+    }
+    const now = audioState.ctx.currentTime;
+    const osc = audioState.ctx.createOscillator();
+    const gain = audioState.ctx.createGain();
+    osc.type = kind === 'hit' ? 'square' : 'triangle';
+    if (kind === 'collect') {
+      osc.frequency.setValueAtTime(420, now);
+      osc.frequency.exponentialRampToValueAtTime(760, now + 0.08);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.exponentialRampToValueAtTime(0.11, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+    } else if (kind === 'jump') {
+      osc.frequency.setValueAtTime(210, now);
+      osc.frequency.exponentialRampToValueAtTime(320, now + 0.09);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.exponentialRampToValueAtTime(0.08, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    } else {
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.exponentialRampToValueAtTime(92, now + 0.12);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.exponentialRampToValueAtTime(0.12, now + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+    }
+    osc.connect(gain);
+    gain.connect(audioState.sfx);
+    osc.start(now);
+    osc.stop(now + 0.18);
+  }
+  let walkthroughIndex = 0;
+  let levelCompleteTimer = null;
+  const walkthroughSteps = [
+    {
+      title: 'These Are Your Lives',
+      text: 'Hearts on the left are your lives. You start with 3 and solving puzzles gives +1 life.',
+      visuals: []
+    },
+    {
+      title: 'Choose Your Character',
+      text: 'Each level gives exactly 2 dashers: one fast (full-width, higher energy use) and one slow (restricted lanes, lower energy use).',
+      visuals: []
+    },
+    {
+      title: 'Movement Controls',
+      text: 'Use left/right to switch lanes, up/space to jump, and down to slide. Every move consumes energy.',
+      visuals: []
+    },
+    {
+      title: 'Collectibles And Hazards',
+      text: 'Catch shards and score tokens (+100/+500). Avoid bombs and negative tokens (-100/-500).',
+      visuals: [
+        { kind: 'shard', icon: '◆', label: 'Shard' },
+        { kind: 'treasure', icon: '+', label: 'Score Token' },
+        { kind: 'hazard', icon: '▲', label: 'Hazard' }
+      ]
+    },
+    {
+      title: 'Energy And Food',
+      text: 'If energy is empty, movement stops. Buy food with points (F key or Buy Food button) and food auto-recovers energy.',
+      visuals: [
+        { kind: 'core', icon: '□', label: 'Puzzle Core' }
+      ]
+    },
+    {
+      title: 'Mission Goal',
+      text: 'Score comes only from score tokens and level clear bonuses. Survive, collect shards, and progress terrain levels.',
+      visuals: []
+    }
+  ];
+
+  const palette = {
+    bgTop: '#08101d',
+    bgBottom: '#1f1332',
+    gold: '#ffd166',
+    orange: '#ff6b35',
+    paper: '#f3e5c0',
+    dark: '#151515',
+    aurora: '#52b788',
+    cyan: '#8be9ff',
+    violet: '#b58cff'
+  };
+
+  // Quirky congrats shown when advancing to the next level
+  const levelTransitionMsgs = [
+    null, // placeholder — level 0 is the start, no incoming transition
+    {
+      congrats: 'Wowww!! Outback: CLEARED! 🌵🔥',
+      teaser: 'Heading into the Bushland — eucalyptus as far as the beak can see, wombat tunnels underfoot, and a 100% chance something rustles right behind you.'
+    },
+    {
+      congrats: 'AYY!! Bushland: SMASHED! 🌿✨',
+      teaser: "Next: Servo — part ancient emu trading post, part glitchy AI hub. The circuits are dusty. The emus are absolutely suspicious."
+    },
+    {
+      congrats: 'Unreal!! Servo: CONQUERED! ⚡🎉',
+      teaser: 'Coastline Lighthouse awaits — salty air, crashing waves, and a lighthouse that blinks in binary. Coincidence? Doubt it.'
+    },
+    {
+      congrats: 'LEGENDARY!! Coastline: OBLITERATED! 🌊🏆',
+      teaser: 'Tasmania — misty peaks, ancient trails, and the terrain where the Halting Problem lives. Will this run ever truly end? (Spoiler: yes. Probably.)'
+    }
+  ];
+
+  const regions = [
+    {
+      name: 'Outback Ruins',
+      top: '#d4a373',
+      bottom: '#8b5e3c',
+      accent: '#ffd166',
+      terrain: 'dunes'
+    },
+    {
+      name: 'Bushland',
+      top: '#8fae66',
+      bottom: '#4a6a3f',
+      accent: '#52b788',
+      terrain: 'forest'
+    },
+    {
+      name: 'Servo',
+      top: '#23364f',
+      bottom: '#0d1728',
+      accent: '#5be7ff',
+      terrain: 'industrial'
+    },
+    {
+      name: 'Coastline Lighthouse',
+      top: '#9fd0e3',
+      bottom: '#3f80a8',
+      accent: '#4ea8de',
+      terrain: 'beach'
+    },
+    {
+      name: 'Tasmania',
+      top: '#8395b7',
+      bottom: '#3f4c75',
+      accent: '#52b788',
+      terrain: 'mountains'
+    }
+  ];
+
+  const lanes = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
+  const laneCenterIndex = Math.floor(lanes.length / 2);
+  const laneSpread = 0.11;
+
+  function laneToXNorm(laneIndex) {
+    const safeIndex = Math.max(0, Math.min(lanes.length - 1, laneIndex));
+    return 0.5 + lanes[safeIndex] * laneSpread;
+  }
+
+  const state = {
+    running: false,
+    ended: false,
+    score: 0,
+    energy: 1000,
+    maxEnergy: 1000,
+    health: 3,
+    maxLives: 7,
+    carryHearts: null,
+    fragments: 0,
+    objective: 'Tap Start and keep moving.',
+    player: {
+      lane: laneCenterIndex,
+      y: 0,
+      jump: 0,
+      sliding: 0,
+      invincible: 0
+    },
+    items: [],
+    events: [],
+    message: '',
+    difficulty: 1,
+    distance: 0,
+    regionIndex: 0,
+    progressLevel: 0,
+    spawnTimer: 0,
+    fragmentTimer: 9,
+    continueFromLevelUnlock: false,
+    lastTime: 0,
+    swipeStart: null,
+    apiOnline: false
+  };
+
+  const characters = {
+    emu: { name: 'Elder Emu', emoji: '🦅', power: 'Dust Sprint', quirk: 'Fast lane weave, moderate hop drain.', unlockAt: 0, role: 'fast' },
+    wombat: { name: 'Digger Wombat', emoji: '🦫', power: 'Burrow Dodge', quirk: 'Cheaper slides in dunes/forest.', unlockAt: 0, role: 'slow' },
+    kangaroo: { name: 'Red Kangaroo', emoji: '🦘', power: 'Sky Hop', quirk: 'Jumps are most energy-efficient.', unlockAt: 1, role: 'fast' },
+    koala: { name: 'River Koala', emoji: '🐨', power: 'Grip Glide', quirk: 'Balanced and steady movement.', unlockAt: 1, role: 'slow' },
+    possum: { name: 'Lantern Possum', emoji: '🌟', power: 'Night Glide', quirk: 'Quick reactions at higher levels.', unlockAt: 2, role: 'fast' },
+    echidna: { name: 'Spike Echidna', emoji: '🦔', power: 'Quill Barrier', quirk: 'Stable lane control with low drift.', unlockAt: 2, role: 'slow' },
+    dingo: { name: 'Coastal Dingo', emoji: '🐕', power: 'Tide Dash', quirk: 'Aggressive full-width lane cuts.', unlockAt: 3, role: 'fast' },
+    bilby: { name: 'Desert Bilby', emoji: '🐇', power: 'Tunnel Pace', quirk: 'Short lane window, low energy burn.', unlockAt: 3, role: 'slow' },
+    kookaburra: { name: 'Aurora Kookaburra', emoji: '🐦', power: 'Light Call', quirk: 'Fast top-tier lane traversal.', unlockAt: 4, role: 'fast' },
+    quokka: { name: 'Summit Quokka', emoji: '🐹', power: 'Calm Climb', quirk: 'Highest efficiency but restricted lanes.', unlockAt: 4, role: 'slow' }
+  };
+  const levelCharacterPairs = {
+    0: { fast: 'emu', slow: 'wombat' },
+    1: { fast: 'kangaroo', slow: 'koala' },
+    2: { fast: 'possum', slow: 'echidna' },
+    3: { fast: 'dingo', slow: 'bilby' },
+    4: { fast: 'kookaburra', slow: 'quokka' }
+  };
+  const characterFood = {
+    emu: { name: 'Seed Mix', cost: 120, restore: 250, moveCost: 50, jumpCost: 68, slideCost: 42 },
+    wombat: { name: 'Root Pack', cost: 95, restore: 230, moveCost: 30, jumpCost: 48, slideCost: 24 },
+    kangaroo: { name: 'Grass Bundle', cost: 135, restore: 270, moveCost: 48, jumpCost: 60, slideCost: 38 },
+    koala: { name: 'Eucalyptus', cost: 105, restore: 250, moveCost: 28, jumpCost: 44, slideCost: 22 },
+    possum: { name: 'Berry Pouch', cost: 150, restore: 300, moveCost: 44, jumpCost: 56, slideCost: 34 },
+    echidna: { name: 'Ant Cluster', cost: 112, restore: 275, moveCost: 26, jumpCost: 42, slideCost: 20 },
+    dingo: { name: 'Fish Strip', cost: 165, restore: 325, moveCost: 42, jumpCost: 54, slideCost: 34 },
+    bilby: { name: 'Herb Bundle', cost: 120, restore: 300, moveCost: 24, jumpCost: 40, slideCost: 18 },
+    kookaburra: { name: 'Worm Satchel', cost: 178, restore: 350, moveCost: 40, jumpCost: 50, slideCost: 30 },
+    quokka: { name: 'Summit Greens', cost: 128, restore: 330, moveCost: 22, jumpCost: 36, slideCost: 18 }
+  };
+  state.foodStocks = Object.keys(characterFood).reduce((acc, key) => {
+    acc[key] = 0;
+    return acc;
+  }, {});
+  const characterRegionMap = {
+    emu: 0,
+    wombat: 0,
+    kangaroo: 1,
+    koala: 1,
+    possum: 2,
+    echidna: 2,
+    dingo: 3,
+    bilby: 3,
+    kookaburra: 4,
+    quokka: 4
+  };
+  let selectedCharacter = 'emu';
+  const puzzleState = {
+    hintIndex: 0,
+    currentIndex: 0,
+    pendingAdvance: null
+  };
+
+  const turingPuzzles = [
+    {
+      title: 'The Reversed Message',
+      instruction: 'A spy reversed the letters of a famous mathematician\'s name. Decode this: N A L A.',
+      answer: 'ALAN',
+      acceptedAnswers: ['alan'],
+      hints: [
+        'Read the letters backward from right to left.',
+        'Last letter comes first.',
+        'Try reversing N A L A fully.'
+      ],
+      rightExplain: 'Correct. Reversing N A L A gives A L A N.',
+      wrongExplain: 'Oops. The trick is pure reversal: right-to-left, not shifting.',
+      learnUrl: 'https://en.wikipedia.org/wiki/Turing_machine'
+    },
+    {
+      title: 'The Next Step Shift',
+      instruction: 'Shift each letter backward by one spot to decode: B M B N.',
+      answer: 'ALAM',
+      acceptedAnswers: ['alam', 'alan'],
+      hints: [
+        'Ask: what letter comes right before B?',
+        'M becomes L. N becomes M.',
+        'Decode one letter at a time.'
+      ],
+      rightExplain: 'Nice. Back-shifting gives A L A M (often intended as ALAN in this puzzle theme).',
+      wrongExplain: 'Oops. Move each letter one step backward in the alphabet.',
+      learnUrl: 'https://en.wikipedia.org/wiki/Binary_number'
+    },
+    {
+      title: 'The Odd One Out',
+      instruction: 'Which item does NOT belong: Computer, Microchip, Calculator, Bicycle?',
+      answer: 'Bicycle',
+      acceptedAnswers: ['bicycle'],
+      hints: [
+        'Three items are electronic devices.',
+        'One relies on human pedaling, not electricity.'
+      ],
+      rightExplain: 'Correct. Bicycle is the non-electronic outlier.',
+      wrongExplain: 'Oops. Pick the one that is not an electronic device.',
+      learnUrl: 'https://en.wikipedia.org/wiki/Boolean_algebra'
+    },
+    {
+      title: 'The Binary Choice',
+      instruction: 'Computers use binary code with only two digits. What are they?',
+      answer: '0 and 1',
+      acceptedAnswers: ['0 and 1', '0,1', '0 1', '01'],
+      hints: [
+        'Think OFF and ON states.',
+        'Only two symbols are used in binary.'
+      ],
+      rightExplain: 'Correct. Binary is built on 0 and 1.',
+      wrongExplain: 'Oops. Binary uses only two symbols: 0 and 1.',
+      learnUrl: 'https://en.wikipedia.org/wiki/Enigma_machine'
+    },
+    {
+      title: 'The Missing Number Sequence',
+      instruction: 'Find the missing number: 2, 4, 8, 16, [ ? ], 64.',
+      answer: '32',
+      acceptedAnswers: ['32'],
+      hints: [
+        'Each number doubles.',
+        '16 doubled gives the missing value.'
+      ],
+      rightExplain: 'Correct. Doubling sequence gives 32 between 16 and 64.',
+      wrongExplain: 'Oops. This pattern multiplies by 2 each step.',
+      learnUrl: 'https://en.wikipedia.org/wiki/Halting_problem'
+    },
+    {
+      title: 'The Secret Identity',
+      instruction: 'One player answers a huge multiplication instantly while the other delays 5s like a human. Who is the computer?',
+      answer: 'Player A',
+      acceptedAnswers: ['player a', 'a'],
+      hints: [
+        'Humans rarely do massive multiplication instantly in their head.',
+        'The instant responder is likely the machine.'
+      ],
+      rightExplain: 'Correct. Instant large arithmetic strongly signals Player A is the computer.',
+      wrongExplain: 'Oops. In this setup, near-instant huge arithmetic points to the computer.',
+      learnUrl: 'https://en.wikipedia.org/wiki/Turing_test'
+    },
+    {
+      title: 'The Enigma Plugboard',
+      instruction: 'If A↔E and B↔X, what does B A B E become?',
+      answer: 'X E X A',
+      acceptedAnswers: ['xexe', 'x e x e'],
+      hints: [
+        'Replace each B with X.',
+        'Replace each A with E.'
+      ],
+      rightExplain: 'Correct using the puzzle mapping. You applied each substitution to every letter.',
+      wrongExplain: 'Oops. Apply substitutions per letter in order.',
+      learnUrl: 'https://en.wikipedia.org/wiki/Enigma_machine'
+    },
+    {
+      title: 'The Logic Route',
+      instruction: 'Robot walks only if sunny AND weekend. Today is Saturday and raining. Does it walk?',
+      answer: 'No',
+      acceptedAnswers: ['no', 'n'],
+      hints: [
+        'AND means both conditions must be true.',
+        'Weekend is true, sunny is false.'
+      ],
+      rightExplain: 'Correct. Weekend alone is insufficient because sunny is false.',
+      wrongExplain: 'Oops. With AND logic, one false condition makes the full condition false.',
+      learnUrl: 'https://en.wikipedia.org/wiki/Logic_gate'
+    },
+    {
+      title: 'The Codebreaker\'s Key',
+      instruction: 'Three-digit code: first digit 1, second is double first, third is double second. What code?',
+      answer: '124',
+      acceptedAnswers: ['124'],
+      hints: [
+        'Start from 1.',
+        'Double each previous digit to get the next.'
+      ],
+      rightExplain: 'Correct. 1 -> 2 -> 4 gives code 124.',
+      wrongExplain: 'Oops. Keep doubling from the previous digit.',
+      learnUrl: 'https://en.wikipedia.org/wiki/Pattern_recognition'
+    },
+    {
+      title: 'The Turing Tape',
+      instruction: 'Rule: if you see a 0, change it to 1 and stop. Tape: 1, 1, 0, 1. Final tape?',
+      answer: '1,1,1,1',
+      acceptedAnswers: ['1,1,1,1', '1 1 1 1', '1111'],
+      hints: [
+        'Leave all 1s unchanged.',
+        'Only the first 0 encountered is flipped to 1.'
+      ],
+      rightExplain: 'Correct. The single 0 becomes 1, so the tape is all ones.',
+      wrongExplain: 'Oops. You only flip the encountered 0 to 1, then stop.',
+      learnUrl: 'https://en.wikipedia.org/wiki/Turing_machine'
+    }
+  ];
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    terrainTextureCache.clear();
+    resizeThreeTerrain();
+  }
+
+  function clampColorChannel(value) {
+    return Math.max(0, Math.min(255, Math.round(value)));
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function smoothStep(t) {
+    return t * t * (3 - 2 * t);
+  }
+
+  function hash2(x, y) {
+    const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453123;
+    return s - Math.floor(s);
+  }
+
+  function valueNoise2(x, y) {
+    const x0 = Math.floor(x);
+    const y0 = Math.floor(y);
+    const x1 = x0 + 1;
+    const y1 = y0 + 1;
+    const tx = smoothStep(x - x0);
+    const ty = smoothStep(y - y0);
+
+    const n00 = hash2(x0, y0);
+    const n10 = hash2(x1, y0);
+    const n01 = hash2(x0, y1);
+    const n11 = hash2(x1, y1);
+    const nx0 = lerp(n00, n10, tx);
+    const nx1 = lerp(n01, n11, tx);
+    return lerp(nx0, nx1, ty) * 2 - 1;
+  }
+
+  function mixRgb(a, b, t) {
+    return [
+      clampColorChannel(lerp(a[0], b[0], t)),
+      clampColorChannel(lerp(a[1], b[1], t)),
+      clampColorChannel(lerp(a[2], b[2], t))
+    ];
+  }
+
+  function octaveNoise(x, y) {
+    let amp = 0.5;
+    let freq = 1;
+    let total = 0;
+    let norm = 0;
+    for (let i = 0; i < 4; i++) {
+      const n = hasPerlinNoise
+        ? globalThis.noise.perlin2(x * freq, y * freq)
+        : valueNoise2(x * freq * 1.37, y * freq * 1.37);
+      total += n * amp;
+      norm += amp;
+      amp *= 0.5;
+      freq *= 2;
+    }
+    return total / norm;
+  }
+
+  function biomePalette(terrain) {
+    if (terrain === 'dunes') {
+      return {
+        low: [92, 56, 34],
+        mid: [146, 98, 62],
+        high: [206, 164, 114],
+        tint: [234, 196, 146]
+      };
+    }
+    if (terrain === 'forest') {
+      return {
+        low: [34, 51, 28],
+        mid: [62, 88, 48],
+        high: [110, 142, 82],
+        tint: [150, 182, 120]
+      };
+    }
+    if (terrain === 'beach') {
+      return {
+        low: [96, 86, 66],
+        mid: [150, 134, 102],
+        high: [210, 192, 146],
+        tint: [206, 224, 210]
+      };
+    }
+    if (terrain === 'industrial') {
+      return {
+        low: [14, 24, 38],
+        mid: [28, 48, 72],
+        high: [70, 104, 138],
+        tint: [88, 226, 246]
+      };
+    }
+    return {
+      low: [44, 52, 74],
+      mid: [78, 92, 122],
+      high: [144, 164, 196],
+      tint: [212, 226, 240]
+    };
+  }
+
+  function getTerrainTexture(terrain, targetW, targetH) {
+    const texW = Math.max(280, Math.floor(targetW * 0.55));
+    const texH = Math.max(180, Math.floor(targetH * 0.6));
+    const key = `${terrain}:${texW}x${texH}`;
+    if (terrainTextureCache.has(key)) {
+      return terrainTextureCache.get(key);
+    }
+
+    const off = document.createElement('canvas');
+    off.width = texW;
+    off.height = texH;
+    const offCtx = off.getContext('2d');
+    const image = offCtx.createImageData(texW, texH);
+    const px = image.data;
+    const pal = biomePalette(terrain);
+
+    for (let y = 0; y < texH; y++) {
+      for (let x = 0; x < texW; x++) {
+        const nx = x / texW;
+        const ny = y / texH;
+        const ridge = Math.abs(octaveNoise(nx * 2.4 + 11.2, ny * 2 + 7.6));
+        const detail = octaveNoise(nx * 9.5 + 25.1, ny * 8.7 + 33.4);
+        const macro = octaveNoise(nx * 1.2 + 3.7, ny * 1.35 + 4.3);
+        let heightMix = 0.5 + macro * 0.35 + ridge * 0.28 + detail * 0.15;
+        heightMix = Math.max(0, Math.min(1, heightMix));
+
+        let color = mixRgb(pal.low, pal.mid, Math.min(1, heightMix * 1.25));
+        if (heightMix > 0.58) {
+          color = mixRgb(color, pal.high, (heightMix - 0.58) / 0.42);
+        }
+        if (terrain === 'industrial') {
+          const trace = octaveNoise(nx * 28 + 90, ny * 5 + 120);
+          if (trace > 0.56) {
+            color = mixRgb(color, pal.tint, 0.4);
+          }
+        }
+
+        const lighting = 0.82 + ny * 0.2 + Math.max(0, detail) * 0.08;
+        const i = (y * texW + x) * 4;
+        px[i] = clampColorChannel(color[0] * lighting);
+        px[i + 1] = clampColorChannel(color[1] * lighting);
+        px[i + 2] = clampColorChannel(color[2] * lighting);
+        px[i + 3] = 255;
+      }
+    }
+
+    offCtx.putImageData(image, 0, 0);
+    terrainTextureCache.set(key, off);
+    return off;
+  }
+
+  function drawProceduralTerrainTexture(terrain, w, h, horizonY, t) {
+    const groundH = h - horizonY;
+    const tex = getTerrainTexture(terrain, w, groundH);
+    const shiftA = (t * 24) % tex.width;
+    const shiftB = (t * 11) % tex.width;
+
+    ctx.save();
+    ctx.globalAlpha = terrain === 'industrial' ? 0.78 : 0.72;
+    ctx.drawImage(tex, -shiftA, horizonY, w + tex.width, groundH);
+    ctx.globalAlpha = terrain === 'industrial' ? 0.34 : 0.3;
+    ctx.drawImage(tex, -shiftB, horizonY - 8, w + tex.width, groundH + 12);
+    ctx.restore();
+  }
+
+  function resetGame(options = {}) {
+    const keepProgress = Boolean(options.keepProgress);
+    state.running = true;
+    state.ended = false;
+    if (!keepProgress) {
+      state.score = 0;
+    }
+    const baseHearts = state.carryHearts ?? (keepProgress ? state.health : 3);
+    state.health = Math.max(1, Math.min(state.maxLives, baseHearts));
+    state.carryHearts = null;
+    state.fragments = 0;
+    const tier = Math.max(0, characters[selectedCharacter]?.unlockAt || 0);
+    const role = characters[selectedCharacter]?.role || 'fast';
+    state.maxEnergy = 1000 + tier * 120 + (role === 'slow' ? 80 : 30);
+    state.energy = state.maxEnergy;
+    state.objective = keepProgress
+      ? 'Continue your expedition and recover the next shard set.'
+      : 'Traverse the expedition map and collect shards.';
+    state.player = { lane: laneCenterIndex, y: 0, jump: 0, sliding: 0, invincible: 0 };
+    state.items = [];
+    state.events = [];
+    state.message = keepProgress ? 'Run resumed with your earned hearts.' : 'Go!';
+    state.difficulty = 1 + state.progressLevel * 0.45;
+    state.distance = 0;
+    state.regionIndex = characterRegionMap[selectedCharacter] ?? 0;
+    state.spawnTimer = 0;
+    state.fragmentTimer = 7;
+    state.continueFromLevelUnlock = false;
+    setCharacterSelectionOpen(false);
+    setLanding(false);
+    setGameplayChrome(true);
+    applyRegionThreeTheme(regions[state.regionIndex]);
+    syncAudioToRegion();
+    syncHud();
+  }
+
+  function hasSeenWalkthrough() {
+    return globalThis.localStorage.getItem(WALKTHROUGH_KEY) === '1';
+  }
+
+  function markWalkthroughSeen() {
+    globalThis.localStorage.setItem(WALKTHROUGH_KEY, '1');
+  }
+
+  function launchRunFromStartButton(keepProgress = false) {
+    resetGame({ keepProgress });
+  }
+
+  function hydrateWalkthroughStep() {
+    const step = walkthroughSteps[walkthroughIndex];
+    if (!step) {
+      return;
+    }
+    if (walkthroughTitle) walkthroughTitle.textContent = step.title;
+    if (walkthroughText) walkthroughText.textContent = step.text;
+    if (walkthroughVisual) {
+      walkthroughVisual.innerHTML = '';
+      if (Array.isArray(step.visuals) && step.visuals.length) {
+        step.visuals.forEach((visual) => {
+          const chip = document.createElement('div');
+          chip.className = 'walk-chip';
+          chip.innerHTML = `<span class="walk-icon ${visual.kind}">${visual.icon}</span><span>${visual.label}</span>`;
+          walkthroughVisual.appendChild(chip);
+        });
+      }
+    }
+    if (walkthroughStep) walkthroughStep.textContent = `Step ${walkthroughIndex + 1}/${walkthroughSteps.length}`;
+    const onLastStep = walkthroughIndex === walkthroughSteps.length - 1;
+    if (walkthroughNextBtn) walkthroughNextBtn.style.display = onLastStep ? 'none' : '';
+    if (walkthroughBeginBtn) walkthroughBeginBtn.style.display = onLastStep ? '' : 'none';
+  }
+
+  function openWalkthrough() {
+    walkthroughIndex = 0;
+    hydrateWalkthroughStep();
+    if (!walkthroughModal) {
+      launchRunFromStartButton(false);
+      return;
+    }
+    walkthroughModal.classList.add('open');
+    walkthroughModal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeWalkthroughAndStart() {
+    closeModal(walkthroughModal);
+    markWalkthroughSeen();
+    launchRunFromStartButton(false);
+  }
+
+  function onStartButtonPressed(keepProgress = false) {
+    ensureAudioStarted();
+    if (!keepProgress && !state.running) {
+      openWalkthrough();
+      return;
+    }
+    launchRunFromStartButton(keepProgress);
+  }
+
+  function setLanding(open) {
+    if (!landingOverlay) {
+      return;
+    }
+    landingOverlay.classList.toggle('open', open);
+    landingOverlay.setAttribute('aria-hidden', String(!open));
+  }
+
+  function setGameplayChrome(visible) {
+    const display = visible ? '' : 'none';
+    if (hudEl) hudEl.style.display = display;
+    if (missionEl) missionEl.style.display = display;
+    if (dockEl) dockEl.style.display = display;
+    if (livesEl) livesEl.style.display = display;
+  }
+
+  function setCharacterSelectionOpen(open) {
+    if (!characterPanel) {
+      return;
+    }
+    if (open && !superModeEnabled && !isCharacterAvailableForCurrentLevel(selectedCharacter)) {
+      const pair = getPairForLevel(state.progressLevel);
+      selectedCharacter = pair.fast;
+      state.regionIndex = characterRegionMap[selectedCharacter] ?? 0;
+    }
+    characterPanel.classList.toggle('open', open);
+    characterPanel.setAttribute('aria-hidden', String(!open));
+    if (open) {
+      updateCharacterAvailability();
+      refreshCharacterBio();
+    }
+  }
+
+  function getSavedRuns() {
+    try {
+      const raw = globalThis.localStorage.getItem(RUNS_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveRunSnapshot() {
+    const runs = getSavedRuns();
+    runs.unshift({
+      id: Date.now(),
+      score: state.score,
+      fragments: state.fragments,
+      health: state.health,
+      regionIndex: state.regionIndex,
+      progressLevel: state.progressLevel,
+      distance: state.distance,
+      character: selectedCharacter,
+      ts: new Date().toISOString()
+    });
+    globalThis.localStorage.setItem(RUNS_KEY, JSON.stringify(runs.slice(0, 8)));
+  }
+
+  function setSelectedCharacter(id) {
+    if (!id || !characters[id]) {
+      return;
+    }
+    if (!superModeEnabled && !isCharacterAvailableForCurrentLevel(id)) {
+      const lvl = Math.max(0, Math.min(regions.length - 1, state.progressLevel));
+      const pair = levelCharacterPairs[lvl] || levelCharacterPairs[0];
+      pushMessage(`Level ${lvl + 1} uses ${characters[pair.fast].name} (fast) or ${characters[pair.slow].name} (slow).`);
+      return;
+    }
+    selectedCharacter = id;
+    state.regionIndex = characterRegionMap[selectedCharacter] ?? 0;
+    applyRegionThreeTheme(regions[state.regionIndex]);
+    syncAudioToRegion();
+    characterButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.character === id));
+    applyCharacterSelectionTheme();
+    refreshCharacterBio();
+  }
+
+  function applyCharacterSelectionTheme() {
+    if (!characterTitleEl) {
+      return;
+    }
+    const region = regions[state.regionIndex] || regions[0];
+    characterTitleEl.style.setProperty('--terrain-top', region.top);
+    characterTitleEl.style.setProperty('--terrain-bottom', region.bottom);
+    characterTitleEl.style.setProperty('--terrain-accent', region.accent);
+    characterTitleEl.textContent = `Choose Your Dasher - ${region.name}`;
+  }
+
+  function decorateCharacterButtons() {
+    characterButtons.forEach((button) => {
+      const id = button.dataset.character;
+      const role = characters[id]?.role;
+      if (!role) {
+        return;
+      }
+      button.classList.toggle('role-fast', role === 'fast');
+      button.classList.toggle('role-slow', role === 'slow');
+      let pill = button.querySelector('.role-pill');
+      if (!pill) {
+        pill = document.createElement('span');
+        pill.className = 'role-pill';
+        button.appendChild(pill);
+      }
+      pill.textContent = role.toUpperCase();
+    });
+  }
+
+  function getPairForLevel(level) {
+    const safe = Math.max(0, Math.min(regions.length - 1, level));
+    return levelCharacterPairs[safe] || levelCharacterPairs[0];
+  }
+
+  function isCharacterAvailableForCurrentLevel(id) {
+    const pair = getPairForLevel(state.progressLevel);
+    return id === pair.fast || id === pair.slow;
+  }
+
+  function getCurrentFoodSpec() {
+    return characterFood[selectedCharacter] || characterFood.emu;
+  }
+
+  function getMovementLaneBounds() {
+    const role = characters[selectedCharacter]?.role || 'fast';
+    return role === 'slow' ? [2, 6] : [0, lanes.length - 1];
+  }
+
+  function getEnergyCost(action) {
+    const food = getCurrentFoodSpec();
+    let base = food.moveCost;
+    if (action === 'jump') {
+      base = food.jumpCost;
+    } else if (action === 'slide') {
+      base = food.slideCost;
+    }
+    const role = characters[selectedCharacter]?.role || 'fast';
+    const roleMult = role === 'fast' ? 1.16 : 0.82;
+    const tier = Math.max(0, characters[selectedCharacter]?.unlockAt || 0);
+    const tierMult = Math.max(0.75, 1 - tier * 0.05);
+    return Math.max(8, Math.round(base * getEnergyScaleForLevel() * roleMult * tierMult));
+  }
+
+  function consumeFoodFromStock() {
+    const stock = state.foodStocks[selectedCharacter] || 0;
+    const food = getCurrentFoodSpec();
+    if (stock <= 0) {
+      return false;
+    }
+    state.foodStocks[selectedCharacter] = stock - 1;
+    state.energy = Math.min(state.maxEnergy, state.energy + food.restore);
+    pushMessage(`${food.name} used: +${food.restore} energy`);
+    syncHud();
+    return true;
+  }
+
+  function spendEnergyForAction(action) {
+    const cost = getEnergyCost(action);
+    if (state.energy < cost && !consumeFoodFromStock()) {
+      pushMessage('Out of energy. Buy food with points (F).');
+      return false;
+    }
+    if (state.energy < cost) {
+      pushMessage('Still low energy. Buy more food.');
+      return false;
+    }
+    state.energy = Math.max(0, state.energy - cost);
+    syncHud();
+    return true;
+  }
+
+  function buyFoodForCurrentCharacter() {
+    const food = getCurrentFoodSpec();
+    if (state.score < food.cost) {
+      pushMessage(`Need ${food.cost} score for ${food.name}.`);
+      return;
+    }
+    state.score -= food.cost;
+    state.foodStocks[selectedCharacter] = (state.foodStocks[selectedCharacter] || 0) + 1;
+    pushMessage(`Bought ${food.name} (-${food.cost}). Stock: ${state.foodStocks[selectedCharacter]}`);
+    syncHud();
+  }
+
+  function getEnergyScaleForLevel() {
+    return Math.max(0.5, 1.25 - state.progressLevel * 0.18);
+  }
+
+  function refreshCharacterBio() {
+    if (!characterPower || !characters[selectedCharacter]) {
+      return;
+    }
+    const current = characters[selectedCharacter];
+    const food = getCurrentFoodSpec();
+    const [minLane, maxLane] = getMovementLaneBounds();
+    const laneMode = current.role === 'slow' ? `Restricted lanes ${minLane + 1}-${maxLane + 1}` : 'Full-width lanes';
+    const energyScale = getEnergyScaleForLevel();
+    characterPower.innerHTML = `
+      <div class="spec-card role-${current.role}">
+        <div class="spec-head">
+          <span class="spec-name">${current.name}</span>
+          <span class="spec-role">${current.role.toUpperCase()}</span>
+        </div>
+        <div class="spec-grid">
+          <div class="spec-item"><span>Power</span><strong>${current.power}</strong></div>
+          <div class="spec-item"><span>Food</span><strong>${food.name}</strong></div>
+          <div class="spec-item"><span>Food Cost</span><strong>${food.cost}</strong></div>
+          <div class="spec-item"><span>Food Restore</span><strong>${food.restore}</strong></div>
+          <div class="spec-item"><span>Energy Move</span><strong>${getEnergyCost('move')}</strong></div>
+          <div class="spec-item"><span>Energy Jump</span><strong>${getEnergyCost('jump')}</strong></div>
+          <div class="spec-item"><span>Energy Slide</span><strong>${getEnergyCost('slide')}</strong></div>
+          <div class="spec-item"><span>Lanes</span><strong>${laneMode}</strong></div>
+          <div class="spec-item"><span>Level Scale</span><strong>x${energyScale.toFixed(2)}</strong></div>
+        </div>
+      </div>`;
+  }
+
+  function resumeSavedRun(run) {
+    ensureAudioStarted();
+    resetGame();
+    state.score = run.score || 0;
+    state.fragments = run.fragments || 0;
+    state.health = Math.max(1, Math.min(state.maxLives, run.health || 3));
+    state.regionIndex = Math.max(0, Math.min(regions.length - 1, run.regionIndex || 0));
+    state.progressLevel = Math.max(state.progressLevel, Math.min(regions.length - 1, run.progressLevel ?? state.regionIndex));
+    state.distance = run.distance || state.regionIndex * 145;
+    setSelectedCharacter(run.character || 'emu');
+    state.message = 'Resumed previous expedition.';
+    state.objective = `Continue through ${regions[state.regionIndex].name}`;
+    applyRegionThreeTheme(regions[state.regionIndex]);
+    syncAudioToRegion();
+    syncHud();
+    closeModal(pastGamesModal);
+    setLanding(false);
+    setGameplayChrome(true);
+    setCharacterSelectionOpen(false);
+  }
+
+  function renderPastGames() {
+    if (!pastGamesList) {
+      return;
+    }
+    const runs = getSavedRuns();
+    if (!runs.length) {
+      pastGamesList.innerHTML = '<div class="panel-item"><span>No saved runs yet.</span><strong>Play one run first</strong></div>';
+      return;
+    }
+
+    pastGamesList.innerHTML = '';
+    runs.forEach((run) => {
+      const row = document.createElement('div');
+      row.className = 'panel-item';
+
+      const info = document.createElement('span');
+      const regionName = regions[Math.min(regions.length - 1, run.regionIndex || 0)].name;
+      info.textContent = `${regionName} | Score ${run.score} | Shards ${run.fragments}/7`;
+
+      const btn = document.createElement('button');
+      btn.textContent = 'Resume';
+      btn.className = 'modal-close';
+      btn.addEventListener('click', () => resumeSavedRun(run));
+
+      row.appendChild(info);
+      row.appendChild(btn);
+      pastGamesList.appendChild(row);
+    });
+  }
+
+  function syncHud() {
+    scoreEl.textContent = state.score;
+    if (energyEl) {
+      energyEl.textContent = `${Math.round(state.energy)}/${Math.round(state.maxEnergy)}`;
+    }
+    if (foodEl) {
+      foodEl.textContent = String(state.foodStocks[selectedCharacter] || 0);
+    }
+    fragmentEl.textContent = `${state.fragments}/7`;
+    regionEl.textContent = regions[state.regionIndex].name;
+    objectiveEl.textContent = state.objective;
+    messageEl.textContent = state.message;
+    renderLives();
+    updateCharacterAvailability();
+    refreshCharacterBio();
+  }
+
+  function renderLives() {
+    if (!livesEl) {
+      return;
+    }
+    livesEl.innerHTML = '';
+    for (let i = 0; i < state.maxLives; i += 1) {
+      const heart = document.createElement('span');
+      heart.className = `heart${i < state.health ? '' : ' off'}`;
+      heart.textContent = '❤';
+      livesEl.appendChild(heart);
+    }
+  }
+
+  function updateCharacterAvailability() {
+    const pair = getPairForLevel(state.progressLevel);
+    decorateCharacterButtons();
+    applyCharacterSelectionTheme();
+    characterButtons.forEach((button) => {
+      const id = button.dataset.character;
+      if (!id || !characters[id]) {
+        return;
+      }
+      const isUnlocked = superModeEnabled || (id === pair.fast || id === pair.slow);
+      button.classList.toggle('terrain-hidden', !isUnlocked && !superModeEnabled);
+      button.classList.toggle('locked', !isUnlocked);
+      button.setAttribute('aria-disabled', String(!isUnlocked));
+      if (isUnlocked) {
+        button.title = superModeEnabled
+          ? `${characters[id].power} (Super Mode unlocked)`
+          : `${characters[id].power}`;
+      } else {
+        button.title = `Available in level ${characters[id].unlockAt + 1}`;
+      }
+    });
+  }
+
+  function pushMessage(text) {
+    state.message = text;
+    syncHud();
+    clearTimeout(pushMessage._t);
+    pushMessage._t = setTimeout(() => {
+      if (!state.ended) {
+        state.message = '';
+        syncHud();
+      }
+    }, 1500);
+  }
+
+  function addScore(amount) {
+    state.score += amount;
+    syncHud();
+  }
+
+  function getLevelClearBonus(nextLevel) {
+    return 500 * (2 ** Math.max(0, nextLevel - 1));
+  }
+
+  function endGame(victory = false) {
+    saveRunSnapshot();
+
+    if (victory && state.progressLevel < regions.length - 1) {
+      const nextLevel = state.progressLevel + 1;
+      state.running = false;
+      state.ended = false;
+      const carriedHearts = Math.max(1, Math.min(state.maxLives, state.health));
+      const levelBonus = getLevelClearBonus(nextLevel);
+      const unlockedNames = Object.keys(characters)
+        .filter((id) => characters[id].unlockAt === nextLevel)
+        .map((id) => characters[id].name)
+        .join(', ');
+
+      // Hard gate: solve one puzzle to unlock next level transition.
+      puzzleState.pendingAdvance = {
+        nextLevel,
+        carriedHearts,
+        levelBonus,
+        unlockedNames
+      };
+
+      setLanding(false);
+      setGameplayChrome(false);
+      setCharacterSelectionOpen(false);
+      if (puzzleModal) {
+        puzzleModal.classList.add('open');
+        puzzleModal.setAttribute('aria-hidden', 'false');
+      }
+      if (puzzleTerrain) {
+        puzzleTerrain.textContent = `${regions[nextLevel].name} Unlock Puzzle`;
+      }
+      hydratePuzzlePanel();
+      if (puzzleStatus) {
+        puzzleStatus.textContent = 'Solve this puzzle to unlock the next level.';
+      }
+      state.message = 'Level clear! Solve the puzzle to continue.';
+      syncHud();
+      return;
+    }
+
+    state.running = false;
+    state.ended = true;
+    state.objective = victory ? 'Sunrise restored. The expedition is complete.' : 'The night won this run. Try again.';
+    state.message = victory ? 'Victory!' : 'Game Over';
+    syncHud();
+  }
+
+  function spawnItem() {
+    const roll = Math.random();
+    const lane = Math.floor(Math.random() * lanes.length);
+    const shardDeficit = Math.max(0, 7 - state.fragments);
+    const fragChance = Math.max(.26, .38 - state.progressLevel * .014 - shardDeficit * .008);
+    const plus100Chance = 0.16;
+    const plus500Chance = 0.08;
+    const minus100Chance = 0.12;
+    const minus500Chance = 0.05;
+
+    if (roll < fragChance) {
+      // Shards only: reward values stay simple (+100 / +500).
+      const shardValue = Math.random() < 0.7 ? 100 : 500;
+      state.items.push({ type: 'fragment', lane, xNorm: 0.08 + Math.random() * 0.84, z: 1, value: shardValue });
+      return;
+    }
+
+    if (roll < fragChance + plus100Chance) {
+      state.items.push({ type: 'scoreBonus', lane, xNorm: 0.1 + Math.random() * 0.8, z: 1, value: 100 });
+      return;
+    }
+
+    if (roll < fragChance + plus100Chance + plus500Chance) {
+      state.items.push({ type: 'scoreBonus', lane, xNorm: 0.1 + Math.random() * 0.8, z: 1, value: 500 });
+      return;
+    }
+
+    if (roll < fragChance + plus100Chance + plus500Chance + minus100Chance) {
+      state.items.push({ type: 'scorePenalty', lane, xNorm: 0.1 + Math.random() * 0.8, z: 1, value: 100 });
+      return;
+    }
+
+    if (roll < fragChance + plus100Chance + plus500Chance + minus100Chance + minus500Chance) {
+      state.items.push({ type: 'scorePenalty', lane, xNorm: 0.1 + Math.random() * 0.8, z: 1, value: 500 });
+      return;
+    }
+
+    // Bombs only: penalty values stay simple (-100 / -500).
+    const bombPenalty = Math.random() < 0.75 ? 100 : 500;
+    state.items.push({ type: 'obstacle', lane, z: 1, hit: 1, penalty: bombPenalty });
+  }
+
+  function shiftLane(dir) {
+    const [minLane, maxLane] = getMovementLaneBounds();
+    const nextLane = Math.max(minLane, Math.min(maxLane, state.player.lane + dir));
+    if (nextLane === state.player.lane) {
+      return;
+    }
+    if (!spendEnergyForAction('move')) {
+      return;
+    }
+    state.player.lane = nextLane;
+  }
+
+  function jump() {
+    if (state.player.jump === 0 && state.player.sliding === 0) {
+      if (!spendEnergyForAction('jump')) {
+        return;
+      }
+      state.player.jump = .9;
+      state.player.invincible = Math.max(state.player.invincible, .3);
+      playSfx('jump');
+      pushMessage('Jump!');
+    }
+  }
+
+  function slide() {
+    if (state.player.sliding === 0) {
+      if (!spendEnergyForAction('slide')) {
+        return;
+      }
+      state.player.sliding = .75;
+      pushMessage('Slide!');
+    }
+  }
+
+  function requestRoadEvent() {
+    if (clueModal) {
+      clueModal.classList.add('open');
+      clueModal.setAttribute('aria-hidden', 'false');
+      if (clueTerrain) {
+        clueTerrain.textContent = `${regions[state.regionIndex].name} Clue`;
+      }
+      if (clueText) {
+        clueText.textContent = [
+          'Two ancient stone pillars stand at the Sun Gate. Legend says the gate only opens when both the Dawn and Dusk pillars are lit together. The old keepers\' riddle: "neither alone, but both as one."',
+          'A firefly elder guards the Rune Tree. She whispers: "Only the middle branches remember the old light. The outer ones have forgotten." Two branches. That\'s all you need.',
+          'The Servo pump house has been dry for decades. Someone taped a note to the fuse box: "A is dead — don\'t touch it. Run the relay from B through to F but skip D. In that order." Old electrician wisdom.',
+          'The lighthouse keeper\'s logbook washed ashore. The last entry: "Anchor, skip Buoy (it\'s gone), Coral, Depth, skip Echo, end at Fog. If you read this — please, light the beacon."',
+          'The radio tower\'s signal has looped for 73 years. A Tasmanian physicist taped a diagram to the base: "Four switches break the loop. Skip the ones inside it or you\'ll just restart it. A, then jump to D, E, F."'
+        ][state.regionIndex] || 'Follow the clue and recover the next fragment.';
+      }
+      return;
+    }
+
+    const events = [
+      { title: 'Trail Boost', description: 'A burst of speed ripples ahead.', reward_tokens: 1 },
+      { title: 'Map Cache', description: 'A bright charge lifts your run.', reward_tokens: 2 },
+      { title: 'Signal Drift', description: 'A weak signal clears the path.', reward_tokens: 1 }
+    ];
+    const fallback = events[Math.floor(Math.random() * events.length)];
+    state.objective = fallback.description;
+    pushMessage(fallback.title + ' (local)');
+    syncHud();
+  }
+
+  function requestHint() {
+    if (puzzleModal) {
+      puzzleModal.classList.add('open');
+      puzzleModal.setAttribute('aria-hidden', 'false');
+      if (puzzleTerrain) {
+        puzzleTerrain.textContent = `${regions[state.regionIndex].name} Puzzle`;
+      }
+      hydratePuzzlePanel();
+      return;
+    }
+
+    const puzzle = getCurrentPuzzle();
+    const nextHint = puzzle.hints[Math.min(puzzleState.hintIndex, puzzle.hints.length - 1)];
+    puzzleState.hintIndex = Math.min(puzzleState.hintIndex + 1, puzzle.hints.length - 1);
+    pushMessage(nextHint);
+  }
+
+  function getCurrentPuzzle() {
+    return turingPuzzles[puzzleState.currentIndex % turingPuzzles.length];
+  }
+
+  function normalizeAnswer(value) {
+    return String(value || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .replaceAll('.', '')
+      .replace(/\band\b/g, ' ')
+      .replace(/\s*,\s*/g, ',')
+      .trim();
+  }
+
+  function hydratePuzzlePanel() {
+    const puzzle = getCurrentPuzzle();
+    puzzleState.hintIndex = 0;
+    if (puzzleTitle) puzzleTitle.textContent = `${puzzle.title} (${(puzzleState.currentIndex % turingPuzzles.length) + 1}/${turingPuzzles.length})`;
+    if (puzzleInstruction) puzzleInstruction.textContent = puzzle.instruction;
+    if (puzzleQuestion) puzzleQuestion.textContent = `Question: ${puzzle.instruction}`;
+    if (puzzleAnswerInput) {
+      puzzleAnswerInput.value = '';
+      puzzleAnswerInput.focus();
+    }
+    if (puzzleLearnLink) puzzleLearnLink.href = puzzle.learnUrl;
+    if (puzzleStatus) puzzleStatus.textContent = 'Solve this to unlock the next fun puzzle. Use Hint if needed.';
+  }
+
+  function submitPuzzle() {
+    const puzzle = getCurrentPuzzle();
+    const guess = normalizeAnswer(puzzleAnswerInput ? puzzleAnswerInput.value : '');
+    const validAnswers = Array.isArray(puzzle.acceptedAnswers)
+      ? puzzle.acceptedAnswers.map(normalizeAnswer)
+      : [normalizeAnswer(puzzle.answer)];
+    const matches = validAnswers.includes(guess);
+
+    if (matches) {
+      state.health = Math.min(state.maxLives, state.health + 1);
+      pushMessage('Correct! Next puzzle unlocked.');
+      if (puzzleStatus) {
+        puzzleStatus.textContent = `Correct! ${puzzle.rightExplain} (+1 life)`;
+      }
+      syncHud();
+
+      if (puzzleState.pendingAdvance) {
+        const next = puzzleState.pendingAdvance;
+        puzzleState.pendingAdvance = null;
+        const carriedHearts = Math.max(1, Math.min(state.maxLives, state.health));
+        state.progressLevel = next.nextLevel;
+        state.carryHearts = carriedHearts;
+        state.score += next.levelBonus;
+        triggerLevelCelebrate(next.nextLevel, carriedHearts, next.levelBonus, next.unlockedNames);
+        closeModal(puzzleModal);
+        syncHud();
+      }
+
+      puzzleState.currentIndex = (puzzleState.currentIndex + 1) % turingPuzzles.length;
+      setTimeout(() => {
+          if (puzzleModal?.classList.contains('open')) {
+          hydratePuzzlePanel();
+        }
+      }, 900);
+      return;
+    }
+
+    const hint = puzzle.hints[Math.min(puzzleState.hintIndex, puzzle.hints.length - 1)];
+    puzzleState.hintIndex = Math.min(puzzleState.hintIndex + 1, puzzle.hints.length - 1);
+    if (puzzleStatus) {
+      puzzleStatus.textContent = `Oops, not quite. ${puzzle.wrongExplain} Hint: ${hint}`;
+    }
+    pushMessage('Oops, try again. Hint updated.');
+  }
+
+  function skipPuzzle() {
+    if (puzzleState.pendingAdvance) {
+      if (puzzleStatus) {
+        puzzleStatus.textContent = 'Cannot skip this one. Solve it to unlock the next level.';
+      }
+      pushMessage('Solve required to continue.');
+      return;
+    }
+    puzzleState.currentIndex = (puzzleState.currentIndex + 1) % turingPuzzles.length;
+    pushMessage('Puzzle skipped. Next puzzle queued in Puzzle Core.');
+    if (puzzleStatus) {
+      puzzleStatus.textContent = 'Skipped. Opening the next puzzle...';
+    }
+    setTimeout(() => {
+      if (puzzleModal?.classList.contains('open')) {
+        hydratePuzzlePanel();
+      }
+    }, 700);
+  }
+
+  function triggerLevelCelebrate(nextLevel, carriedHearts, levelBonus, unlockedNames) {
+    const tMsg = levelTransitionMsgs[nextLevel];
+    const unlockLine = unlockedNames ? `New dashers unlocked: ${unlockedNames}!` : '';
+    const levelEmojis = ['', '🌿', '⚡', '🌊', '❄️'];
+    if (lcEmoji) lcEmoji.textContent = levelEmojis[nextLevel] || '🎉';
+    if (lcCongrats) lcCongrats.textContent = tMsg ? tMsg.congrats : `Level ${nextLevel} unlocked! 🎉`;
+    if (lcTeaser) lcTeaser.textContent = tMsg ? tMsg.teaser : `Now entering ${regions[nextLevel].name}.`;
+    if (lcBonus) lcBonus.textContent = `${unlockLine ? unlockLine + '  ' : ''}+${levelBonus} level clear bonus · ${carriedHearts} ❤️ carried forward`;
+    if (levelCompleteOverlay) {
+      levelCompleteOverlay.classList.add('open');
+      levelCompleteOverlay.setAttribute('aria-hidden', 'false');
+    }
+    if (levelCompleteTimer) {
+      clearTimeout(levelCompleteTimer);
+    }
+    levelCompleteTimer = setTimeout(() => {
+      if (levelCompleteOverlay) {
+        levelCompleteOverlay.classList.remove('open');
+        levelCompleteOverlay.setAttribute('aria-hidden', 'true');
+      }
+      state.continueFromLevelUnlock = true;
+      setCharacterSelectionOpen(true);
+      state.objective = 'Choose your character for the next level.';
+      state.message = 'Next level unlocked! Pick your dasher.';
+      syncHud();
+    }, 2600);
+  }
+
+  function update(dt) {
+    if (!state.running) {
+      render();
+      return;
+    }
+
+    advanceDifficulty(dt);
+    updateSpawnTimers(dt);
+    updatePlayerTimers(dt);
+    updateItems(dt);
+    updateEvents(dt);
+    state.distance += dt * (60 + state.difficulty * 8);
+    updateRegion();
+    render();
+  }
+
+  function advanceDifficulty(dt) {
+    const shardDeficit = Math.max(0, 7 - state.fragments);
+    state.difficulty += dt * (.04 + state.progressLevel * .018 + shardDeficit * .006) * difficultyMultipliers[gameDifficulty];
+  }
+
+  function updateRegion() {
+    const fixedIndex = characterRegionMap[selectedCharacter] ?? 0;
+    if (state.regionIndex !== fixedIndex) {
+      state.regionIndex = fixedIndex;
+      state.objective = `Running in ${regions[state.regionIndex].name}`;
+      applyRegionThreeTheme(regions[state.regionIndex]);
+      syncAudioToRegion();
+      syncHud();
+    }
+  }
+
+  function updateSpawnTimers(dt) {
+    const speedMult = difficultyMultipliers[gameDifficulty];
+    state.spawnTimer -= dt;
+    const shardDeficit = Math.max(0, 7 - state.fragments);
+
+    if (state.spawnTimer <= 0) {
+      spawnItem();
+      const nextSpawn = .92 - state.difficulty * .06 - state.progressLevel * .08 - shardDeficit * .025;
+      state.spawnTimer = Math.max(.28, nextSpawn / speedMult);
+    }
+  }
+
+  function updatePlayerTimers(dt) {
+    state.player.invincible = Math.max(0, state.player.invincible - dt);
+    state.player.jump = Math.max(0, state.player.jump - dt * 1.8);
+    state.player.sliding = Math.max(0, state.player.sliding - dt * 1.6);
+  }
+
+  function updateItems(dt) {
+    const shardDeficit = Math.max(0, 7 - state.fragments);
+    const speedScale = (1 + state.progressLevel * .16 + shardDeficit * .05) * difficultyMultipliers[gameDifficulty];
+    for (let i = state.items.length - 1; i >= 0; i--) {
+      const item = state.items[i];
+      item.z -= dt * (.9 + state.difficulty * .07) * speedScale;
+      if (item.z < .1) {
+        resolveItem(item);
+        state.items.splice(i, 1);
+      }
+    }
+  }
+
+  function resolveItem(item) {
+    const isBird = selectedCharacter === 'emu' || selectedCharacter === 'kookaburra';
+    const isWombat = selectedCharacter === 'wombat';
+    const terrain = regions[state.regionIndex].terrain;
+    const playerXNorm = laneToXNorm(state.player.lane);
+    const itemXNorm = typeof item.xNorm === 'number' ? item.xNorm : laneToXNorm(item.lane);
+    const isMatch = item.lane === state.player.lane;
+    const closeEnough = Math.abs(itemXNorm - playerXNorm) <= (isBird ? 0.18 : 0.12);
+    const airborne = state.player.jump > .15;
+    const sliding = state.player.sliding > .15;
+    const wombatBurrowDodge = isWombat && (terrain === 'dunes' || terrain === 'forest') && sliding;
+
+    if (item.type === 'obstacle' || item.type === 'shadow') {
+      if (isMatch && !airborne && !sliding && state.player.invincible <= 0) {
+        if (wombatBurrowDodge) {
+          pushMessage('Burrow dodge!');
+          return;
+        }
+        const penalty = Math.abs(item.penalty || 100);
+        state.health -= 1;
+        state.player.invincible = .7;
+        playSfx('hit');
+        addScore(-penalty);
+        pushMessage(`Bomb hit! -${penalty}`);
+        if (state.health <= 0) {
+          endGame(false);
+        }
+      }
+      return;
+    }
+
+    if (!isMatch && !closeEnough) {
+      return;
+    }
+
+    if (item.type === 'fragment') {
+      state.fragments += 1;
+      playSfx('collect');
+      addScore(item.value);
+      pushMessage(`+${item.value} Shard`);
+      if (state.fragments >= 7) {
+        endGame(true);
+      }
+      return;
+    }
+
+    if (item.type === 'scoreBonus') {
+      playSfx('collect');
+      addScore(item.value);
+      pushMessage(`+${item.value}`);
+      return;
+    }
+
+    if (item.type === 'scorePenalty') {
+      playSfx('hit');
+      addScore(-item.value);
+      pushMessage(`-${item.value}`);
+      return;
+    }
+
+    addScore(item.value);
+    playSfx('collect');
+    pushMessage(`+${item.value}`);
+  }
+
+  function updateEvents(dt) {
+    // Simple mode: no falling text/event boxes.
+    if (state.events.length) {
+      state.events.length = 0;
+    }
+  }
+
+  function drawBackground() {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    const region = regions[state.regionIndex];
+
+    if (terrain3dEnabled && threeState.ready) {
+      // Keep gameplay legible on top of 3D pass.
+      const grad3d = ctx.createLinearGradient(0, 0, 0, h);
+      grad3d.addColorStop(0, hexToRgba(region.top, 0.2));
+      grad3d.addColorStop(1, hexToRgba(region.bottom, 0.26));
+      ctx.fillStyle = grad3d;
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(10, 7, 5, .12)';
+      ctx.fillRect(0, 0, w, h);
+      return;
+    }
+
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, region.top);
+    grad.addColorStop(1, region.bottom);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    if (region.terrain === 'dunes') {
+      drawOutbackScene(w, h);
+    } else if (region.terrain === 'forest') {
+      drawBushlandScene(w, h);
+    } else if (region.name === 'Servo') {
+      drawServoScene(w, h);
+    } else if (region.terrain === 'beach') {
+      drawCoastlineScene(w, h);
+    } else {
+      drawTasmaniaScene(w, h);
+    }
+
+    // Keep mood but avoid over-darkening the avatar.
+    ctx.fillStyle = 'rgba(12, 8, 5, .16)';
+    ctx.fillRect(0, 0, w, h);
+
+    drawRunnerTrack(w, h, region);
+  }
+
+  function drawRunnerTrack(w, h, region) {
+    const t = performance.now() * 0.001;
+    const terrain = region.terrain;
+    const horizonY = h * 0.58;
+    const frontY = h * 0.8;
+
+    const midGrad = ctx.createLinearGradient(0, horizonY, 0, frontY);
+    if (terrain === 'dunes') {
+      midGrad.addColorStop(0, 'rgba(160, 120, 84, .35)');
+      midGrad.addColorStop(1, 'rgba(112, 74, 44, .52)');
+    } else if (terrain === 'forest') {
+      midGrad.addColorStop(0, 'rgba(88, 102, 72, .34)');
+      midGrad.addColorStop(1, 'rgba(48, 64, 38, .58)');
+    } else if (terrain === 'beach') {
+      midGrad.addColorStop(0, 'rgba(125, 143, 148, .3)');
+      midGrad.addColorStop(1, 'rgba(169, 149, 112, .54)');
+    } else if (terrain === 'industrial') {
+      midGrad.addColorStop(0, 'rgba(36, 61, 91, .38)');
+      midGrad.addColorStop(1, 'rgba(15, 28, 44, .62)');
+    } else {
+      midGrad.addColorStop(0, 'rgba(98, 112, 132, .3)');
+      midGrad.addColorStop(1, 'rgba(62, 72, 92, .6)');
+    }
+    ctx.fillStyle = midGrad;
+    ctx.fillRect(0, horizonY, w, frontY - horizonY);
+
+    const frontGrad = ctx.createLinearGradient(0, frontY, 0, h);
+    if (terrain === 'dunes') {
+      frontGrad.addColorStop(0, 'rgba(96, 58, 34, .74)');
+      frontGrad.addColorStop(1, 'rgba(62, 34, 20, .88)');
+    } else if (terrain === 'forest') {
+      frontGrad.addColorStop(0, 'rgba(52, 66, 39, .78)');
+      frontGrad.addColorStop(1, 'rgba(30, 43, 24, .9)');
+    } else if (terrain === 'beach') {
+      frontGrad.addColorStop(0, 'rgba(158, 137, 98, .76)');
+      frontGrad.addColorStop(1, 'rgba(116, 96, 72, .9)');
+    } else if (terrain === 'industrial') {
+      frontGrad.addColorStop(0, 'rgba(20, 38, 62, .82)');
+      frontGrad.addColorStop(1, 'rgba(10, 21, 35, .94)');
+    } else {
+      frontGrad.addColorStop(0, 'rgba(78, 88, 108, .8)');
+      frontGrad.addColorStop(1, 'rgba(44, 54, 76, .9)');
+    }
+    ctx.fillStyle = frontGrad;
+    ctx.fillRect(0, frontY, w, h - frontY);
+
+    drawProceduralTerrainTexture(terrain, w, h, horizonY, t);
+
+    if (terrain === 'industrial') {
+      // Keep Servo panel seams over texture for a synthetic ground read.
+      ctx.strokeStyle = 'rgba(112, 146, 190, .2)';
+      ctx.lineWidth = 1.4;
+      for (let i = 0; i < 8; i++) {
+        const y = h * (0.62 + i * 0.05);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y + Math.sin(t * 0.45 + i) * 2);
+        ctx.stroke();
+      }
+    }
+
+    ctx.fillStyle = region.accent;
+    ctx.font = '700 34px Cinzel Decorative';
+    ctx.textAlign = 'left';
+    ctx.fillText(region.name.toUpperCase(), 16, h - 40);
+  }
+
+  function drawOutbackScene(w, h) {
+    const t = performance.now() * 0.001;
+
+    // Larger, cinematic sun and bloom core.
+    const sunX = w * (0.52 + Math.sin(t * 0.08) * 0.01);
+    const sunY = h * 0.17;
+    const bloom = ctx.createRadialGradient(sunX, sunY, 16, sunX, sunY, 220);
+    bloom.addColorStop(0, 'rgba(255, 240, 188, .38)');
+    bloom.addColorStop(0.38, 'rgba(255, 209, 102, .18)');
+    bloom.addColorStop(1, 'rgba(255, 175, 104, 0)');
+    ctx.fillStyle = bloom;
+    ctx.fillRect(0, 0, w, h * 0.6);
+
+    // Distant mesas with subtle parallax drift.
+    ctx.fillStyle = 'rgba(118, 79, 56, .38)';
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.55);
+    for (let i = 0; i <= 8; i++) {
+      const x = (w / 8) * i;
+      const y = h * (0.49 + Math.sin(i * 0.75 + t * 0.12) * 0.018);
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w, h * 0.64);
+    ctx.lineTo(0, h * 0.64);
+    ctx.closePath();
+    ctx.fill();
+
+    // Heat shimmer strips (screen-space mirage effect).
+    for (let i = 0; i < 12; i++) {
+      const yy = h * (0.34 + i * 0.037);
+      const wobble = Math.sin(t * 2.6 + i * 0.7) * 6;
+      ctx.strokeStyle = `rgba(255, 226, 181, ${0.05 + (i % 3) * 0.03})`;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(0, yy + wobble);
+      ctx.bezierCurveTo(w * 0.25, yy - 8 + wobble, w * 0.65, yy + 10 + wobble, w, yy + wobble);
+      ctx.stroke();
+    }
+
+    // Rolling dune ridges in multiple moving layers.
+    for (let band = 0; band < 5; band++) {
+      const baseY = h * (0.52 + band * 0.065);
+      ctx.strokeStyle = `rgba(242, 201, 144, ${0.18 - band * 0.02})`;
+      ctx.lineWidth = 2.2 - band * 0.2;
+      ctx.beginPath();
+      ctx.moveTo(0, baseY);
+      for (let x = 0; x <= w; x += 28) {
+        const nx = x / w;
+        const n = octaveNoise(nx * (2.6 + band * 0.5) + 12.4 + t * (0.12 + band * 0.03), band * 3.1);
+        const y = baseY + n * (12 - band * 1.5) + Math.sin(nx * 8 + t * (0.2 + band * 0.04)) * 3;
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    // Gusting dust sheets crossing screen.
+    for (let i = 0; i < 54; i++) {
+      const lane = i % 9;
+      const speed = 52 + lane * 10;
+      const x = ((t * speed + i * 48) % (w + 240)) - 120;
+      const y = h * (0.28 + (i / 54) * 0.56) + Math.sin(t * 1.6 + i * 0.3) * 9;
+      const len = 18 + (i % 6) * 5;
+      const alpha = 0.06 + (i % 5) * 0.02;
+      ctx.strokeStyle = `rgba(245, 214, 168, ${alpha})`;
+      ctx.lineWidth = 1 + (i % 3) * 0.35;
+      ctx.beginPath();
+      ctx.moveTo(x - len, y - 1.2);
+      ctx.lineTo(x + len, y + 1.2);
+      ctx.stroke();
+    }
+
+    // Foreground scrub silhouettes for depth.
+    ctx.fillStyle = 'rgba(74, 46, 28, .44)';
+    for (let i = 0; i < 9; i++) {
+      const x = w * (0.05 + i * 0.11) + Math.sin(t * 0.4 + i) * 6;
+      const y = h * (0.72 + (i % 3) * 0.045);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.quadraticCurveTo(x - 8, y - 24, x + 2, y - 42);
+      ctx.quadraticCurveTo(x + 11, y - 26, x + 6, y);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  function drawBushlandScene(w, h) {
+    const t = performance.now() * 0.001;
+
+    // Broad atmospheric haze and god-rays for depth.
+    const haze = ctx.createLinearGradient(0, h * 0.06, 0, h * 0.7);
+    haze.addColorStop(0, 'rgba(220, 240, 188, .12)');
+    haze.addColorStop(0.55, 'rgba(123, 166, 97, .1)');
+    haze.addColorStop(1, 'rgba(56, 92, 54, .08)');
+    ctx.fillStyle = haze;
+    ctx.fillRect(0, h * 0.06, w, h * 0.66);
+
+    for (let i = 0; i < 7; i++) {
+      const beamX = w * (0.08 + i * 0.14) + Math.sin(t * 0.2 + i) * 22;
+      const beam = ctx.createLinearGradient(beamX, h * 0.1, beamX + 90, h * 0.8);
+      beam.addColorStop(0, 'rgba(232, 249, 204, .12)');
+      beam.addColorStop(1, 'rgba(232, 249, 204, 0)');
+      ctx.fillStyle = beam;
+      ctx.beginPath();
+      ctx.moveTo(beamX, h * 0.12);
+      ctx.lineTo(beamX + 34, h * 0.12);
+      ctx.lineTo(beamX + 124, h * 0.82);
+      ctx.lineTo(beamX + 68, h * 0.82);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Distant canopy silhouette layer.
+    ctx.fillStyle = 'rgba(32, 55, 34, .48)';
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.45);
+    for (let x = 0; x <= w; x += 20) {
+      const nx = x / w;
+      const y = h * (0.43 + octaveNoise(nx * 3.4 + 8.2 + t * 0.03, 3.1) * 0.04);
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w, h * 0.62);
+    ctx.lineTo(0, h * 0.62);
+    ctx.closePath();
+    ctx.fill();
+
+    // Mid-tree layer with irregular canopy blobs and varied trunk widths.
+    for (let i = 0; i < 18; i++) {
+      const baseX = w * (i / 17) + Math.sin(t * 0.4 + i) * 8;
+      const rootY = h * (0.52 + (i % 4) * 0.03);
+      const trunkH = h * (0.17 + ((i % 5) * 0.014));
+      const trunkW = 8 + (i % 3) * 4;
+      const sway = Math.sin(t * 0.9 + i * 0.7) * 3;
+
+      ctx.fillStyle = 'rgba(47, 30, 20, .54)';
+      ctx.fillRect(baseX, rootY - trunkH, trunkW, trunkH);
+
+      const crownY = rootY - trunkH - 8;
+      ctx.fillStyle = `rgba(${58 + (i % 4) * 8}, ${98 + (i % 5) * 10}, ${58 + (i % 3) * 6}, .58)`;
+      for (let k = 0; k < 4; k++) {
+        const radius = 18 + (k % 2) * 8 + (i % 3) * 2;
+        ctx.beginPath();
+        ctx.arc(baseX + sway + 6 + (k - 1.5) * 10, crownY - k * 4, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Ground litter: twigs, fern fans, and stones.
+    for (let i = 0; i < 34; i++) {
+      const x = ((i * 47 + t * 6) % (w + 30)) - 15;
+      const y = h * (0.67 + (i % 6) * 0.042);
+      ctx.strokeStyle = 'rgba(60, 42, 26, .34)';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(x - 10, y + 5);
+      ctx.lineTo(x + 12, y - 3);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(76, 108, 58, .3)';
+      ctx.beginPath();
+      ctx.ellipse(x + 6, y + 3, 5 + (i % 2), 11, -0.22, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(96, 88, 72, .26)';
+      ctx.beginPath();
+      ctx.ellipse(x - 4, y + 8, 3 + (i % 2), 1.8, 0.1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Wind-borne leaves and pollen.
+    for (let i = 0; i < 90; i++) {
+      const speed = 10 + (i % 8) * 3;
+      const x = ((t * speed + i * 39) % (w + 120)) - 60;
+      const y = h * (0.14 + (i / 90) * 0.78) + Math.sin(t * 1.3 + i * 0.6) * 8;
+      const size = 1.4 + (i % 4) * 0.9;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(Math.sin(t * 2 + i * 0.4) * 0.8);
+      ctx.fillStyle = `rgba(146, 184, 102, ${0.12 + (i % 5) * 0.04})`;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, size, size * 1.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    for (let i = 0; i < 50; i++) {
+      const x = ((t * (7 + (i % 5)) + i * 31) % (w + 20)) - 10;
+      const y = h * (0.18 + (i / 50) * 0.64) + Math.sin(t * 0.9 + i) * 4;
+      ctx.fillStyle = `rgba(234, 246, 194, ${0.06 + (i % 4) * 0.04})`;
+      ctx.beginPath();
+      ctx.arc(x, y, 0.7 + (i % 3) * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawServoScene(w, h) {
+    const t = performance.now() * 0.001;
+
+    // Atmospheric glow behind the station.
+    const halo = ctx.createRadialGradient(w * 0.5, h * 0.3, 10, w * 0.5, h * 0.3, w * 0.42);
+    halo.addColorStop(0, 'rgba(91, 231, 255, .22)');
+    halo.addColorStop(0.45, 'rgba(116, 123, 255, .12)');
+    halo.addColorStop(1, 'rgba(15, 25, 40, 0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(0, 0, w, h * 0.72);
+
+    // Station silhouette blocks.
+    ctx.fillStyle = 'rgba(20, 32, 48, .72)';
+    const blocks = [
+      { x: 0.06, y: 0.26, bw: 0.16, bh: 0.24 },
+      { x: 0.24, y: 0.2, bw: 0.14, bh: 0.3 },
+      { x: 0.41, y: 0.24, bw: 0.18, bh: 0.26 },
+      { x: 0.62, y: 0.18, bw: 0.13, bh: 0.32 },
+      { x: 0.77, y: 0.23, bw: 0.17, bh: 0.27 }
+    ];
+    blocks.forEach((b) => {
+      ctx.fillRect(w * b.x, h * b.y, w * b.bw, h * b.bh);
+    });
+
+    // Neon windows and data strips.
+    for (let i = 0; i < 70; i++) {
+      const col = i % 14;
+      const row = Math.floor(i / 14);
+      const x = w * (0.08 + col * 0.06) + Math.sin(t * 0.7 + i) * 2;
+      const y = h * (0.24 + row * 0.055);
+      const on = ((i + Math.floor(t * 2)) % 3) !== 0;
+      ctx.fillStyle = on ? 'rgba(91, 231, 255, .5)' : 'rgba(61, 78, 102, .35)';
+      ctx.fillRect(x, y, 10, 3);
+    }
+
+    // Hologrid sweep lines.
+    ctx.strokeStyle = 'rgba(111, 173, 255, .24)';
+    ctx.lineWidth = 1.2;
+    for (let i = 0; i < 10; i++) {
+      const y = h * (0.2 + i * 0.04) + Math.sin(t * 1.3 + i) * 2;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.04, y);
+      ctx.lineTo(w * 0.96, y);
+      ctx.stroke();
+    }
+
+    // Falling data rain.
+    for (let i = 0; i < 52; i++) {
+      const x = (i * 29 + t * (36 + (i % 4) * 8)) % (w + 50) - 25;
+      const y = (i * 19 + t * 145) % (h * 0.58 + 40) - 20;
+      const len = 8 + (i % 4) * 3;
+      ctx.strokeStyle = `rgba(113, 238, 255, ${0.14 + (i % 5) * 0.06})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y + len);
+      ctx.stroke();
+    }
+
+    // Occasional horizontal glitch bars to sell a digital atmosphere.
+    const glitchPulse = Math.max(0, Math.sin(t * 6.2) - 0.72);
+    if (glitchPulse > 0) {
+      const bands = 3 + Math.floor(glitchPulse * 6);
+      for (let i = 0; i < bands; i++) {
+        const y = h * (0.18 + ((i * 0.13 + t * 0.27) % 0.38));
+        const bandW = w * (0.25 + ((i * 0.17 + t * 0.5) % 0.45));
+        const x = w * (0.08 + ((i * 0.11 + t * 0.37) % 0.75));
+        const alpha = 0.08 + glitchPulse * 0.24;
+        ctx.fillStyle = `rgba(146, 248, 255, ${alpha})`;
+        ctx.fillRect(x - bandW * 0.5, y, bandW, 3 + (i % 2));
+      }
+    }
+
+    // Animated title glow.
+    const glow = 0.28 + (Math.sin(t * 3) + 1) * 0.12;
+    ctx.fillStyle = `rgba(130, 242, 255, ${glow})`;
+    ctx.font = '700 24px ui-monospace, SFMono-Regular, Menlo, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SERVO NET HUB', w * 0.5, h * 0.38);
+  }
+
+  function drawCoastlineScene(w, h) {
+    const t = performance.now() * 0.001;
+
+    // Sea band
+    const sea = ctx.createLinearGradient(0, h * .42, 0, h * .76);
+    sea.addColorStop(0, 'rgba(78, 168, 222, .22)');
+    sea.addColorStop(1, 'rgba(22, 98, 150, .45)');
+    ctx.fillStyle = sea;
+    ctx.fillRect(0, h * .42, w, h * .34);
+
+    // Surf lines
+    ctx.strokeStyle = 'rgba(232, 249, 255, .52)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 5; i++) {
+      const y = h * (.48 + i * .05) + Math.sin(t * 1.6 + i) * 4;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.quadraticCurveTo(w * .25, y - 10, w * .5, y);
+      ctx.quadraticCurveTo(w * .75, y + 10, w, y);
+      ctx.stroke();
+    }
+
+    // Rainfall across full scene.
+    for (let i = 0; i < 120; i++) {
+      const x = (i * 19 + t * 180) % (w + 40) - 20;
+      const y = (i * 13 + t * 380) % (h + 60) - 30;
+      const len = 8 + (i % 3) * 3;
+      ctx.strokeStyle = `rgba(180, 225, 255, ${0.12 + (i % 5) * 0.08})`;
+      ctx.lineWidth = 1 + (i % 2) * 0.4;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - 3, y + len);
+      ctx.stroke();
+    }
+
+    // Moving foam clusters near shoreline.
+    for (let i = 0; i < 24; i++) {
+      const x = ((t * (24 + (i % 5) * 4) + i * 49) % (w + 80)) - 40;
+      const y = h * (0.62 + (i % 4) * 0.045) + Math.sin(t * 1.6 + i) * 4;
+      ctx.fillStyle = `rgba(238, 249, 255, ${0.18 + (i % 3) * 0.1})`;
+      ctx.beginPath();
+      ctx.ellipse(x, y, 10 + (i % 3) * 3, 3, 0.1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Pebble strip and dune grass silhouettes for beach realism.
+    ctx.fillStyle = 'rgba(136, 118, 91, .44)';
+    for (let i = 0; i < 50; i++) {
+      const x = w * (i / 50) + Math.sin(i * 0.7) * 2;
+      const y = h * (0.78 + (i % 4) * 0.02);
+      ctx.beginPath();
+      ctx.ellipse(x, y, 2 + (i % 2), 1.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(104, 122, 92, .36)';
+    for (let i = 0; i < 10; i++) {
+      const x = w * (0.06 + i * 0.09) + Math.sin(t * 0.5 + i) * 6;
+      const y = h * 0.76;
+      ctx.beginPath();
+      ctx.moveTo(x, y + 8);
+      ctx.quadraticCurveTo(x - 4, y - 12, x + 2, y - 28);
+      ctx.quadraticCurveTo(x + 6, y - 14, x + 5, y + 8);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Lighthouse silhouette
+    ctx.fillStyle = 'rgba(243, 229, 192, .68)';
+    ctx.fillRect(w * .78, h * .24, 18, h * .22);
+    ctx.beginPath();
+    ctx.arc(w * .79, h * .24, 16, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawTasmaniaScene(w, h) {
+    const t = performance.now() * 0.001;
+
+    ctx.fillStyle = 'rgba(230, 240, 255, .14)';
+    ctx.fillRect(0, h * .14, w, h * .62);
+
+    // Dark mountain silhouettes.
+    ctx.fillStyle = 'rgba(60, 74, 106, .78)';
+    ctx.beginPath();
+    ctx.moveTo(0, h * .7);
+    ctx.lineTo(w * .18, h * .54);
+    ctx.lineTo(w * .32, h * .72);
+    ctx.lineTo(w * .5, h * .52);
+    ctx.lineTo(w * .66, h * .72);
+    ctx.lineTo(w * .82, h * .56);
+    ctx.lineTo(w, h * .72);
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    ctx.fill();
+
+    // Animated aurora curtains.
+    const shift = Math.sin(t * 0.9) * 0.12;
+    const aurora = ctx.createLinearGradient(0, h * .04, w, h * .36);
+    aurora.addColorStop(0, 'rgba(82, 183, 136, .0)');
+    aurora.addColorStop(.2 + shift, 'rgba(82, 183, 136, .32)');
+    aurora.addColorStop(.5, 'rgba(120, 220, 255, .34)');
+    aurora.addColorStop(.78 - shift, 'rgba(150, 255, 210, .24)');
+    aurora.addColorStop(1, 'rgba(82, 183, 136, .0)');
+    ctx.fillStyle = aurora;
+    ctx.fillRect(0, h * .03, w, h * .34);
+
+    // Snowfall across entire screen.
+    for (let i = 0; i < 90; i++) {
+      const x = (i * 27 + t * (18 + (i % 7) * 3)) % (w + 40) - 20;
+      const y = (i * 19 + t * (38 + (i % 5) * 6)) % (h + 60) - 30;
+      const r = 1.1 + (i % 4) * 0.55;
+      ctx.fillStyle = `rgba(245, 252, 255, ${0.2 + (i % 4) * 0.12})`;
+      ctx.beginPath();
+      ctx.arc(x + Math.sin(t * 1.4 + i) * 3, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Foreground rocky ridges.
+    ctx.fillStyle = 'rgba(42, 53, 74, .62)';
+    for (let i = 0; i < 6; i++) {
+      const x = w * (0.02 + i * 0.18);
+      const peak = h * (0.78 - (i % 2) * 0.04);
+      ctx.beginPath();
+      ctx.moveTo(x, h);
+      ctx.lineTo(x + w * 0.08, peak);
+      ctx.lineTo(x + w * 0.16, h);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Snow drift streaks across ground.
+    ctx.strokeStyle = 'rgba(232, 243, 255, .28)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 16; i++) {
+      const y = h * (0.73 + i * 0.018);
+      ctx.beginPath();
+      ctx.moveTo(0, y + Math.sin(t * 0.6 + i) * 2.5);
+      ctx.quadraticCurveTo(w * 0.45, y - 6, w, y + Math.cos(t * 0.7 + i) * 2.5);
+      ctx.stroke();
+    }
+  }
+
+  function drawExpeditionMap(w, h, region) {
+    const centerX = w * .5;
+    const centerY = h * .54;
+    const scale = Math.min(w, h) * .42;
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+
+    drawAustraliaSilhouette(scale, region);
+    drawRouteLine(scale);
+    drawRegionLabels(scale);
+    drawCompassRose(-scale * .68, -scale * .55, scale * .13);
+
+    ctx.restore();
+  }
+
+  function drawAustraliaSilhouette(scale, region) {
+    ctx.save();
+    ctx.scale(scale, scale);
+
+    ctx.beginPath();
+    ctx.moveTo(-1.08, -.08);
+    ctx.lineTo(-.98, -.36);
+    ctx.lineTo(-.78, -.54);
+    ctx.lineTo(-.46, -.64);
+    ctx.lineTo(-.18, -.56);
+    ctx.lineTo(.1, -.66);
+    ctx.lineTo(.4, -.58);
+    ctx.lineTo(.72, -.4);
+    ctx.lineTo(.94, -.1);
+    ctx.lineTo(1, .22);
+    ctx.lineTo(.88, .5);
+    ctx.lineTo(.66, .72);
+    ctx.lineTo(.42, .84);
+    ctx.lineTo(.16, .8);
+    ctx.lineTo(-.06, .86);
+    ctx.lineTo(-.28, .78);
+    ctx.lineTo(-.5, .82);
+    ctx.lineTo(-.76, .66);
+    ctx.lineTo(-.94, .4);
+    ctx.lineTo(-1.02, .12);
+    ctx.closePath();
+
+    ctx.fillStyle = 'rgba(243, 229, 192, .2)';
+    ctx.fill();
+    ctx.lineWidth = .03;
+    ctx.strokeStyle = 'rgba(43, 43, 43, .85)';
+    ctx.stroke();
+
+    ctx.clip();
+
+    const zones = [
+      { x: -1.1, w: .62, color: '#c97d43' },
+      { x: -.48, w: .56, color: '#567c4a' },
+      { x: .08, w: .52, color: '#5c8fb8' },
+      { x: .6, w: .44, color: '#4b5ea8' }
+    ];
+
+    zones.forEach((zone, index) => {
+      ctx.fillStyle = index === state.regionIndex ? zone.color : hexToRgba(zone.color, .68);
+      ctx.fillRect(zone.x, -.72, zone.w, 1.58);
+    });
+
+    if (region.terrain === 'dunes') {
+      drawDunes();
+    } else if (region.terrain === 'forest') {
+      drawBushland();
+    } else if (region.terrain === 'beach') {
+      drawBeaches();
+    } else {
+      drawMountains();
+    }
+
+    ctx.restore();
+
+    if (state.regionIndex === regions.length - 1) {
+      ctx.save();
+      ctx.translate(.34, .9);
+      ctx.fillStyle = 'rgba(82, 183, 136, .25)';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, .28, .18, -.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawRouteLine(scale) {
+    ctx.save();
+    ctx.scale(scale, scale);
+    ctx.strokeStyle = 'rgba(255, 209, 102, .92)';
+    ctx.lineWidth = .06;
+    ctx.setLineDash([.14, .12]);
+    ctx.beginPath();
+    ctx.moveTo(-.78, .44);
+    ctx.quadraticCurveTo(-.48, .12, -.18, .22);
+    ctx.quadraticCurveTo(.18, .34, .46, .12);
+    ctx.quadraticCurveTo(.68, -.04, .86, -.02);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    const markers = [
+      [-.76, .42],
+      [-.36, .18],
+      [-.02, .26],
+      [.32, .24],
+      [.64, .02]
+    ];
+
+    markers.forEach((marker, index) => {
+      ctx.fillStyle = index <= state.regionIndex ? 'rgba(255, 209, 102, 1)' : 'rgba(255, 209, 102, .35)';
+      ctx.beginPath();
+      ctx.arc(marker[0], marker[1], .05, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  function drawRegionLabels(scale) {
+    ctx.save();
+    ctx.scale(scale, scale);
+    ctx.fillStyle = 'rgba(43, 43, 43, .7)';
+    ctx.font = 'bold .12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('OUTBACK', -.96, -.64);
+    ctx.fillText('BUSHLAND', -.36, -.64);
+    ctx.fillText('BEACHES', .24, -.64);
+    ctx.fillText('MOUNTAINS', .14, .54);
+    ctx.fillStyle = 'rgba(255, 209, 102, .9)';
+    ctx.font = 'bold .14px sans-serif';
+    ctx.fillText(regions[state.regionIndex].name.toUpperCase(), -.98, .92);
+    ctx.restore();
+  }
+
+  function drawCompassRose(x, y, size) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.strokeStyle = 'rgba(255, 209, 102, .55)';
+    ctx.fillStyle = 'rgba(255, 209, 102, .22)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(0, 0, size, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, -size);
+    ctx.lineTo(size * .22, -size * .22);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(-size * .22, -size * .22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawDunes() {
+    ctx.strokeStyle = 'rgba(255, 235, 200, .2)';
+    ctx.lineWidth = .02;
+    for (let i = -2; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-1, -.34 + i * .16);
+      ctx.quadraticCurveTo(-.72, -.46 + i * .16, -.42, -.32 + i * .16);
+      ctx.quadraticCurveTo(-.12, -.18 + i * .16, .16, -.3 + i * .16);
+      ctx.stroke();
+    }
+  }
+
+  function drawBushland() {
+    ctx.fillStyle = 'rgba(19, 41, 24, .52)';
+    for (let i = -2; i < 3; i++) {
+      const x = -.32 + i * .22;
+      ctx.fillRect(x, .02, .03, .26);
+      ctx.beginPath();
+      ctx.arc(x + .015, -.04, .08, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x - .03, 0, .06, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawBeaches() {
+    ctx.strokeStyle = 'rgba(232, 249, 255, .35)';
+    ctx.lineWidth = .02;
+    for (let i = -2; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(.04, -.42 + i * .13);
+      ctx.quadraticCurveTo(.24, -.36 + i * .13, .46, -.42 + i * .13);
+      ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(255, 229, 189, .44)';
+    ctx.fillRect(.62, -.2, .22, .54);
+
+    ctx.fillStyle = 'rgba(92, 64, 51, .35)';
+    ctx.fillRect(.72, -.06, .02, .3);
+
+    ctx.fillStyle = 'rgba(243, 229, 192, .45)';
+    ctx.beginPath();
+    ctx.moveTo(.68, -.28);
+    ctx.lineTo(.74, -.1);
+    ctx.lineTo(.8, -.28);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawMountains() {
+    ctx.fillStyle = 'rgba(120, 132, 152, .6)';
+    ctx.beginPath();
+    ctx.moveTo(.22, .84);
+    ctx.lineTo(.32, .64);
+    ctx.lineTo(.42, .84);
+    ctx.lineTo(.52, .6);
+    ctx.lineTo(.62, .84);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(230, 240, 255, .55)';
+    ctx.beginPath();
+    ctx.moveTo(.3, .68);
+    ctx.lineTo(.32, .64);
+    ctx.lineTo(.35, .68);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(.5, .64);
+    ctx.lineTo(.52, .6);
+    ctx.lineTo(.55, .64);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function hexToRgba(hex, alpha) {
+    const value = hex.replace('#', '');
+    const red = Number.parseInt(value.slice(0, 2), 16);
+    const green = Number.parseInt(value.slice(2, 4), 16);
+    const blue = Number.parseInt(value.slice(4, 6), 16);
+    return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+  }
+
+  function drawPlayer() {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    const x = w * laneToXNorm(state.player.lane);
+    const yBase = h * .72;
+    const jumpOffset = state.player.jump > 0 ? Math.sin((.9 - state.player.jump) * Math.PI) * 55 : 0;
+    const y = yBase - jumpOffset + (state.player.sliding > 0 ? 20 : 0);
+    const avatar = (characters[selectedCharacter] || characters.emu).emoji;
+    const regionAccent = regions[state.regionIndex].accent;
+    const terrain = regions[state.regionIndex].terrain;
+    const t = performance.now() * 0.01;
+    const isBird = selectedCharacter === 'emu' || selectedCharacter === 'kookaburra';
+    const isWombat = selectedCharacter === 'wombat';
+    const gait = Math.sin(t * (isBird ? 0.8 : 1.4));
+
+    ctx.save();
+    ctx.translate(x, y + gait * (isBird ? 2 : 3));
+
+    if (isBird) {
+      // Wing flutter streaks behind bird characters.
+      ctx.strokeStyle = 'rgba(255, 245, 220, .28)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-22, -8);
+      ctx.quadraticCurveTo(-36, -16 - Math.abs(gait * 5), -16, -22);
+      ctx.moveTo(22, -8);
+      ctx.quadraticCurveTo(36, -16 - Math.abs(gait * 5), 16, -22);
+      ctx.stroke();
+    } else {
+      // Footstep pulses for land animals.
+      ctx.fillStyle = 'rgba(255, 209, 102, .2)';
+      ctx.beginPath();
+      ctx.ellipse(-12, 22 + Math.abs(gait * 2), 6, 3, 0, 0, Math.PI * 2);
+      ctx.ellipse(12, 22 + Math.abs(gait * 2), 6, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Wombat gets visible burrow behavior in dunes/forest while sliding.
+      if (isWombat && (terrain === 'dunes' || terrain === 'forest')) {
+        const burrowDepth = state.player.sliding > 0 ? 13 : 6;
+        ctx.fillStyle = 'rgba(30, 18, 10, .42)';
+        ctx.beginPath();
+        ctx.ellipse(0, 22 + burrowDepth, 22, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    ctx.fillStyle = hexToRgba(regionAccent, .28);
+    ctx.beginPath();
+    ctx.arc(0, 0, state.player.sliding > 0 ? 26 : 34, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255, 255, 255, .18)';
+    ctx.beginPath();
+    ctx.arc(0, 0, state.player.sliding > 0 ? 34 : 44, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(255, 245, 220, .45)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, state.player.sliding > 0 ? 38 : 49, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.rotate(gait * (isBird ? 0.05 : 0.025));
+    ctx.font = state.player.sliding > 0 ? '62px serif' : '86px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(255, 245, 220, .95)';
+    ctx.shadowBlur = 34;
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(20, 12, 8, .72)';
+    ctx.strokeText(avatar, 0, 0);
+    ctx.fillStyle = '#fff8e6';
+    ctx.fillText(avatar, 0, 0);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  function drawItem(item) {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    const terrain = regions[state.regionIndex].terrain;
+    const isServoTech = terrain === 'industrial';
+    const x = typeof item.xNorm === 'number'
+      ? w * item.xNorm
+      : w * laneToXNorm(item.lane);
+    const y = h * .15 + (1 - item.z) * h * .65;
+    ctx.save();
+    ctx.translate(x, y);
+    if (item.type === 'fragment') {
+      ctx.fillStyle = palette.gold;
+      ctx.beginPath();
+      ctx.moveTo(0, -20);
+      ctx.lineTo(16, 0);
+      ctx.lineTo(0, 20);
+      ctx.lineTo(-16, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowColor = 'rgba(255, 209, 102, .6)';
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = palette.paper;
+      ctx.fillRect(-3, -9, 6, 18);
+      ctx.shadowBlur = 0;
+    } else if (item.type === 'scoreBonus' || item.type === 'scorePenalty') {
+      const isBonus = item.type === 'scoreBonus';
+      ctx.fillStyle = isBonus ? 'rgba(79, 214, 131, .95)' : 'rgba(233, 92, 92, .95)';
+      ctx.beginPath();
+      ctx.roundRect(-28, -16, 56, 32, 10);
+      ctx.fill();
+      ctx.strokeStyle = isBonus ? 'rgba(222, 255, 232, .9)' : 'rgba(255, 225, 225, .9)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#08110b';
+      ctx.font = '700 14px Nunito';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const sign = isBonus ? '+' : '-';
+      ctx.fillText(`${sign}${item.value}`, 0, 1);
+    } else if (item.type === 'treasure' || item.type === 'relic') {
+      ctx.fillStyle = item.type === 'relic' ? palette.cyan : palette.orange;
+      ctx.beginPath();
+      ctx.arc(0, 0, 16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = palette.paper;
+      ctx.beginPath();
+      ctx.arc(0, 0, 7, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Bomb icon for hazards.
+      ctx.fillStyle = '#121317';
+      ctx.beginPath();
+      ctx.arc(0, 0, 15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255, 228, 186, .9)';
+      ctx.fillRect(-2, -18, 4, 8);
+      ctx.strokeStyle = 'rgba(255, 196, 96, .9)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, -18);
+      ctx.quadraticCurveTo(8, -26, 12, -18);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255, 126, 64, .8)';
+      ctx.beginPath();
+      ctx.arc(13, -18, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (isServoTech && (item.type === 'fragment' || item.type === 'treasure' || item.type === 'relic')) {
+      const phase = performance.now() * 0.006;
+      const pulse = 0.22 + (Math.sin(phase + item.z * 9) + 1) * 0.14;
+      ctx.strokeStyle = `rgba(108, 243, 255, ${pulse})`;
+      ctx.lineWidth = 1.6;
+
+      // Circuit bracket ring around collectible pickups in Servo only.
+      ctx.beginPath();
+      ctx.arc(0, 0, 22, 0.3, 1.1);
+      ctx.arc(0, 0, 22, 2, 2.8);
+      ctx.arc(0, 0, 22, 3.45, 4.25);
+      ctx.arc(0, 0, 22, 5.1, 5.9);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(-26, 0);
+      ctx.lineTo(-16, 0);
+      ctx.moveTo(26, 0);
+      ctx.lineTo(16, 0);
+      ctx.moveTo(0, -26);
+      ctx.lineTo(0, -16);
+      ctx.moveTo(0, 26);
+      ctx.lineTo(0, 16);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  function drawEvent(ev) {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    const x = w * laneToXNorm(ev.lane);
+    const y = h * .15 + (1 - ev.z) * h * .65;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.strokeStyle = palette.cyan;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(-30, -20, 60, 40);
+    ctx.fillStyle = palette.paper;
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(ev.type === 'puzzle' ? 'PUZZLE' : 'SHARD GATE', 0, 5);
+    ctx.restore();
+  }
+
+  function render() {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    ctx.clearRect(0, 0, w, h);
+    drawBackground();
+
+    state.items.forEach(drawItem);
+    drawPlayer();
+
+    if (!state.running && !state.ended) {
+      ctx.fillStyle = 'rgba(13, 27, 42, .72)';
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = palette.paper;
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 26px sans-serif';
+      ctx.fillText('Dawn Dashers', w / 2, h / 2 - 30);
+      ctx.font = '18px sans-serif';
+      ctx.fillText('Traverse Australia, collect shards, and outrun the dark', w / 2, h / 2 + 2);
+      ctx.fillText('Swipe or use arrow keys. Follow the expedition route.', w / 2, h / 2 + 28);
+    }
+
+    if (state.ended) {
+      ctx.fillStyle = 'rgba(26, 20, 16, .66)';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.fillStyle = 'rgba(15, 11, 9, .72)';
+      ctx.strokeStyle = 'rgba(255, 209, 102, .3)';
+      ctx.lineWidth = 2;
+      const panelW = Math.min(560, w * 0.82);
+      const panelH = 200;
+      const panelX = (w - panelW) / 2;
+      const panelY = (h - panelH) / 2 - 12;
+      ctx.beginPath();
+      ctx.roundRect(panelX, panelY, panelW, panelH, 14);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = palette.paper;
+      ctx.textAlign = 'center';
+      ctx.font = '700 34px Cinzel Decorative';
+      ctx.fillText(state.fragments >= 7 ? 'Expedition Complete!' : 'Game Over', w / 2, h / 2 - 58);
+      ctx.font = '18px sans-serif';
+      ctx.fillText(state.fragments >= 7 ? 'Sunrise restored. The expedition is complete.' : 'The night won this run. Try again.', w / 2, h / 2 - 26);
+      ctx.fillText(state.fragments >= 7 ? 'Expedition Complete!' : 'Run Ended', w / 2, h / 2 + 2);
+      ctx.fillText(`Score ${state.score} | Shards ${state.fragments}/7`, w / 2, h / 2 + 30);
+      ctx.fillText('Press Restart to play again.', w / 2, h / 2 + 58);
+    }
+  }
+
+  function onKeyDown(e) {
+    if (landingOverlay?.classList.contains('open')) {
+      return;
+    }
+    if (!state.running && (e.key === 'Enter' || e.key === ' ')) {
+      resetGame();
+      return;
+    }
+    if (!state.running) return;
+    if (e.key === 'ArrowLeft' || e.key === 'a') shiftLane(-1);
+    if (e.key === 'ArrowRight' || e.key === 'd') shiftLane(1);
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') jump();
+    if (e.key === 'ArrowDown' || e.key === 's') slide();
+    if (e.key === 'f' || e.key === 'F') buyFoodForCurrentCharacter();
+  }
+
+  function closeModal(modal) {
+    if (!modal) {
+      return;
+    }
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
+  function bindTouchControls() {
+    canvas.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      state.swipeStart = { x: t.clientX, y: t.clientY };
+    }, { passive: true });
+
+    canvas.addEventListener('touchend', (e) => {
+      if (!state.swipeStart || !state.running) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - state.swipeStart.x;
+      const dy = t.clientY - state.swipeStart.y;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx < -30) shiftLane(-1);
+        if (dx > 30) shiftLane(1);
+      } else {
+        if (dy < -30) jump();
+        if (dy > 30) slide();
+      }
+      state.swipeStart = null;
+    }, { passive: true });
+  }
+
+  function bindGameplayControls() {
+    startBtn.addEventListener('click', onStartButtonPressed);
+    if (roadEventBtn) {
+      roadEventBtn.addEventListener('click', requestRoadEvent);
+    }
+    hintBtn.addEventListener('click', requestHint);
+    if (buyFoodBtn) {
+      buyFoodBtn.addEventListener('click', buyFoodForCurrentCharacter);
+    }
+  }
+
+  function bindCharacterControls() {
+    characterButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const id = button.dataset.character;
+        if (!id || !characters[id]) {
+          return;
+        }
+        if (!superModeEnabled && !isCharacterAvailableForCurrentLevel(id)) {
+          const pair = getPairForLevel(state.progressLevel);
+          pushMessage(`Pick ${characters[pair.fast].name} (fast) or ${characters[pair.slow].name} (slow).`);
+          return;
+        }
+        setSelectedCharacter(id);
+        refreshCharacterBio();
+        pushMessage(`${characters[id].name} selected - ${characters[id].power}`);
+      });
+    });
+  }
+
+  function bindPuzzleControls() {
+    if (puzzleAnswerInput) {
+      puzzleAnswerInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          submitPuzzle();
+        }
+      });
+    }
+    if (puzzleCheckBtn) {
+      puzzleCheckBtn.addEventListener('click', submitPuzzle);
+    }
+    if (puzzleSubmitBtn) {
+      puzzleSubmitBtn.addEventListener('click', submitPuzzle);
+    }
+    if (puzzleHintBtn) {
+      puzzleHintBtn.addEventListener('click', () => {
+        const puzzle = getCurrentPuzzle();
+        const hint = puzzle.hints[Math.min(puzzleState.hintIndex, puzzle.hints.length - 1)];
+        puzzleState.hintIndex = Math.min(puzzleState.hintIndex + 1, puzzle.hints.length - 1);
+        if (puzzleStatus) {
+          puzzleStatus.textContent = hint;
+        }
+        pushMessage('Hint step revealed.');
+      });
+    }
+    if (puzzleTopHintBtn) {
+      puzzleTopHintBtn.addEventListener('click', () => {
+        const puzzle = getCurrentPuzzle();
+        const hint = puzzle.hints[Math.min(puzzleState.hintIndex, puzzle.hints.length - 1)];
+        puzzleState.hintIndex = Math.min(puzzleState.hintIndex + 1, puzzle.hints.length - 1);
+        if (puzzleStatus) {
+          puzzleStatus.textContent = hint;
+        }
+        pushMessage('Puzzle hint revealed.');
+      });
+    }
+    if (puzzleSkipBtn) {
+      puzzleSkipBtn.addEventListener('click', skipPuzzle);
+    }
+  }
+
+  function bindModalControls() {
+    if (closeClueBtn) {
+      closeClueBtn.addEventListener('click', () => closeModal(clueModal));
+    }
+    if (closePuzzleBtn) {
+      closePuzzleBtn.addEventListener('click', () => closeModal(puzzleModal));
+    }
+    if (clueHintBtn) {
+      clueHintBtn.addEventListener('click', requestHint);
+    }
+    if (clueSolveBtn) {
+      clueSolveBtn.addEventListener('click', () => {
+        closeModal(clueModal);
+        requestHint();
+      });
+    }
+    if (landingSettingsBtn) {
+      landingSettingsBtn.addEventListener('click', () => {
+        if (!settingsModal) {
+          return;
+        }
+        settingsModal.classList.add('open');
+        settingsModal.setAttribute('aria-hidden', 'false');
+      });
+    }
+    if (closeSettingsBtn) {
+      closeSettingsBtn.addEventListener('click', () => closeModal(settingsModal));
+    }
+
+    if (difficultySelect) {
+      difficultySelect.value = gameDifficulty;
+      difficultySelect.addEventListener('change', () => {
+        const nextDifficulty = difficultySelect.value;
+        gameDifficulty = difficultyMultipliers[nextDifficulty] ? nextDifficulty : 'medium';
+        localStorage.setItem(DIFFICULTY_KEY, gameDifficulty);
+        pushMessage(`Difficulty: ${gameDifficulty[0].toUpperCase()}${gameDifficulty.slice(1)}`);
+      });
+    }
+    if (superModeSelect) {
+      superModeSelect.value = superModeEnabled ? 'on' : 'off';
+      superModeSelect.addEventListener('change', () => {
+        superModeEnabled = superModeSelect.value === 'on';
+        localStorage.setItem(SUPER_MODE_KEY, superModeEnabled ? 'on' : 'off');
+        updateCharacterAvailability();
+        pushMessage(superModeEnabled
+          ? 'Super Mode enabled: all dashers and terrains unlocked.'
+          : 'Super Mode disabled. Normal unlock rules restored.');
+      });
+    }
+    if (terrain3dSelect) {
+      terrain3dSelect.value = terrain3dEnabled ? 'on' : 'off';
+      terrain3dSelect.addEventListener('change', () => {
+        terrain3dEnabled = terrain3dSelect.value !== 'off';
+        localStorage.setItem(TERRAIN_3D_KEY, terrain3dEnabled ? 'on' : 'off');
+        updateThreeVisibility();
+        pushMessage(`3D Terrain: ${terrain3dEnabled ? 'On' : 'Off'}`);
+      });
+    }
+    if (musicToggleSelect) {
+      musicToggleSelect.value = musicEnabled ? 'on' : 'off';
+      musicToggleSelect.addEventListener('change', () => {
+        musicEnabled = musicToggleSelect.value !== 'off';
+        localStorage.setItem(MUSIC_ENABLED_KEY, musicEnabled ? 'on' : 'off');
+        ensureAudioStarted();
+        syncAudioToRegion();
+        pushMessage(`Music: ${musicEnabled ? 'On' : 'Off'}`);
+      });
+    }
+    if (musicVolumeRange) {
+      musicVolumeRange.value = String(Math.round(musicVolume * 100));
+      musicVolumeRange.addEventListener('input', () => {
+        musicVolume = Math.max(0, Math.min(1, Number(musicVolumeRange.value) / 100));
+        localStorage.setItem(MUSIC_VOLUME_KEY, String(musicVolume));
+        syncAudioToRegion();
+      });
+    }
+    if (sfxVolumeRange) {
+      sfxVolumeRange.value = String(Math.round(sfxVolume * 100));
+      sfxVolumeRange.addEventListener('input', () => {
+        sfxVolume = Math.max(0, Math.min(1, Number(sfxVolumeRange.value) / 100));
+        localStorage.setItem(SFX_VOLUME_KEY, String(sfxVolume));
+        syncAudioToRegion();
+      });
+    }
+    if (pastGamesBtn) {
+      pastGamesBtn.addEventListener('click', () => {
+        if (!pastGamesModal) {
+          return;
+        }
+        renderPastGames();
+        pastGamesModal.classList.add('open');
+        pastGamesModal.setAttribute('aria-hidden', 'false');
+      });
+    }
+    if (closePastGamesBtn) {
+      closePastGamesBtn.addEventListener('click', () => closeModal(pastGamesModal));
+    }
+    if (landingHelpBtn) {
+      landingHelpBtn.addEventListener('click', () => {
+        if (!helpModal) {
+          return;
+        }
+        helpModal.classList.add('open');
+        helpModal.setAttribute('aria-hidden', 'false');
+      });
+    }
+    if (closeHelpBtn) {
+      closeHelpBtn.addEventListener('click', () => closeModal(helpModal));
+    }
+    if (walkthroughNextBtn) {
+      walkthroughNextBtn.addEventListener('click', () => {
+        walkthroughIndex = Math.min(walkthroughIndex + 1, walkthroughSteps.length - 1);
+        hydrateWalkthroughStep();
+      });
+    }
+    if (walkthroughBeginBtn) {
+      walkthroughBeginBtn.addEventListener('click', closeWalkthroughAndStart);
+    }
+    if (walkthroughSkipBtn) {
+      walkthroughSkipBtn.addEventListener('click', closeWalkthroughAndStart);
+    }
+  }
+
+  function bindLandingFlowControls() {
+    if (lcContinueBtn) {
+      lcContinueBtn.addEventListener('click', () => {
+        if (levelCompleteTimer) {
+          clearTimeout(levelCompleteTimer);
+          levelCompleteTimer = null;
+        }
+        if (levelCompleteOverlay) {
+          levelCompleteOverlay.classList.remove('open');
+          levelCompleteOverlay.setAttribute('aria-hidden', 'true');
+        }
+        setCharacterSelectionOpen(true);
+        state.objective = 'Choose your character for the next level.';
+        state.message = 'Pick your dasher!';
+        syncHud();
+      });
+    }
+    if (playNowBtn) {
+      playNowBtn.addEventListener('click', () => {
+        state.continueFromLevelUnlock = false;
+        setLanding(false);
+        setGameplayChrome(false);
+        setCharacterSelectionOpen(true);
+        state.objective = 'Choose your character, then tap Start Run.';
+        state.message = 'Select your dasher power first.';
+        syncHud();
+      });
+    }
+    if (characterBackBtn) {
+      characterBackBtn.addEventListener('click', () => {
+        setCharacterSelectionOpen(false);
+        setLanding(true);
+        setGameplayChrome(false);
+      });
+    }
+    if (characterStartBtn) {
+      characterStartBtn.addEventListener('click', () => {
+        const keepProgress = state.continueFromLevelUnlock;
+        state.continueFromLevelUnlock = false;
+        setCharacterSelectionOpen(false);
+        setGameplayChrome(true);
+        onStartButtonPressed(keepProgress);
+      });
+    }
+  }
+
+  function bindSystemEvents() {
+    globalThis.addEventListener('keydown', onKeyDown);
+    globalThis.addEventListener('resize', resize);
+    globalThis.addEventListener('pointerdown', ensureAudioStarted, { passive: true });
+  }
+
+  function checkApi() {
+    state.apiOnline = false;
+    document.getElementById('apiStatus').textContent = 'Local mode';
+  }
+
+  function tick(time) {
+    if (!state.lastTime) state.lastTime = time;
+    const dt = Math.min((time - state.lastTime) / 1000, .033);
+    state.lastTime = time;
+    update(dt);
+    updateThreeTerrain(dt);
+    requestAnimationFrame(tick);
+  }
+
+  function initializeGame() {
+    initThreeTerrain();
+    bindTouchControls();
+    bindGameplayControls();
+    bindCharacterControls();
+    bindPuzzleControls();
+    bindModalControls();
+    bindLandingFlowControls();
+    bindSystemEvents();
+
+    resize();
+    render();
+    setLanding(true);
+    setGameplayChrome(false);
+    setCharacterSelectionOpen(false);
+    checkApi();
+    decorateCharacterButtons();
+    applyCharacterSelectionTheme();
+    syncAudioToRegion();
+    requestAnimationFrame(tick);
+  }
+
+  initializeGame();

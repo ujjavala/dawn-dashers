@@ -1,0 +1,20 @@
+{
+  "music": [
+    "main_menu_theme",
+    "outback_run_theme",
+    "aurora_flight_theme",
+    "turing_boss_theme"
+  ],
+  "sfx": [
+    "jump_boing",
+    "collect_chime",
+    "fragment_stinger",
+    "hit_tumble",
+    "ability_woosh",
+    "wildlife_chatter"
+  ],
+  "mixing": {
+    "musicDb": -8,
+    "sfxDb": -3
+  }
+}
