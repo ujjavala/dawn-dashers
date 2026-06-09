@@ -169,6 +169,7 @@ Latest character-system pass in the web runtime:
 	- one **SLOW** option (restricted lane window, lower energy burn)
 - Characters scale by progression tier so later-level options feel stronger while preserving role identity.
 - Character profiles now include explicit per-action energy rates and food economy stats.
+- Super/admin character selection now also syncs the effective gameplay tier/level so choosing a late-game dasher plays like that level immediately.
 
 ---
 
@@ -180,6 +181,12 @@ To connect with Alan Turing’s legacy without slowing the action, I split logic
 - **Tests of the Chosen One (progression gates):** medium-difficulty ciphers/logic tests (Vigenere shifts, halting-loop reasoning, Enigma constraints, binary arithmetic, state transitions, frequency logic) that appear after all 7 shards are collected and must be solved to unlock the next level.
 
 This keeps momentum high during the run while making level progression feel earned.
+
+Latest puzzle-content refinement:
+
+- Every logic/puzzle prompt now carries a clear Australian twist while preserving Alan Turing themes.
+- Examples now reference outback radios, bush telegraph clues, Bondi/Bush/Tasman/Servo settings, and Australian field gear.
+- Puzzle pools and hint strictness now scale by level, so later terrain tiers feel more demanding.
 
 ---
 
@@ -201,6 +208,8 @@ Recent economy + control tuning:
 - If energy runs out, movement halts until food is available.
 - Food is bought using score and consumed automatically when required.
 - Food is character-specific (different cost/restore), reinforcing fast-vs-slow strategy choices.
+- Food buying now uses a dedicated cart/shop flow with character-specific food icons and special buff foods.
+- Pausing the run now freezes falling items and movement while still allowing shop and puzzle interactions.
 
 Each Sun Fragment recovered visibly restores light to the world, reinforcing the solstice transformation.
 
@@ -231,9 +240,17 @@ Latest visual upgrade applied in the playable web build:
 - Bushland overhaul: replaced repetitive tree circles with layered canopy silhouettes, depth haze, light shafts, and natural debris scatter
 - Reduced "road" look in favor of open terrain surfaces
 - End-state UX polish: centered game-over/results card now combines narrative line + run-ended/restart guidance
+- Victory finale pass: expedition completion now fills the screen with a bright smiling sunrise celebration
 - Temporary Super Mode added for admin playtesting: all character locks bypassed so any terrain can be entered by selecting its mapped dasher
 - Simplified run loop pass for readability: shard and bomb focus with direct score feedback (+500 shard, -100 bomb hit)
 - Character select UX upgrade: terrain-themed title bar, explicit FAST/SLOW role badges, and a structured spec-card layout for character stats
+- Gameplay control refresh: icon-based controls, HUD cart icon, and right-side vertical control rail instead of a bottom-heavy dock
+- Terrain realism pass expanded across all major biomes with more grounded scene props and moving ambient elements:
+	- Outback: posts, station remnants, tanks, signs, drifting sand
+	- Bushland: logs, stumps, rocks, leaves, pollen
+	- Servo: masts, cables, barrels, pipes, glitch/data motion
+	- Coastline: jetty, fishing boats, palms, surf/rain layers
+	- Tasmania: pines, cabin silhouettes, frozen ground patches, snow drift motion
 
 Latest audio upgrade:
 

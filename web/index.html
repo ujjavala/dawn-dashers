@@ -110,8 +110,7 @@
       60% { transform: scale(1.14); }
     }
     .chip,
-    .panel,
-    .dock {
+    .panel {
       background: var(--glass);
       border: 1px solid rgba(212, 163, 115, 0.4);
       border-radius: 6px;
@@ -146,22 +145,134 @@
       max-width: min(360px, calc(100vw - 24px));
       z-index: 3;
       padding: 10px 12px;
+      pointer-events: none;
     }
     .mission .title { margin: 0; font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); font-family: 'Cinzel Decorative', serif; }
     .mission .small { font-size: 12px; opacity: .95; margin-top: 4px; color: #f5e6c8; }
     .mission .message { min-height: 18px; margin-top: 6px; font-size: 13px; color: var(--paper); }
     .dock {
       position: absolute;
-      left: 50%;
-      bottom: 14px;
-      transform: translateX(-50%);
+      right: 12px;
+      top: 176px;
+      z-index: 8;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+      padding: 0;
+      pointer-events: auto;
+    }
+    .dock-icon-btn {
+      width: 58px;
+      height: 58px;
+      padding: 0;
       display: grid;
-      grid-template-columns: repeat(2, minmax(120px, 1fr));
-      gap: 8px;
-      padding: 10px;
-      width: min(720px, calc(100vw - 24px));
-      z-index: 3;
-      background: var(--glass-strong);
+      place-items: center;
+      min-height: 58px;
+      border-radius: 16px;
+      border: 1px solid rgba(212, 163, 115, 0.55);
+      background: linear-gradient(180deg, rgba(107, 71, 45, 0.95), rgba(63, 42, 27, 0.98));
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 232, 188, 0.18);
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    .dock-icon-btn:hover {
+      transform: translateY(-1px) scale(1.03);
+    }
+    .icon-play,
+    .icon-pause,
+    .icon-puzzle,
+    .cart-shape {
+      position: relative;
+      display: inline-block;
+    }
+    .icon-play {
+      width: 0;
+      height: 0;
+      border-top: 13px solid transparent;
+      border-bottom: 13px solid transparent;
+      border-left: 21px solid #ffd166;
+      filter: drop-shadow(0 0 6px rgba(255, 209, 102, 0.38));
+      margin-left: 4px;
+    }
+    .icon-pause {
+      width: 22px;
+      height: 24px;
+      background:
+        linear-gradient(90deg, #ffd166 0 7px, transparent 7px 14px, #ffd166 14px 21px, transparent 21px 100%);
+      filter: drop-shadow(0 0 6px rgba(255, 209, 102, 0.38));
+    }
+    .icon-puzzle {
+      width: 22px;
+      height: 22px;
+      background: #ffd166;
+      border-radius: 4px;
+      filter: drop-shadow(0 0 6px rgba(255, 209, 102, 0.38));
+    }
+    .icon-puzzle::after {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      right: -5px;
+      top: 7px;
+      border-radius: 50%;
+      background: #ffd166;
+      box-shadow:
+        -16px -9px 0 -1px rgba(26, 15, 8, 0.98),
+        -8px 15px 0 -1px rgba(26, 15, 8, 0.98);
+    }
+    .hud-cart-btn {
+      width: 58px;
+      height: 58px;
+      border-radius: 16px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, #6b472d, #3f2a1b);
+      border: 1px solid rgba(212, 163, 115, 0.58);
+      color: #ffd166;
+      box-shadow: inset 0 1px 0 rgba(255, 227, 175, 0.26), 0 8px 18px rgba(0, 0, 0, 0.32);
+      line-height: 1;
+      cursor: pointer;
+    }
+    .hud-cart-btn:hover {
+      transform: translateY(-1px) scale(1.03);
+    }
+    .cart-shape {
+      width: 26px;
+      height: 18px;
+      border: 3px solid #ffd166;
+      border-top: 0;
+      border-radius: 0 0 6px 6px;
+      box-shadow: 0 0 9px rgba(255, 209, 102, 0.24);
+    }
+    #buyFoodBtn .cart-shape {
+      transform: translateY(-1px);
+      filter: drop-shadow(0 0 6px rgba(255, 209, 102, 0.42));
+    }
+    .cart-shape::before {
+      content: '';
+      position: absolute;
+      left: 4px;
+      top: -10px;
+      width: 15px;
+      height: 10px;
+      border: 3px solid #ffd166;
+      border-bottom: 0;
+      border-radius: 10px 10px 0 0;
+      transform: skewX(-18deg);
+    }
+    .cart-shape::after {
+      content: '';
+      position: absolute;
+      left: 1px;
+      bottom: -8px;
+      width: 24px;
+      height: 6px;
+      background:
+        radial-gradient(circle, #ffd166 0 3px, transparent 3px) left center / 10px 6px no-repeat,
+        radial-gradient(circle, #ffd166 0 3px, transparent 3px) right center / 10px 6px no-repeat;
     }
     .landing {
       position: absolute;
@@ -504,6 +615,85 @@
       margin-top: 12px;
     }
     .modal-actions button { flex: 1; }
+    .food-shop-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .food-item-card {
+      display: grid;
+      grid-template-columns: 44px 1fr auto;
+      gap: 10px;
+      border: 1px solid rgba(212, 163, 115, 0.32);
+      border-radius: 10px;
+      background: rgba(41, 24, 14, 0.62);
+      padding: 10px;
+      align-items: center;
+    }
+    .food-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      background: rgba(255, 209, 102, 0.14);
+      border: 1px solid rgba(255, 209, 102, 0.35);
+    }
+    .food-meta {
+      min-width: 0;
+    }
+    .food-name {
+      font-weight: 800;
+      color: #ffdca4;
+      font-size: 14px;
+    }
+    .food-desc {
+      font-size: 12px;
+      color: #f2deba;
+      margin-top: 2px;
+    }
+    .food-cost {
+      margin-top: 4px;
+      font-size: 11px;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: #ffd166;
+    }
+    .food-qty {
+      font-size: 11px;
+      color: #f0dab4;
+      margin-bottom: 4px;
+      text-align: right;
+    }
+    .food-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+    .food-actions .food-add,
+    .food-actions .food-remove {
+      min-width: 72px;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+    .food-actions .food-add {
+      background: linear-gradient(180deg, #d8ae67, #9c6f3f);
+      color: #1f130a;
+    }
+    .food-actions .food-remove {
+      background: linear-gradient(180deg, #7d4d39, #4d2a1d);
+    }
+    .food-cart-summary {
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(212, 163, 115, 0.28);
+      background: rgba(24, 14, 8, 0.6);
+      color: #f3e3c4;
+      font-size: 12px;
+      letter-spacing: .03em;
+    }
     .character-panel {
       position: absolute;
       inset: 0;
@@ -731,7 +921,19 @@
         max-width: none;
       }
       .dock {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        right: 12px;
+        top: auto;
+        bottom: 112px;
+      }
+      .food-item-card {
+        grid-template-columns: 40px 1fr;
+      }
+      .food-actions {
+        grid-column: 1 / -1;
+      }
+      .food-qty {
+        grid-column: 1 / -1;
+        text-align: left;
       }
       .character-title {
         min-width: 0;
@@ -976,6 +1178,24 @@
         </div>
       </div>
 
+      <div id="foodShopModal" class="modal" aria-hidden="true">
+        <div class="modal-card">
+          <div class="modal-top">
+            <div>
+              <div class="modal-sub">Food Cart</div>
+              <h3 class="modal-title">Camp Market</h3>
+            </div>
+            <button id="closeFoodShopBtn" class="modal-close">Close</button>
+          </div>
+          <div id="foodShopList" class="food-shop-list"></div>
+          <div id="foodCartSummary" class="food-cart-summary">Cart: 0 items | Total: 0 score</div>
+          <div class="modal-actions">
+            <button id="clearFoodCartBtn" class="modal-close">Clear Cart</button>
+            <button id="foodCheckoutBtn">Checkout</button>
+          </div>
+        </div>
+      </div>
+
       <div id="walkthroughModal" class="modal" aria-hidden="true">
         <div class="modal-card">
           <div class="modal-top">
@@ -997,9 +1217,9 @@
     </div>
 
     <div class="dock">
-      <button id="startBtn">Start / Restart</button>
-      <button id="hintBtn">Puzzle Core</button>
-      <button id="buyFoodBtn">Buy Food</button>
+      <button id="startBtn" class="dock-icon-btn" aria-label="Play or pause run" title="Play / Pause"><span class="icon-play"></span></button>
+      <button id="hintBtn" class="dock-icon-btn" aria-label="Open puzzle core" title="Puzzle Core"><span class="icon-puzzle"></span></button>
+      <button id="buyFoodBtn" class="dock-icon-btn" aria-label="Open food cart" title="Food Cart"><span class="cart-shape"></span></button>
     </div>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r165/three.min.js"></script>

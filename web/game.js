@@ -1,4 +1,6 @@
 
+// @ts-nocheck
+
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   const threeRoot = document.getElementById('threeRoot');
@@ -75,6 +77,12 @@
   const puzzleSubmitBtn = document.getElementById('puzzleSubmitBtn');
   const puzzleHintBtn = document.getElementById('puzzleHintBtn');
   const puzzleSkipBtn = document.getElementById('puzzleSkipBtn');
+  const foodShopModal = document.getElementById('foodShopModal');
+  const closeFoodShopBtn = document.getElementById('closeFoodShopBtn');
+  const foodShopList = document.getElementById('foodShopList');
+  const foodCartSummary = document.getElementById('foodCartSummary');
+  const foodCheckoutBtn = document.getElementById('foodCheckoutBtn');
+  const clearFoodCartBtn = document.getElementById('clearFoodCartBtn');
   const RUNS_KEY = 'dawn_dashers_runs_v1';
   const WALKTHROUGH_KEY = 'dawn_dashers_walkthrough_seen';
   const DIFFICULTY_KEY = 'dawn_dashers_difficulty_v1';
@@ -674,6 +682,14 @@
     distance: 0,
     regionIndex: 0,
     progressLevel: 0,
+    hintsUsed: 0,
+    paused: false,
+    hungerPaused: false,
+    activeBoostMoves: {
+      slowFullWidth: 0,
+      fastEfficiency: 0
+    },
+    foodCartByCharacter: {},
     spawnTimer: 0,
     fragmentTimer: 9,
     continueFromLevelUnlock: false,
@@ -702,16 +718,16 @@
     4: { fast: 'kookaburra', slow: 'quokka' }
   };
   const characterFood = {
-    emu: { name: 'Seed Mix', cost: 120, restore: 250, moveCost: 50, jumpCost: 68, slideCost: 42 },
-    wombat: { name: 'Root Pack', cost: 95, restore: 230, moveCost: 30, jumpCost: 48, slideCost: 24 },
-    kangaroo: { name: 'Grass Bundle', cost: 135, restore: 270, moveCost: 48, jumpCost: 60, slideCost: 38 },
-    koala: { name: 'Eucalyptus', cost: 105, restore: 250, moveCost: 28, jumpCost: 44, slideCost: 22 },
-    possum: { name: 'Berry Pouch', cost: 150, restore: 300, moveCost: 44, jumpCost: 56, slideCost: 34 },
-    echidna: { name: 'Ant Cluster', cost: 112, restore: 275, moveCost: 26, jumpCost: 42, slideCost: 20 },
-    dingo: { name: 'Fish Strip', cost: 165, restore: 325, moveCost: 42, jumpCost: 54, slideCost: 34 },
-    bilby: { name: 'Herb Bundle', cost: 120, restore: 300, moveCost: 24, jumpCost: 40, slideCost: 18 },
-    kookaburra: { name: 'Worm Satchel', cost: 178, restore: 350, moveCost: 40, jumpCost: 50, slideCost: 30 },
-    quokka: { name: 'Summit Greens', cost: 128, restore: 330, moveCost: 22, jumpCost: 36, slideCost: 18 }
+    emu: { name: 'Seed Mix', icon: '🌾', cost: 220, restore: 250, moveCost: 50, jumpCost: 68, slideCost: 42 },
+    wombat: { name: 'Root Pack', icon: '🥕', cost: 190, restore: 230, moveCost: 30, jumpCost: 48, slideCost: 24 },
+    kangaroo: { name: 'Grass Bundle', icon: '🥬', cost: 235, restore: 270, moveCost: 48, jumpCost: 60, slideCost: 38 },
+    koala: { name: 'Eucalyptus', icon: '🍃', cost: 200, restore: 250, moveCost: 28, jumpCost: 44, slideCost: 22 },
+    possum: { name: 'Berry Pouch', icon: '🍓', cost: 245, restore: 300, moveCost: 44, jumpCost: 56, slideCost: 34 },
+    echidna: { name: 'Ant Cluster', icon: '🐜', cost: 210, restore: 275, moveCost: 26, jumpCost: 42, slideCost: 20 },
+    dingo: { name: 'Fish Strip', icon: '🐟', cost: 260, restore: 325, moveCost: 42, jumpCost: 54, slideCost: 34 },
+    bilby: { name: 'Herb Bundle', icon: '🥦', cost: 225, restore: 300, moveCost: 24, jumpCost: 40, slideCost: 18 },
+    kookaburra: { name: 'Worm Satchel', icon: '🪱', cost: 280, restore: 350, moveCost: 40, jumpCost: 50, slideCost: 30 },
+    quokka: { name: 'Summit Greens', icon: '🥗', cost: 230, restore: 330, moveCost: 22, jumpCost: 36, slideCost: 18 }
   };
   state.foodStocks = Object.keys(characterFood).reduce((acc, key) => {
     acc[key] = 0;
@@ -733,140 +749,149 @@
   const puzzleState = {
     hintIndex: 0,
     currentIndex: 0,
+    hintsUsedThisPuzzle: 0,
     pendingAdvance: null
+  };
+
+  const levelPuzzlePools = {
+    0: [0, 2],
+    1: [3, 4],
+    2: [8, 5],
+    3: [1, 7],
+    4: [6, 9]
   };
 
   const turingPuzzles = [
     {
-      title: 'The Reversed Message',
-      instruction: 'A spy reversed the letters of a famous mathematician\'s name. Decode this: N A L A.',
+      title: 'Outback Reversed Message',
+      instruction: 'A dusty radio near an outback roadhouse reverses the name of the thinker who inspired this machine. Decode: N A L A.',
       answer: 'ALAN',
       acceptedAnswers: ['alan'],
       hints: [
-        'Read the letters backward from right to left.',
-        'Last letter comes first.',
-        'Try reversing N A L A fully.'
+        'Read the signal backward from right to left.',
+        'The last letter in the bush transmission comes first.',
+        'Reverse N A L A completely.'
       ],
-      rightExplain: 'Correct. Reversing N A L A gives A L A N.',
-      wrongExplain: 'Oops. The trick is pure reversal: right-to-left, not shifting.',
+      rightExplain: 'Correct. Reversing N A L A gives A L A N, the Turing clue hidden in the outback static.',
+      wrongExplain: 'Oops. This outback radio trick is a straight reversal, right-to-left.',
       learnUrl: 'https://en.wikipedia.org/wiki/Turing_machine'
     },
     {
-      title: 'The Next Step Shift',
-      instruction: 'Shift each letter backward by one spot to decode: B M B N.',
+      title: 'Bush Telegraph Shift',
+      instruction: 'A bush telegraph note says each letter is shifted forward once. Shift backward by one to decode: B M B O.',
       answer: 'ALAM',
       acceptedAnswers: ['alam', 'alan'],
       hints: [
-        'Ask: what letter comes right before B?',
-        'M becomes L. N becomes M.',
-        'Decode one letter at a time.'
+        'Ask which letter comes just before B in the alphabet.',
+        'Shift each character back by one, one at a time.',
+        'This puzzle is aiming you toward ALAN even if one clue letter is a little scruffy.'
       ],
-      rightExplain: 'Nice. Back-shifting gives A L A M (often intended as ALAN in this puzzle theme).',
-      wrongExplain: 'Oops. Move each letter one step backward in the alphabet.',
+      rightExplain: 'Nice. Back-shifting the bush code reveals the intended Turing nod.',
+      wrongExplain: 'Oops. Move each letter one step backward through the alphabet.',
       learnUrl: 'https://en.wikipedia.org/wiki/Binary_number'
     },
     {
-      title: 'The Odd One Out',
-      instruction: 'Which item does NOT belong: Computer, Microchip, Calculator, Bicycle?',
-      answer: 'Bicycle',
-      acceptedAnswers: ['bicycle'],
+      title: 'The Odd One Outback',
+      instruction: 'Which item does NOT belong at a Turing research camp: Computer, Microchip, Calculator, Billy Can?',
+      answer: 'Billy Can',
+      acceptedAnswers: ['billy can', 'billycan'],
       hints: [
-        'Three items are electronic devices.',
-        'One relies on human pedaling, not electricity.'
+        'Three items are computing-related tools.',
+        'One is camp gear for boiling tea in the bush.'
       ],
-      rightExplain: 'Correct. Bicycle is the non-electronic outlier.',
-      wrongExplain: 'Oops. Pick the one that is not an electronic device.',
+      rightExplain: 'Correct. A billy can belongs by the fire, not inside a computing set.',
+      wrongExplain: 'Oops. Pick the item that is not part of an electronic/computing toolkit.',
       learnUrl: 'https://en.wikipedia.org/wiki/Boolean_algebra'
     },
     {
-      title: 'The Binary Choice',
-      instruction: 'Computers use binary code with only two digits. What are they?',
+      title: 'Binary at Bondi',
+      instruction: 'A Bondi lifeguard board flashes the two symbols used by every binary machine. What are they?',
       answer: '0 and 1',
       acceptedAnswers: ['0 and 1', '0,1', '0 1', '01'],
       hints: [
-        'Think OFF and ON states.',
-        'Only two symbols are used in binary.'
+        'Think of a surf warning light being OFF or ON.',
+        'Binary uses exactly two symbols.'
       ],
-      rightExplain: 'Correct. Binary is built on 0 and 1.',
-      wrongExplain: 'Oops. Binary uses only two symbols: 0 and 1.',
+      rightExplain: 'Correct. Whether in Sydney or Cambridge, binary is built from 0 and 1.',
+      wrongExplain: 'Oops. Binary machines use only 0 and 1.',
       learnUrl: 'https://en.wikipedia.org/wiki/Enigma_machine'
     },
     {
-      title: 'The Missing Number Sequence',
-      instruction: 'Find the missing number: 2, 4, 8, 16, [ ? ], 64.',
+      title: 'Tasman Tide Sequence',
+      instruction: 'A Tassie signal buoy doubles every cycle. Find the missing value: 2, 4, 8, 16, [ ? ], 64.',
       answer: '32',
       acceptedAnswers: ['32'],
       hints: [
-        'Each number doubles.',
-        '16 doubled gives the missing value.'
+        'Each buoy reading is twice the last one.',
+        'Double 16 to fill the gap.'
       ],
-      rightExplain: 'Correct. Doubling sequence gives 32 between 16 and 64.',
-      wrongExplain: 'Oops. This pattern multiplies by 2 each step.',
+      rightExplain: 'Correct. The Tasman reading doubles cleanly to 32 before 64.',
+      wrongExplain: 'Oops. This coastal pattern doubles at each step.',
       learnUrl: 'https://en.wikipedia.org/wiki/Halting_problem'
     },
     {
-      title: 'The Secret Identity',
-      instruction: 'One player answers a huge multiplication instantly while the other delays 5s like a human. Who is the computer?',
+      title: 'The Secret Identity Test',
+      instruction: 'At a Darwin pub quiz, one mate answers a giant multiplication instantly while the other stalls for 5 seconds. Who is the computer?',
       answer: 'Player A',
       acceptedAnswers: ['player a', 'a'],
       hints: [
-        'Humans rarely do massive multiplication instantly in their head.',
-        'The instant responder is likely the machine.'
+        'Humans usually need time for huge arithmetic, even after a meat pie.',
+        'The instant responder is the stronger machine candidate.'
       ],
-      rightExplain: 'Correct. Instant large arithmetic strongly signals Player A is the computer.',
-      wrongExplain: 'Oops. In this setup, near-instant huge arithmetic points to the computer.',
+      rightExplain: 'Correct. Near-instant huge arithmetic strongly suggests Player A is the machine.',
+      wrongExplain: 'Oops. In a Turing-style test, instant huge arithmetic points to the computer.',
       learnUrl: 'https://en.wikipedia.org/wiki/Turing_test'
     },
     {
-      title: 'The Enigma Plugboard',
-      instruction: 'If A↔E and B↔X, what does B A B E become?',
+      title: 'The Enigma Plugboard Down Under',
+      instruction: 'A coastal cipher hut swaps A↔E and B↔X. What does B A B E become?',
       answer: 'X E X A',
-      acceptedAnswers: ['xexe', 'x e x e'],
+      acceptedAnswers: ['x e x a', 'xexa', 'xexa '],
       hints: [
-        'Replace each B with X.',
-        'Replace each A with E.'
+        'Swap each B for X wherever it appears.',
+        'Swap each A for E, and E back to A.'
       ],
-      rightExplain: 'Correct using the puzzle mapping. You applied each substitution to every letter.',
-      wrongExplain: 'Oops. Apply substitutions per letter in order.',
+      rightExplain: 'Correct. You applied the plugboard swaps in order, just like a tiny Enigma hut on the coast would.',
+      wrongExplain: 'Oops. Apply the plugboard swaps to each letter one by one.',
       learnUrl: 'https://en.wikipedia.org/wiki/Enigma_machine'
     },
     {
-      title: 'The Logic Route',
-      instruction: 'Robot walks only if sunny AND weekend. Today is Saturday and raining. Does it walk?',
+      title: 'The Bush Logic Route',
+      instruction: 'A survey robot crosses the bush track only if it is SUNNY AND weekend. Today is Saturday and raining. Does it walk?',
       answer: 'No',
       acceptedAnswers: ['no', 'n'],
       hints: [
-        'AND means both conditions must be true.',
-        'Weekend is true, sunny is false.'
+        'AND means both conditions must be true together.',
+        'Weekend is true, but sunny is false.'
       ],
-      rightExplain: 'Correct. Weekend alone is insufficient because sunny is false.',
-      wrongExplain: 'Oops. With AND logic, one false condition makes the full condition false.',
+      rightExplain: 'Correct. A wet Saturday in the bush still fails the SUNNY AND weekend rule.',
+      wrongExplain: 'Oops. With AND logic, one false condition makes the whole route fail.',
       learnUrl: 'https://en.wikipedia.org/wiki/Logic_gate'
     },
     {
-      title: 'The Codebreaker\'s Key',
-      instruction: 'Three-digit code: first digit 1, second is double first, third is double second. What code?',
+      title: 'The Codebreaker\'s Keycard',
+      instruction: 'A servo relay locker uses a 3-digit key: first digit 1, second is double the first, third is double the second. What code opens it?',
       answer: '124',
       acceptedAnswers: ['124'],
       hints: [
-        'Start from 1.',
-        'Double each previous digit to get the next.'
+        'Start from 1 at the first dial.',
+        'Keep doubling the previous digit to get the next one.'
       ],
-      rightExplain: 'Correct. 1 -> 2 -> 4 gives code 124.',
-      wrongExplain: 'Oops. Keep doubling from the previous digit.',
+      rightExplain: 'Correct. 1 -> 2 -> 4 opens the servo locker with code 124.',
+      wrongExplain: 'Oops. This code doubles from the previous digit each time.',
       learnUrl: 'https://en.wikipedia.org/wiki/Pattern_recognition'
     },
     {
-      title: 'The Turing Tape',
-      instruction: 'Rule: if you see a 0, change it to 1 and stop. Tape: 1, 1, 0, 1. Final tape?',
+      title: 'The Turing Tape at the Tram Stop',
+      instruction: 'A Melbourne tram-stop machine follows one rule: if you see a 0, change it to 1 and stop. Tape: 1, 1, 0, 1. Final tape?',
       answer: '1,1,1,1',
       acceptedAnswers: ['1,1,1,1', '1 1 1 1', '1111'],
       hints: [
-        'Leave all 1s unchanged.',
-        'Only the first 0 encountered is flipped to 1.'
+        'Leave each 1 unchanged as you scan.',
+        'Flip the first 0 you encounter, then stop immediately.'
       ],
-      rightExplain: 'Correct. The single 0 becomes 1, so the tape is all ones.',
-      wrongExplain: 'Oops. You only flip the encountered 0 to 1, then stop.',
+      rightExplain: 'Correct. The lone 0 becomes 1, leaving an all-ones tape.',
+      wrongExplain: 'Oops. You flip only the encountered 0 to 1, then halt.',
       learnUrl: 'https://en.wikipedia.org/wiki/Turing_machine'
     }
   ];
@@ -1050,6 +1075,7 @@
     const keepProgress = Boolean(options.keepProgress);
     state.running = true;
     state.ended = false;
+    state.paused = false;
     if (!keepProgress) {
       state.score = 0;
     }
@@ -1057,6 +1083,7 @@
     state.health = Math.max(1, Math.min(state.maxLives, baseHearts));
     state.carryHearts = null;
     state.fragments = 0;
+    syncAdminProgressToSelectedCharacter();
     const tier = Math.max(0, characters[selectedCharacter]?.unlockAt || 0);
     const role = characters[selectedCharacter]?.role || 'fast';
     state.maxEnergy = 1000 + tier * 120 + (role === 'slow' ? 80 : 30);
@@ -1067,6 +1094,7 @@
     state.player = { lane: laneCenterIndex, y: 0, jump: 0, sliding: 0, invincible: 0 };
     state.items = [];
     state.events = [];
+    state.hintsUsed = 0;
     state.message = keepProgress ? 'Run resumed with your earned hearts.' : 'Go!';
     state.difficulty = 1 + state.progressLevel * 0.45;
     state.distance = 0;
@@ -1074,12 +1102,15 @@
     state.spawnTimer = 0;
     state.fragmentTimer = 7;
     state.continueFromLevelUnlock = false;
+    puzzleState.pendingAdvance = null;
+    closeModal(puzzleModal);
     setCharacterSelectionOpen(false);
     setLanding(false);
     setGameplayChrome(true);
     applyRegionThreeTheme(regions[state.regionIndex]);
     syncAudioToRegion();
     syncHud();
+    syncPlaybackButton();
   }
 
   function hasSeenWalkthrough() {
@@ -1092,6 +1123,18 @@
 
   function launchRunFromStartButton(keepProgress = false) {
     resetGame({ keepProgress });
+  }
+
+  function syncPlaybackButton() {
+    if (!startBtn) {
+      return;
+    }
+    const shouldShowPlay = !state.running || state.ended || state.paused || state.hungerPaused;
+    startBtn.innerHTML = shouldShowPlay
+      ? '<span class="icon-play"></span>'
+      : '<span class="icon-pause"></span>';
+    startBtn.setAttribute('aria-label', shouldShowPlay ? 'Play run' : 'Pause run');
+    startBtn.title = shouldShowPlay ? 'Play' : 'Pause';
   }
 
   function hydrateWalkthroughStep() {
@@ -1137,6 +1180,10 @@
 
   function onStartButtonPressed(keepProgress = false) {
     ensureAudioStarted();
+    if (state.running && !state.ended) {
+      togglePause();
+      return;
+    }
     if (!keepProgress && !state.running) {
       openWalkthrough();
       return;
@@ -1215,12 +1262,23 @@
       return;
     }
     selectedCharacter = id;
+    syncAdminProgressToSelectedCharacter();
     state.regionIndex = characterRegionMap[selectedCharacter] ?? 0;
     applyRegionThreeTheme(regions[state.regionIndex]);
     syncAudioToRegion();
     characterButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.character === id));
     applyCharacterSelectionTheme();
     refreshCharacterBio();
+  }
+
+  function syncAdminProgressToSelectedCharacter() {
+    if (!superModeEnabled || !characters[selectedCharacter]) {
+      return;
+    }
+    const targetLevel = Math.max(0, Math.min(regions.length - 1, characters[selectedCharacter].unlockAt || 0));
+    state.progressLevel = targetLevel;
+    state.regionIndex = characterRegionMap[selectedCharacter] ?? targetLevel;
+    puzzleState.pendingAdvance = null;
   }
 
   function applyCharacterSelectionTheme() {
@@ -1267,8 +1325,163 @@
     return characterFood[selectedCharacter] || characterFood.emu;
   }
 
+  function getSpecialFoodForCharacter() {
+    const role = characters[selectedCharacter]?.role || 'fast';
+    if (role === 'slow') {
+      return {
+        id: 'slow-wide-lane-tonic',
+        type: 'special',
+        icon: '🍵',
+        name: 'Wide-Lane Tonic',
+        description: 'For 5 moves, slow dashers can access full lane width.',
+        cost: 520,
+        effect: 'slowFullWidth',
+        moves: 5
+      };
+    }
+    return {
+      id: 'fast-efficiency-nectar',
+      type: 'special',
+      icon: '🧃',
+      name: 'Efficiency Nectar',
+      description: 'For 6 actions, fast dashers consume less energy.',
+      cost: 560,
+      effect: 'fastEfficiency',
+      moves: 6
+    };
+  }
+
+  function getFoodShopItemsForCharacter() {
+    const food = getCurrentFoodSpec();
+    return [
+      {
+        id: 'base-food',
+        type: 'food',
+        icon: food.icon || '🍽️',
+        name: food.name,
+        description: `Restores ${food.restore} energy when consumed.`,
+        cost: food.cost
+      },
+      getSpecialFoodForCharacter()
+    ];
+  }
+
+  function getCartForSelectedCharacter() {
+    if (!state.foodCartByCharacter[selectedCharacter]) {
+      state.foodCartByCharacter[selectedCharacter] = {};
+    }
+    return state.foodCartByCharacter[selectedCharacter];
+  }
+
+  function renderFoodShop() {
+    if (!foodShopList || !foodCartSummary || !foodCheckoutBtn) {
+      return;
+    }
+    const items = getFoodShopItemsForCharacter();
+    const cart = getCartForSelectedCharacter();
+    foodShopList.innerHTML = '';
+
+    items.forEach((item) => {
+      const qty = cart[item.id] || 0;
+      const card = document.createElement('div');
+      card.className = 'food-item-card';
+      card.innerHTML = `
+        <div class="food-icon">${item.icon}</div>
+        <div class="food-meta">
+          <div class="food-name">${item.name}</div>
+          <div class="food-desc">${item.description}</div>
+          <div class="food-cost">Cost ${item.cost}</div>
+        </div>
+        <div class="food-qty">In cart: <strong>${qty}</strong></div>
+        <div class="food-actions">
+          <button class="food-add" data-item="${item.id}">Add</button>
+          <button class="food-remove" data-item="${item.id}" ${qty <= 0 ? 'disabled' : ''}>Remove</button>
+        </div>`;
+      foodShopList.appendChild(card);
+    });
+
+    const total = items.reduce((sum, item) => sum + (cart[item.id] || 0) * item.cost, 0);
+    const totalCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
+    foodCartSummary.textContent = `Cart: ${totalCount} items | Total: ${total} score | Balance: ${state.score}`;
+    foodCheckoutBtn.disabled = totalCount === 0;
+    if (totalCount > 0 && total > state.score) {
+      foodCheckoutBtn.textContent = `Need +${total - state.score}`;
+    } else {
+      foodCheckoutBtn.textContent = 'Checkout';
+    }
+
+    foodShopList.querySelectorAll('.food-add').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.item;
+        cart[id] = (cart[id] || 0) + 1;
+        renderFoodShop();
+      });
+    });
+
+    foodShopList.querySelectorAll('.food-remove').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.item;
+        cart[id] = Math.max(0, (cart[id] || 0) - 1);
+        if (cart[id] === 0) {
+          delete cart[id];
+        }
+        renderFoodShop();
+      });
+    });
+  }
+
+  function openFoodShop() {
+    if (!foodShopModal) {
+      return;
+    }
+    renderFoodShop();
+    foodShopModal.classList.add('open');
+    foodShopModal.setAttribute('aria-hidden', 'false');
+  }
+
+  function checkoutFoodCart() {
+    const cart = getCartForSelectedCharacter();
+    const items = getFoodShopItemsForCharacter();
+    const total = items.reduce((sum, item) => sum + (cart[item.id] || 0) * item.cost, 0);
+    if (total <= 0) {
+      pushMessage('Your cart is empty.');
+      return;
+    }
+    if (total > state.score) {
+      pushMessage(`Need ${total - state.score} more score for this cart.`);
+      return;
+    }
+
+    state.score -= total;
+    let purchasedFoodQty = 0;
+    items.forEach((item) => {
+      const qty = cart[item.id] || 0;
+      if (!qty) {
+        return;
+      }
+      if (item.type === 'food') {
+        state.foodStocks[selectedCharacter] = (state.foodStocks[selectedCharacter] || 0) + qty;
+        purchasedFoodQty += qty;
+      } else if (item.effect === 'slowFullWidth') {
+        state.activeBoostMoves.slowFullWidth += item.moves * qty;
+      } else if (item.effect === 'fastEfficiency') {
+        state.activeBoostMoves.fastEfficiency += item.moves * qty;
+      }
+    });
+
+    state.foodCartByCharacter[selectedCharacter] = {};
+    renderFoodShop();
+    closeModal(foodShopModal);
+    syncHud();
+    const foodCount = state.foodStocks[selectedCharacter] || 0;
+    pushMessage(`Purchased. +${purchasedFoodQty} food added (stock ${foodCount}).`);
+  }
+
   function getMovementLaneBounds() {
     const role = characters[selectedCharacter]?.role || 'fast';
+    if (role === 'slow' && state.activeBoostMoves.slowFullWidth > 0) {
+      return [0, lanes.length - 1];
+    }
     return role === 'slow' ? [2, 6] : [0, lanes.length - 1];
   }
 
@@ -1284,7 +1497,11 @@
     const roleMult = role === 'fast' ? 1.16 : 0.82;
     const tier = Math.max(0, characters[selectedCharacter]?.unlockAt || 0);
     const tierMult = Math.max(0.75, 1 - tier * 0.05);
-    return Math.max(8, Math.round(base * getEnergyScaleForLevel() * roleMult * tierMult));
+    let cost = Math.max(8, Math.round(base * getEnergyScaleForLevel() * roleMult * tierMult));
+    if (role === 'fast' && state.activeBoostMoves.fastEfficiency > 0) {
+      cost = Math.max(6, Math.round(cost * 0.55));
+    }
+    return cost;
   }
 
   function consumeFoodFromStock() {
@@ -1311,20 +1528,29 @@
       return false;
     }
     state.energy = Math.max(0, state.energy - cost);
+    const role = characters[selectedCharacter]?.role || 'fast';
+    if (role === 'fast' && state.activeBoostMoves.fastEfficiency > 0) {
+      state.activeBoostMoves.fastEfficiency = Math.max(0, state.activeBoostMoves.fastEfficiency - 1);
+    }
+    if (role === 'slow' && action === 'move' && state.activeBoostMoves.slowFullWidth > 0) {
+      state.activeBoostMoves.slowFullWidth = Math.max(0, state.activeBoostMoves.slowFullWidth - 1);
+    }
     syncHud();
     return true;
   }
 
+  function hasEnoughEnergyForAnyAction() {
+    const minCost = Math.min(getEnergyCost('move'), getEnergyCost('jump'), getEnergyCost('slide'));
+    return state.energy >= minCost;
+  }
+
+  function shouldPauseForHunger() {
+    const stock = state.foodStocks[selectedCharacter] || 0;
+    return !hasEnoughEnergyForAnyAction() && stock <= 0;
+  }
+
   function buyFoodForCurrentCharacter() {
-    const food = getCurrentFoodSpec();
-    if (state.score < food.cost) {
-      pushMessage(`Need ${food.cost} score for ${food.name}.`);
-      return;
-    }
-    state.score -= food.cost;
-    state.foodStocks[selectedCharacter] = (state.foodStocks[selectedCharacter] || 0) + 1;
-    pushMessage(`Bought ${food.name} (-${food.cost}). Stock: ${state.foodStocks[selectedCharacter]}`);
-    syncHud();
+    openFoodShop();
   }
 
   function getEnergyScaleForLevel() {
@@ -1487,6 +1713,12 @@
 
   function endGame(victory = false) {
     saveRunSnapshot();
+    state.paused = false;
+
+    // Hard safety: level-unlock puzzle can only start after collecting all shards.
+    if (victory && state.fragments < 7) {
+      victory = false;
+    }
 
     if (victory && state.progressLevel < regions.length - 1) {
       const nextLevel = state.progressLevel + 1;
@@ -1523,6 +1755,7 @@
       }
       state.message = 'Level clear! Solve the puzzle to continue.';
       syncHud();
+      syncPlaybackButton();
       return;
     }
 
@@ -1531,6 +1764,7 @@
     state.objective = victory ? 'Sunrise restored. The expedition is complete.' : 'The night won this run. Try again.';
     state.message = victory ? 'Victory!' : 'Game Over';
     syncHud();
+    syncPlaybackButton();
   }
 
   function spawnItem() {
@@ -1644,20 +1878,95 @@
       puzzleModal.classList.add('open');
       puzzleModal.setAttribute('aria-hidden', 'false');
       if (puzzleTerrain) {
-        puzzleTerrain.textContent = `${regions[state.regionIndex].name} Puzzle`;
+        puzzleTerrain.textContent = puzzleState.pendingAdvance
+          ? `${regions[state.regionIndex].name} Unlock Puzzle`
+          : `${regions[state.regionIndex].name} Puzzle Core`;
       }
       hydratePuzzlePanel();
       return;
     }
 
+    revealPuzzleHint();
+  }
+
+  function registerHintUsage() {
+    state.hintsUsed += 1;
+    if (state.hintsUsed % 3 !== 0) {
+      const left = 3 - (state.hintsUsed % 3);
+      pushMessage(`Hint used (${state.hintsUsed}). ${left} more for +1 heart.`);
+      return;
+    }
+
+    if (state.health < state.maxLives) {
+      state.health = Math.min(state.maxLives, state.health + 1);
+      pushMessage(`Hint streak! +1 heart (${state.hintsUsed} hints used)`);
+      syncHud();
+      return;
+    }
+
+    pushMessage(`Hint streak reached (${state.hintsUsed}) but hearts are full.`);
+  }
+
+  function getPuzzleDifficultyLevel() {
+    if (superModeEnabled && characters[selectedCharacter]) {
+      return Math.max(0, Math.min(regions.length - 1, characters[selectedCharacter].unlockAt || 0));
+    }
+    return Math.max(0, Math.min(regions.length - 1, state.progressLevel));
+  }
+
+  function getPuzzlePoolForLevel(level) {
+    const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
+    const ids = levelPuzzlePools[safeLevel] || levelPuzzlePools[0];
+    const pool = ids.map((id) => turingPuzzles[id]).filter(Boolean);
+    return pool.length ? pool : turingPuzzles;
+  }
+
+  function getHintLimitForLevel(level) {
+    return Math.max(1, 3 - Math.floor(level / 2));
+  }
+
+  function formatHintForLevel(text, level) {
+    if (level <= 1) {
+      return text;
+    }
+    if (level === 2) {
+      return `Focus clue: ${text}`;
+    }
+    if (level === 3) {
+      return `Cryptic clue: ${text.replace(/[aeiou]/gi, '•')}`;
+    }
+    const compact = text.split(' ').slice(0, 5).join(' ');
+    return `Elite clue: ${compact}...`;
+  }
+
+  function revealPuzzleHint() {
     const puzzle = getCurrentPuzzle();
-    const nextHint = puzzle.hints[Math.min(puzzleState.hintIndex, puzzle.hints.length - 1)];
+    const level = getPuzzleDifficultyLevel();
+    const hintLimit = getHintLimitForLevel(level);
+    if (puzzleState.hintsUsedThisPuzzle >= hintLimit) {
+      if (puzzleStatus) {
+        puzzleStatus.textContent = `No more hints for this puzzle at level ${level + 1}.`;
+      }
+      pushMessage(`Hint limit reached (${hintLimit}) for this level.`);
+      return;
+    }
+
+    const rawHint = puzzle.hints[Math.min(puzzleState.hintIndex, puzzle.hints.length - 1)] || 'Think carefully about the puzzle rules.';
+    const hint = formatHintForLevel(rawHint, level);
     puzzleState.hintIndex = Math.min(puzzleState.hintIndex + 1, puzzle.hints.length - 1);
-    pushMessage(nextHint);
+    puzzleState.hintsUsedThisPuzzle += 1;
+
+    if (puzzleStatus) {
+      const remaining = Math.max(0, hintLimit - puzzleState.hintsUsedThisPuzzle);
+      puzzleStatus.textContent = `${hint} (${remaining} hints left)`;
+    }
+    pushMessage('Hint revealed.');
   }
 
   function getCurrentPuzzle() {
-    return turingPuzzles[puzzleState.currentIndex % turingPuzzles.length];
+    const level = getPuzzleDifficultyLevel();
+    const pool = getPuzzlePoolForLevel(level);
+    return pool[puzzleState.currentIndex % pool.length];
   }
 
   function normalizeAnswer(value) {
@@ -1673,8 +1982,11 @@
 
   function hydratePuzzlePanel() {
     const puzzle = getCurrentPuzzle();
+    const level = getPuzzleDifficultyLevel();
+    const pool = getPuzzlePoolForLevel(level);
     puzzleState.hintIndex = 0;
-    if (puzzleTitle) puzzleTitle.textContent = `${puzzle.title} (${(puzzleState.currentIndex % turingPuzzles.length) + 1}/${turingPuzzles.length})`;
+    puzzleState.hintsUsedThisPuzzle = 0;
+    if (puzzleTitle) puzzleTitle.textContent = `${puzzle.title} (${(puzzleState.currentIndex % pool.length) + 1}/${pool.length})`;
     if (puzzleInstruction) puzzleInstruction.textContent = puzzle.instruction;
     if (puzzleQuestion) puzzleQuestion.textContent = `Question: ${puzzle.instruction}`;
     if (puzzleAnswerInput) {
@@ -1682,7 +1994,7 @@
       puzzleAnswerInput.focus();
     }
     if (puzzleLearnLink) puzzleLearnLink.href = puzzle.learnUrl;
-    if (puzzleStatus) puzzleStatus.textContent = 'Solve this to unlock the next fun puzzle. Use Hint if needed.';
+    if (puzzleStatus) puzzleStatus.textContent = `Level ${level + 1} puzzle loaded. Hints available: ${getHintLimitForLevel(level)}.`;
   }
 
   function submitPuzzle() {
@@ -1694,15 +2006,25 @@
     const matches = validAnswers.includes(guess);
 
     if (matches) {
-      state.health = Math.min(state.maxLives, state.health + 1);
       pushMessage('Correct! Next puzzle unlocked.');
       if (puzzleStatus) {
-        puzzleStatus.textContent = `Correct! ${puzzle.rightExplain} (+1 life)`;
+        puzzleStatus.textContent = `Correct! ${puzzle.rightExplain}`;
       }
       syncHud();
 
       if (puzzleState.pendingAdvance) {
         const next = puzzleState.pendingAdvance;
+
+        // Safety guard against stale pending state across runs.
+        if (state.fragments < 7) {
+          puzzleState.pendingAdvance = null;
+          if (puzzleStatus) {
+            puzzleStatus.textContent = 'Collect all 7 shards first to unlock the next level.';
+          }
+          pushMessage('Need 7 shards before level unlock.');
+          return;
+        }
+
         puzzleState.pendingAdvance = null;
         const carriedHearts = Math.max(1, Math.min(state.maxLives, state.health));
         state.progressLevel = next.nextLevel;
@@ -1713,7 +2035,7 @@
         syncHud();
       }
 
-      puzzleState.currentIndex = (puzzleState.currentIndex + 1) % turingPuzzles.length;
+      puzzleState.currentIndex += 1;
       setTimeout(() => {
           if (puzzleModal?.classList.contains('open')) {
           hydratePuzzlePanel();
@@ -1738,7 +2060,7 @@
       pushMessage('Solve required to continue.');
       return;
     }
-    puzzleState.currentIndex = (puzzleState.currentIndex + 1) % turingPuzzles.length;
+    puzzleState.currentIndex += 1;
     pushMessage('Puzzle skipped. Next puzzle queued in Puzzle Core.');
     if (puzzleStatus) {
       puzzleStatus.textContent = 'Skipped. Opening the next puzzle...';
@@ -1782,6 +2104,30 @@
     if (!state.running) {
       render();
       return;
+    }
+
+    if (state.paused) {
+      render();
+      return;
+    }
+
+    const hungryNow = shouldPauseForHunger();
+    if (hungryNow) {
+      if (!state.hungerPaused) {
+        state.hungerPaused = true;
+        state.message = 'Hungry: run paused. Buy food to continue.';
+        syncHud();
+        syncPlaybackButton();
+      }
+      render();
+      return;
+    }
+
+    if (state.hungerPaused) {
+      state.hungerPaused = false;
+      state.message = 'Food acquired. Run resumed.';
+      syncHud();
+      syncPlaybackButton();
     }
 
     advanceDifficulty(dt);
@@ -1841,41 +2187,30 @@
     }
   }
 
-  function resolveItem(item) {
-    const isBird = selectedCharacter === 'emu' || selectedCharacter === 'kookaburra';
-    const isWombat = selectedCharacter === 'wombat';
-    const terrain = regions[state.regionIndex].terrain;
-    const playerXNorm = laneToXNorm(state.player.lane);
-    const itemXNorm = typeof item.xNorm === 'number' ? item.xNorm : laneToXNorm(item.lane);
-    const isMatch = item.lane === state.player.lane;
-    const closeEnough = Math.abs(itemXNorm - playerXNorm) <= (isBird ? 0.18 : 0.12);
-    const airborne = state.player.jump > .15;
-    const sliding = state.player.sliding > .15;
-    const wombatBurrowDodge = isWombat && (terrain === 'dunes' || terrain === 'forest') && sliding;
+  function isHazardItemType(type) {
+    return type === 'obstacle' || type === 'shadow';
+  }
 
-    if (item.type === 'obstacle' || item.type === 'shadow') {
-      if (isMatch && !airborne && !sliding && state.player.invincible <= 0) {
-        if (wombatBurrowDodge) {
-          pushMessage('Burrow dodge!');
-          return;
-        }
-        const penalty = Math.abs(item.penalty || 100);
-        state.health -= 1;
-        state.player.invincible = .7;
-        playSfx('hit');
-        addScore(-penalty);
-        pushMessage(`Bomb hit! -${penalty}`);
-        if (state.health <= 0) {
-          endGame(false);
-        }
-      }
+  function handleHazardResolution(item, collision) {
+    if (!collision.isTouching || collision.airborne || collision.sliding || state.player.invincible > 0) {
       return;
     }
-
-    if (!isMatch && !closeEnough) {
+    if (collision.wombatBurrowDodge) {
+      pushMessage('Burrow dodge!');
       return;
     }
+    const penalty = Math.abs(item.penalty || 100);
+    state.health -= 1;
+    state.player.invincible = .7;
+    playSfx('hit');
+    addScore(-penalty);
+    pushMessage(`Bomb hit! -${penalty}`);
+    if (state.health <= 0) {
+      endGame(false);
+    }
+  }
 
+  function handleCollectedItem(item) {
     if (item.type === 'fragment') {
       state.fragments += 1;
       playSfx('collect');
@@ -1904,6 +2239,31 @@
     addScore(item.value);
     playSfx('collect');
     pushMessage(`+${item.value}`);
+  }
+
+  function resolveItem(item) {
+    const isWombat = selectedCharacter === 'wombat';
+    const role = characters[selectedCharacter]?.role || 'fast';
+    const terrain = regions[state.regionIndex].terrain;
+    const playerXNorm = laneToXNorm(state.player.lane);
+    const itemXNorm = typeof item.xNorm === 'number' ? item.xNorm : laneToXNorm(item.lane);
+    const hitboxX = role === 'slow' ? 0.085 : 0.1;
+    const isTouching = Math.abs(itemXNorm - playerXNorm) <= hitboxX;
+    const airborne = state.player.jump > .15;
+    const sliding = state.player.sliding > .15;
+    const wombatBurrowDodge = isWombat && (terrain === 'dunes' || terrain === 'forest') && sliding;
+    const collision = { isTouching, airborne, sliding, wombatBurrowDodge };
+
+    if (isHazardItemType(item.type)) {
+      handleHazardResolution(item, collision);
+      return;
+    }
+
+    if (!collision.isTouching) {
+      return;
+    }
+
+    handleCollectedItem(item);
   }
 
   function updateEvents(dt) {
@@ -2105,6 +2465,56 @@
       ctx.closePath();
       ctx.fill();
     }
+
+    // Sparse fence posts and old station wire for a more believable outback edge.
+    ctx.strokeStyle = 'rgba(96, 62, 38, .42)';
+    ctx.lineWidth = 1.6;
+    for (let i = 0; i < 7; i++) {
+      const x = w * (0.08 + i * 0.13);
+      const postY = h * (0.76 + (i % 2) * 0.018);
+      ctx.beginPath();
+      ctx.moveTo(x, postY);
+      ctx.lineTo(x, postY - 28);
+      ctx.stroke();
+      if (i < 6) {
+        const nextX = w * (0.08 + (i + 1) * 0.13);
+        ctx.beginPath();
+        ctx.moveTo(x, postY - 18);
+        ctx.lineTo(nextX, postY - 20 + Math.sin(i + t * 0.3) * 2);
+        ctx.stroke();
+      }
+    }
+
+    // Rusted water tank and broken sign silhouette.
+    ctx.fillStyle = 'rgba(86, 56, 40, .38)';
+    ctx.fillRect(w * 0.82, h * 0.5, 10, h * 0.12);
+    ctx.beginPath();
+    ctx.ellipse(w * 0.825, h * 0.47, 22, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(w * 0.14, h * 0.56, 6, 42);
+    ctx.save();
+    ctx.translate(w * 0.14, h * 0.56);
+    ctx.rotate(-0.16);
+    ctx.fillRect(0, 0, 52, 16);
+    ctx.restore();
+
+    // Rolling tumbleweeds for more readable wind motion.
+    ctx.strokeStyle = 'rgba(118, 84, 48, .45)';
+    ctx.lineWidth = 1.3;
+    for (let i = 0; i < 4; i++) {
+      const x = ((t * (36 + i * 8) + i * 210) % (w + 80)) - 40;
+      const y = h * (0.79 + (i % 2) * 0.035);
+      const radius = 10 + (i % 2) * 3;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x - radius * 0.8, y - 2);
+      ctx.lineTo(x + radius * 0.7, y + 3);
+      ctx.moveTo(x - 2, y - radius * 0.8);
+      ctx.lineTo(x + 2, y + radius * 0.8);
+      ctx.stroke();
+    }
   }
 
   function drawBushlandScene(w, h) {
@@ -2214,6 +2624,49 @@
       ctx.arc(x, y, 0.7 + (i % 3) * 0.45, 0, Math.PI * 2);
       ctx.fill();
     }
+
+    // Fallen logs and stones on the forest floor.
+    ctx.fillStyle = 'rgba(73, 49, 30, .44)';
+    for (let i = 0; i < 5; i++) {
+      const x = w * (0.12 + i * 0.18);
+      const y = h * (0.78 + (i % 2) * 0.03);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(-0.14 + (i % 3) * 0.08);
+      ctx.fillRect(-24, -5, 48, 10);
+      ctx.restore();
+    }
+    ctx.fillStyle = 'rgba(92, 86, 74, .28)';
+    for (let i = 0; i < 14; i++) {
+      const x = w * (0.05 + i * 0.07);
+      const y = h * (0.82 + (i % 3) * 0.016);
+      ctx.beginPath();
+      ctx.ellipse(x, y, 6 + (i % 2) * 2, 3.5, 0.12, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Simple stump silhouettes to break up the foreground.
+    ctx.fillStyle = 'rgba(66, 44, 28, .5)';
+    for (let i = 0; i < 4; i++) {
+      const x = w * (0.18 + i * 0.22);
+      const y = h * (0.75 + (i % 2) * 0.025);
+      ctx.fillRect(x, y, 12, 18);
+      ctx.beginPath();
+      ctx.ellipse(x + 6, y, 8, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Swaying hanging vines to make the forest feel alive.
+    ctx.strokeStyle = 'rgba(78, 110, 66, .34)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 8; i++) {
+      const x = w * (0.06 + i * 0.12);
+      const sway = Math.sin(t * 1.4 + i * 0.9) * 9;
+      ctx.beginPath();
+      ctx.moveTo(x, h * 0.12);
+      ctx.bezierCurveTo(x + sway * 0.3, h * 0.24, x + sway, h * 0.38, x + sway * 0.5, h * 0.56);
+      ctx.stroke();
+    }
   }
 
   function drawServoScene(w, h) {
@@ -2295,6 +2748,65 @@
     ctx.font = '700 24px ui-monospace, SFMono-Regular, Menlo, monospace';
     ctx.textAlign = 'center';
     ctx.fillText('SERVO NET HUB', w * 0.5, h * 0.38);
+
+    // Transmission mast silhouettes and hanging cable runs.
+    ctx.strokeStyle = 'rgba(97, 142, 176, .36)';
+    ctx.lineWidth = 2;
+    const mastXs = [w * 0.14, w * 0.52, w * 0.88];
+    mastXs.forEach((x, index) => {
+      const mastTop = h * (0.16 + (index % 2) * 0.04);
+      const mastBase = h * 0.54;
+      ctx.beginPath();
+      ctx.moveTo(x, mastBase);
+      ctx.lineTo(x, mastTop);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x - 12, mastTop + 18);
+      ctx.lineTo(x + 12, mastTop + 18);
+      ctx.moveTo(x - 8, mastTop + 36);
+      ctx.lineTo(x + 8, mastTop + 36);
+      ctx.stroke();
+    });
+    ctx.beginPath();
+    ctx.moveTo(mastXs[0], h * 0.24);
+    ctx.bezierCurveTo(w * 0.28, h * 0.28, w * 0.44, h * 0.2, mastXs[1], h * 0.28);
+    ctx.bezierCurveTo(w * 0.66, h * 0.34, w * 0.76, h * 0.24, mastXs[2], h * 0.26);
+    ctx.stroke();
+
+    // Foreground pipes and service barrels.
+    ctx.fillStyle = 'rgba(31, 46, 64, .62)';
+    ctx.fillRect(w * 0.1, h * 0.73, w * 0.22, 10);
+    ctx.fillRect(w * 0.58, h * 0.76, w * 0.26, 10);
+    for (let i = 0; i < 4; i++) {
+      const x = w * (0.22 + i * 0.15);
+      const y = h * (0.7 + (i % 2) * 0.04);
+      ctx.fillRect(x, y, 12, 28);
+      ctx.beginPath();
+      ctx.ellipse(x + 6, y, 6, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Rotating beacon sweeps over the station.
+    for (let i = 0; i < 2; i++) {
+      const baseX = w * (0.28 + i * 0.34);
+      const baseY = h * 0.24;
+      const sweep = Math.sin(t * 1.8 + i) * 0.7;
+      ctx.save();
+      ctx.translate(baseX, baseY);
+      ctx.rotate(sweep);
+      const beam = ctx.createLinearGradient(0, 0, 0, h * 0.4);
+      beam.addColorStop(0, 'rgba(111, 238, 255, .24)');
+      beam.addColorStop(1, 'rgba(111, 238, 255, 0)');
+      ctx.fillStyle = beam;
+      ctx.beginPath();
+      ctx.moveTo(-8, 0);
+      ctx.lineTo(8, 0);
+      ctx.lineTo(48, h * 0.34);
+      ctx.lineTo(-48, h * 0.34);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
   }
 
   function drawCoastlineScene(w, h) {
@@ -2369,6 +2881,82 @@
     ctx.beginPath();
     ctx.arc(w * .79, h * .24, 16, 0, Math.PI * 2);
     ctx.fill();
+
+    // Jetty posts and planks.
+    ctx.fillStyle = 'rgba(88, 65, 48, .44)';
+    for (let i = 0; i < 5; i++) {
+      const x = w * (0.12 + i * 0.035);
+      ctx.fillRect(x, h * 0.6, 8, h * 0.12);
+    }
+    ctx.fillRect(w * 0.1, h * 0.58, w * 0.19, 10);
+
+    // Small fishing boats on the waterline.
+    for (let i = 0; i < 2; i++) {
+      const boatX = w * (0.22 + i * 0.33) + Math.sin(t * 0.7 + i) * 8;
+      const boatY = h * (0.52 + i * 0.03) + Math.sin(t * 1.1 + i) * 2;
+      ctx.fillStyle = 'rgba(86, 68, 55, .52)';
+      ctx.beginPath();
+      ctx.moveTo(boatX - 26, boatY);
+      ctx.lineTo(boatX + 24, boatY);
+      ctx.lineTo(boatX + 16, boatY + 10);
+      ctx.lineTo(boatX - 18, boatY + 10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(232, 245, 252, .46)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(boatX - 2, boatY);
+      ctx.lineTo(boatX - 2, boatY - 24);
+      ctx.lineTo(boatX + 16, boatY - 8);
+      ctx.stroke();
+    }
+
+    // Palm trees and dune shrubs.
+    ctx.fillStyle = 'rgba(92, 67, 42, .42)';
+    for (let i = 0; i < 3; i++) {
+      const baseX = w * (0.68 + i * 0.08);
+      const baseY = h * (0.72 + (i % 2) * 0.03);
+      ctx.save();
+      ctx.translate(baseX, baseY);
+      ctx.rotate(-0.12 + i * 0.06);
+      ctx.fillRect(-3, -54, 6, 54);
+      ctx.restore();
+      ctx.fillStyle = 'rgba(84, 120, 82, .42)';
+      for (let k = 0; k < 5; k++) {
+        ctx.save();
+        ctx.translate(baseX, baseY - 54);
+        ctx.rotate(-0.9 + k * 0.42);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(18, -3, 28, -14);
+        ctx.quadraticCurveTo(12, -11, 0, 0);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.fillStyle = 'rgba(92, 67, 42, .42)';
+    }
+
+    // Bobbing buoy markers and seabirds over water.
+    for (let i = 0; i < 3; i++) {
+      const x = w * (0.18 + i * 0.21);
+      const y = h * (0.56 + i * 0.03) + Math.sin(t * 1.8 + i) * 4;
+      ctx.fillStyle = 'rgba(204, 86, 62, .65)';
+      ctx.fillRect(x - 3, y - 10, 6, 12);
+      ctx.beginPath();
+      ctx.arc(x, y - 11, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(245, 249, 252, .48)';
+    ctx.lineWidth = 1.4;
+    for (let i = 0; i < 6; i++) {
+      const x = ((t * 26 + i * 120) % (w + 80)) - 40;
+      const y = h * (0.18 + (i % 3) * 0.06) + Math.sin(t * 1.2 + i) * 5;
+      ctx.beginPath();
+      ctx.moveTo(x - 10, y);
+      ctx.quadraticCurveTo(x - 4, y - 5, x, y);
+      ctx.quadraticCurveTo(x + 4, y - 5, x + 10, y);
+      ctx.stroke();
+    }
   }
 
   function drawTasmaniaScene(w, h) {
@@ -2436,6 +3024,62 @@
       ctx.moveTo(0, y + Math.sin(t * 0.6 + i) * 2.5);
       ctx.quadraticCurveTo(w * 0.45, y - 6, w, y + Math.cos(t * 0.7 + i) * 2.5);
       ctx.stroke();
+    }
+
+    // Pine silhouettes and a small cabin to ground the snowy scene.
+    ctx.fillStyle = 'rgba(28, 44, 42, .55)';
+    for (let i = 0; i < 5; i++) {
+      const x = w * (0.08 + i * 0.18);
+      const baseY = h * (0.77 + (i % 2) * 0.025);
+      ctx.beginPath();
+      ctx.moveTo(x, baseY - 48);
+      ctx.lineTo(x - 16, baseY - 16);
+      ctx.lineTo(x - 9, baseY - 16);
+      ctx.lineTo(x - 22, baseY + 8);
+      ctx.lineTo(x - 7, baseY + 8);
+      ctx.lineTo(x - 26, baseY + 30);
+      ctx.lineTo(x + 26, baseY + 30);
+      ctx.lineTo(x + 7, baseY + 8);
+      ctx.lineTo(x + 22, baseY + 8);
+      ctx.lineTo(x + 9, baseY - 16);
+      ctx.lineTo(x + 16, baseY - 16);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(76, 60, 52, .48)';
+    ctx.fillRect(w * 0.76, h * 0.7, 54, 34);
+    ctx.beginPath();
+    ctx.moveTo(w * 0.755, h * 0.7);
+    ctx.lineTo(w * 0.785, h * 0.67);
+    ctx.lineTo(w * 0.83, h * 0.67);
+    ctx.lineTo(w * 0.86, h * 0.7);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = 'rgba(232, 243, 255, .42)';
+    ctx.fillRect(w * 0.775, h * 0.715, 12, 9);
+
+    // Frozen puddle / ice patches in foreground.
+    ctx.fillStyle = 'rgba(198, 226, 248, .18)';
+    for (let i = 0; i < 4; i++) {
+      const x = w * (0.18 + i * 0.17);
+      const y = h * (0.86 + (i % 2) * 0.02);
+      ctx.beginPath();
+      ctx.ellipse(x, y, 34, 10, -0.08, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Low drifting snow fog crossing the foreground.
+    for (let i = 0; i < 10; i++) {
+      const x = ((t * (18 + i * 2) + i * 130) % (w + 140)) - 70;
+      const y = h * (0.68 + (i % 4) * 0.05);
+      const fog = ctx.createLinearGradient(x - 40, y, x + 40, y);
+      fog.addColorStop(0, 'rgba(235, 245, 255, 0)');
+      fog.addColorStop(0.5, 'rgba(235, 245, 255, .1)');
+      fog.addColorStop(1, 'rgba(235, 245, 255, 0)');
+      ctx.fillStyle = fog;
+      ctx.beginPath();
+      ctx.ellipse(x, y, 44, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 
@@ -2677,6 +3321,70 @@
     return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
   }
 
+  function drawPlayerMotionEffects(isBird, isWombat, terrain, gait) {
+    if (isBird) {
+      // Wing flutter streaks behind bird characters.
+      ctx.strokeStyle = 'rgba(255, 245, 220, .28)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-22, -8);
+      ctx.quadraticCurveTo(-36, -16 - Math.abs(gait * 5), -16, -22);
+      ctx.moveTo(22, -8);
+      ctx.quadraticCurveTo(36, -16 - Math.abs(gait * 5), 16, -22);
+      ctx.stroke();
+      return;
+    }
+
+    // Footstep pulses for land animals.
+    ctx.fillStyle = 'rgba(255, 209, 102, .2)';
+    ctx.beginPath();
+    ctx.ellipse(-12, 22 + Math.abs(gait * 2), 6, 3, 0, 0, Math.PI * 2);
+    ctx.ellipse(12, 22 + Math.abs(gait * 2), 6, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Wombat gets visible burrow behavior in dunes/forest while sliding.
+    if (isWombat && (terrain === 'dunes' || terrain === 'forest')) {
+      const burrowDepth = state.player.sliding > 0 ? 13 : 6;
+      ctx.fillStyle = 'rgba(30, 18, 10, .42)';
+      ctx.beginPath();
+      ctx.ellipse(0, 22 + burrowDepth, 22, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawPlayerAura(regionAccent) {
+    ctx.fillStyle = hexToRgba(regionAccent, .28);
+    ctx.beginPath();
+    ctx.arc(0, 0, state.player.sliding > 0 ? 26 : 34, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255, 255, 255, .18)';
+    ctx.beginPath();
+    ctx.arc(0, 0, state.player.sliding > 0 ? 34 : 44, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(255, 245, 220, .45)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, state.player.sliding > 0 ? 38 : 49, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  function drawPlayerAvatarGlyph(avatar, isBird, gait) {
+    ctx.rotate(gait * (isBird ? 0.05 : 0.025));
+    ctx.font = state.player.sliding > 0 ? '62px serif' : '86px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(255, 245, 220, .95)';
+    ctx.shadowBlur = 34;
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(20, 12, 8, .72)';
+    ctx.strokeText(avatar, 0, 0);
+    ctx.fillStyle = '#fff8e6';
+    ctx.fillText(avatar, 0, 0);
+    ctx.shadowBlur = 0;
+  }
+
   function drawPlayer() {
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
@@ -2695,62 +3403,9 @@
     ctx.save();
     ctx.translate(x, y + gait * (isBird ? 2 : 3));
 
-    if (isBird) {
-      // Wing flutter streaks behind bird characters.
-      ctx.strokeStyle = 'rgba(255, 245, 220, .28)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(-22, -8);
-      ctx.quadraticCurveTo(-36, -16 - Math.abs(gait * 5), -16, -22);
-      ctx.moveTo(22, -8);
-      ctx.quadraticCurveTo(36, -16 - Math.abs(gait * 5), 16, -22);
-      ctx.stroke();
-    } else {
-      // Footstep pulses for land animals.
-      ctx.fillStyle = 'rgba(255, 209, 102, .2)';
-      ctx.beginPath();
-      ctx.ellipse(-12, 22 + Math.abs(gait * 2), 6, 3, 0, 0, Math.PI * 2);
-      ctx.ellipse(12, 22 + Math.abs(gait * 2), 6, 3, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Wombat gets visible burrow behavior in dunes/forest while sliding.
-      if (isWombat && (terrain === 'dunes' || terrain === 'forest')) {
-        const burrowDepth = state.player.sliding > 0 ? 13 : 6;
-        ctx.fillStyle = 'rgba(30, 18, 10, .42)';
-        ctx.beginPath();
-        ctx.ellipse(0, 22 + burrowDepth, 22, 8, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    ctx.fillStyle = hexToRgba(regionAccent, .28);
-    ctx.beginPath();
-    ctx.arc(0, 0, state.player.sliding > 0 ? 26 : 34, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = 'rgba(255, 255, 255, .18)';
-    ctx.beginPath();
-    ctx.arc(0, 0, state.player.sliding > 0 ? 34 : 44, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = 'rgba(255, 245, 220, .45)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(0, 0, state.player.sliding > 0 ? 38 : 49, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.rotate(gait * (isBird ? 0.05 : 0.025));
-    ctx.font = state.player.sliding > 0 ? '62px serif' : '86px serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(255, 245, 220, .95)';
-    ctx.shadowBlur = 34;
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = 'rgba(20, 12, 8, .72)';
-    ctx.strokeText(avatar, 0, 0);
-    ctx.fillStyle = '#fff8e6';
-    ctx.fillText(avatar, 0, 0);
-    ctx.shadowBlur = 0;
+    drawPlayerMotionEffects(isBird, isWombat, terrain, gait);
+    drawPlayerAura(regionAccent);
+    drawPlayerAvatarGlyph(avatar, isBird, gait);
     ctx.restore();
   }
 
@@ -2869,6 +3524,75 @@
     ctx.restore();
   }
 
+  function drawVictorySunrise(w, h) {
+    const t = performance.now() * 0.001;
+
+    const sky = ctx.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, '#fff8cc');
+    sky.addColorStop(0.38, '#ffd991');
+    sky.addColorStop(0.72, '#ffba72');
+    sky.addColorStop(1, '#f08a4b');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, h);
+
+    // Horizon glow to make the entire finale feel bright and triumphant.
+    const glow = ctx.createRadialGradient(w * 0.5, h * 0.62, 20, w * 0.5, h * 0.62, h * 0.8);
+    glow.addColorStop(0, 'rgba(255, 251, 210, 0.9)');
+    glow.addColorStop(0.45, 'rgba(255, 224, 142, 0.42)');
+    glow.addColorStop(1, 'rgba(255, 199, 118, 0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, w, h);
+
+    // Rising smiling sun.
+    const sunX = w * 0.5;
+    const sunY = h * 0.42 + Math.sin(t * 1.2) * 4;
+    const sunR = Math.min(w, h) * 0.16;
+
+    const sunAura = ctx.createRadialGradient(sunX, sunY, sunR * 0.2, sunX, sunY, sunR * 2.1);
+    sunAura.addColorStop(0, 'rgba(255, 252, 212, 0.95)');
+    sunAura.addColorStop(0.5, 'rgba(255, 218, 117, 0.45)');
+    sunAura.addColorStop(1, 'rgba(255, 191, 83, 0)');
+    ctx.fillStyle = sunAura;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.fillStyle = '#ffe88f';
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, sunR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Sun face.
+    ctx.fillStyle = '#7b4e22';
+    ctx.beginPath();
+    ctx.arc(sunX - sunR * 0.28, sunY - sunR * 0.1, sunR * 0.08, 0, Math.PI * 2);
+    ctx.arc(sunX + sunR * 0.28, sunY - sunR * 0.1, sunR * 0.08, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = Math.max(3, sunR * 0.06);
+    ctx.strokeStyle = '#7b4e22';
+    ctx.beginPath();
+    ctx.arc(sunX, sunY + sunR * 0.1, sunR * 0.36, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+
+    // Rays.
+    ctx.strokeStyle = 'rgba(255, 214, 122, 0.88)';
+    ctx.lineWidth = Math.max(2, sunR * 0.04);
+    for (let i = 0; i < 14; i += 1) {
+      const angle = (Math.PI * 2 * i) / 14 + t * 0.16;
+      const inner = sunR * 1.14;
+      const outer = sunR * 1.44 + Math.sin(t * 2.1 + i) * sunR * 0.05;
+      ctx.beginPath();
+      ctx.moveTo(sunX + Math.cos(angle) * inner, sunY + Math.sin(angle) * inner);
+      ctx.lineTo(sunX + Math.cos(angle) * outer, sunY + Math.sin(angle) * outer);
+      ctx.stroke();
+    }
+
+    // Soft ground strip.
+    const ground = ctx.createLinearGradient(0, h * 0.72, 0, h);
+    ground.addColorStop(0, 'rgba(165, 96, 56, 0.25)');
+    ground.addColorStop(1, 'rgba(102, 52, 31, 0.5)');
+    ctx.fillStyle = ground;
+    ctx.fillRect(0, h * 0.72, w, h * 0.28);
+  }
+
   function render() {
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
@@ -2891,6 +3615,23 @@
     }
 
     if (state.ended) {
+      if (state.fragments >= 7) {
+        drawVictorySunrise(w, h);
+        ctx.fillStyle = 'rgba(44, 25, 13, .2)';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = '#3f240f';
+        ctx.textAlign = 'center';
+        ctx.font = '700 40px Cinzel Decorative';
+        ctx.fillText('Sunrise Restored', w / 2, h * 0.69);
+        ctx.font = '700 24px Cinzel Decorative';
+        ctx.fillText('Chosen One', w / 2, h * 0.75);
+        ctx.font = '700 17px Nunito';
+        ctx.fillText(`Final Score ${state.score}  •  Shards ${state.fragments}/7`, w / 2, h * 0.82);
+        ctx.fillText('Press Restart to play again.', w / 2, h * 0.865);
+        return;
+      }
+
       ctx.fillStyle = 'rgba(26, 20, 16, .66)';
       ctx.fillRect(0, 0, w, h);
 
@@ -2922,16 +3663,24 @@
     if (landingOverlay?.classList.contains('open')) {
       return;
     }
+    if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+      togglePause();
+      return;
+    }
     if (!state.running && (e.key === 'Enter' || e.key === ' ')) {
       resetGame();
       return;
     }
     if (!state.running) return;
+    if (state.paused) {
+      if (e.key === 'f' || e.key === 'F') openFoodShop();
+      return;
+    }
     if (e.key === 'ArrowLeft' || e.key === 'a') shiftLane(-1);
     if (e.key === 'ArrowRight' || e.key === 'd') shiftLane(1);
     if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') jump();
     if (e.key === 'ArrowDown' || e.key === 's') slide();
-    if (e.key === 'f' || e.key === 'F') buyFoodForCurrentCharacter();
+    if (e.key === 'f' || e.key === 'F') openFoodShop();
   }
 
   function closeModal(modal) {
@@ -2944,12 +3693,13 @@
 
   function bindTouchControls() {
     canvas.addEventListener('touchstart', (e) => {
+      if (state.paused) return;
       const t = e.touches[0];
       state.swipeStart = { x: t.clientX, y: t.clientY };
     }, { passive: true });
 
     canvas.addEventListener('touchend', (e) => {
-      if (!state.swipeStart || !state.running) return;
+      if (!state.swipeStart || !state.running || state.paused) return;
       const t = e.changedTouches[0];
       const dx = t.clientX - state.swipeStart.x;
       const dy = t.clientY - state.swipeStart.y;
@@ -2971,8 +3721,20 @@
     }
     hintBtn.addEventListener('click', requestHint);
     if (buyFoodBtn) {
-      buyFoodBtn.addEventListener('click', buyFoodForCurrentCharacter);
+      buyFoodBtn.addEventListener('click', openFoodShop);
     }
+  }
+
+  function togglePause() {
+    if (!state.running || state.ended) {
+      return;
+    }
+    state.paused = !state.paused;
+    state.message = state.paused
+      ? 'Game paused. Food shop and puzzles are still available.'
+      : 'Game resumed.';
+    syncHud();
+    syncPlaybackButton();
   }
 
   function bindCharacterControls() {
@@ -3011,24 +3773,14 @@
     }
     if (puzzleHintBtn) {
       puzzleHintBtn.addEventListener('click', () => {
-        const puzzle = getCurrentPuzzle();
-        const hint = puzzle.hints[Math.min(puzzleState.hintIndex, puzzle.hints.length - 1)];
-        puzzleState.hintIndex = Math.min(puzzleState.hintIndex + 1, puzzle.hints.length - 1);
-        if (puzzleStatus) {
-          puzzleStatus.textContent = hint;
-        }
-        pushMessage('Hint step revealed.');
+        revealPuzzleHint();
+        registerHintUsage();
       });
     }
     if (puzzleTopHintBtn) {
       puzzleTopHintBtn.addEventListener('click', () => {
-        const puzzle = getCurrentPuzzle();
-        const hint = puzzle.hints[Math.min(puzzleState.hintIndex, puzzle.hints.length - 1)];
-        puzzleState.hintIndex = Math.min(puzzleState.hintIndex + 1, puzzle.hints.length - 1);
-        if (puzzleStatus) {
-          puzzleStatus.textContent = hint;
-        }
-        pushMessage('Puzzle hint revealed.');
+        revealPuzzleHint();
+        registerHintUsage();
       });
     }
     if (puzzleSkipBtn) {
@@ -3036,127 +3788,113 @@
     }
   }
 
-  function bindModalControls() {
-    if (closeClueBtn) {
-      closeClueBtn.addEventListener('click', () => closeModal(clueModal));
+  function bindClick(element, handler) {
+    if (element) {
+      element.addEventListener('click', handler);
     }
-    if (closePuzzleBtn) {
-      closePuzzleBtn.addEventListener('click', () => closeModal(puzzleModal));
-    }
-    if (clueHintBtn) {
-      clueHintBtn.addEventListener('click', requestHint);
-    }
-    if (clueSolveBtn) {
-      clueSolveBtn.addEventListener('click', () => {
-        closeModal(clueModal);
-        requestHint();
-      });
-    }
-    if (landingSettingsBtn) {
-      landingSettingsBtn.addEventListener('click', () => {
-        if (!settingsModal) {
-          return;
-        }
-        settingsModal.classList.add('open');
-        settingsModal.setAttribute('aria-hidden', 'false');
-      });
-    }
-    if (closeSettingsBtn) {
-      closeSettingsBtn.addEventListener('click', () => closeModal(settingsModal));
-    }
+  }
 
-    if (difficultySelect) {
-      difficultySelect.value = gameDifficulty;
-      difficultySelect.addEventListener('change', () => {
-        const nextDifficulty = difficultySelect.value;
-        gameDifficulty = difficultyMultipliers[nextDifficulty] ? nextDifficulty : 'medium';
-        localStorage.setItem(DIFFICULTY_KEY, gameDifficulty);
-        pushMessage(`Difficulty: ${gameDifficulty[0].toUpperCase()}${gameDifficulty.slice(1)}`);
-      });
+  function bindSelectChange(selectEl, initialValue, handler) {
+    if (!selectEl) {
+      return;
     }
-    if (superModeSelect) {
-      superModeSelect.value = superModeEnabled ? 'on' : 'off';
-      superModeSelect.addEventListener('change', () => {
-        superModeEnabled = superModeSelect.value === 'on';
-        localStorage.setItem(SUPER_MODE_KEY, superModeEnabled ? 'on' : 'off');
-        updateCharacterAvailability();
-        pushMessage(superModeEnabled
-          ? 'Super Mode enabled: all dashers and terrains unlocked.'
-          : 'Super Mode disabled. Normal unlock rules restored.');
-      });
+    selectEl.value = initialValue;
+    selectEl.addEventListener('change', handler);
+  }
+
+  function bindRangeInput(rangeEl, initialValue, handler) {
+    if (!rangeEl) {
+      return;
     }
-    if (terrain3dSelect) {
-      terrain3dSelect.value = terrain3dEnabled ? 'on' : 'off';
-      terrain3dSelect.addEventListener('change', () => {
-        terrain3dEnabled = terrain3dSelect.value !== 'off';
-        localStorage.setItem(TERRAIN_3D_KEY, terrain3dEnabled ? 'on' : 'off');
-        updateThreeVisibility();
-        pushMessage(`3D Terrain: ${terrain3dEnabled ? 'On' : 'Off'}`);
-      });
-    }
-    if (musicToggleSelect) {
-      musicToggleSelect.value = musicEnabled ? 'on' : 'off';
-      musicToggleSelect.addEventListener('change', () => {
-        musicEnabled = musicToggleSelect.value !== 'off';
-        localStorage.setItem(MUSIC_ENABLED_KEY, musicEnabled ? 'on' : 'off');
-        ensureAudioStarted();
-        syncAudioToRegion();
-        pushMessage(`Music: ${musicEnabled ? 'On' : 'Off'}`);
-      });
-    }
-    if (musicVolumeRange) {
-      musicVolumeRange.value = String(Math.round(musicVolume * 100));
-      musicVolumeRange.addEventListener('input', () => {
-        musicVolume = Math.max(0, Math.min(1, Number(musicVolumeRange.value) / 100));
-        localStorage.setItem(MUSIC_VOLUME_KEY, String(musicVolume));
-        syncAudioToRegion();
-      });
-    }
-    if (sfxVolumeRange) {
-      sfxVolumeRange.value = String(Math.round(sfxVolume * 100));
-      sfxVolumeRange.addEventListener('input', () => {
-        sfxVolume = Math.max(0, Math.min(1, Number(sfxVolumeRange.value) / 100));
-        localStorage.setItem(SFX_VOLUME_KEY, String(sfxVolume));
-        syncAudioToRegion();
-      });
-    }
-    if (pastGamesBtn) {
-      pastGamesBtn.addEventListener('click', () => {
-        if (!pastGamesModal) {
-          return;
-        }
-        renderPastGames();
-        pastGamesModal.classList.add('open');
-        pastGamesModal.setAttribute('aria-hidden', 'false');
-      });
-    }
-    if (closePastGamesBtn) {
-      closePastGamesBtn.addEventListener('click', () => closeModal(pastGamesModal));
-    }
-    if (landingHelpBtn) {
-      landingHelpBtn.addEventListener('click', () => {
-        if (!helpModal) {
-          return;
-        }
-        helpModal.classList.add('open');
-        helpModal.setAttribute('aria-hidden', 'false');
-      });
-    }
-    if (closeHelpBtn) {
-      closeHelpBtn.addEventListener('click', () => closeModal(helpModal));
-    }
-    if (walkthroughNextBtn) {
-      walkthroughNextBtn.addEventListener('click', () => {
-        walkthroughIndex = Math.min(walkthroughIndex + 1, walkthroughSteps.length - 1);
-        hydrateWalkthroughStep();
-      });
-    }
-    if (walkthroughBeginBtn) {
-      walkthroughBeginBtn.addEventListener('click', closeWalkthroughAndStart);
-    }
-    if (walkthroughSkipBtn) {
-      walkthroughSkipBtn.addEventListener('click', closeWalkthroughAndStart);
-    }
+    rangeEl.value = String(initialValue);
+    rangeEl.addEventListener('input', handler);
+  }
+
+  function bindModalControls() {
+    bindClick(closeClueBtn, () => closeModal(clueModal));
+    bindClick(closePuzzleBtn, () => closeModal(puzzleModal));
+    bindClick(clueHintBtn, requestHint);
+    bindClick(clueSolveBtn, () => {
+      closeModal(clueModal);
+      requestHint();
+    });
+    bindClick(landingSettingsBtn, () => {
+      if (!settingsModal) {
+        return;
+      }
+      settingsModal.classList.add('open');
+      settingsModal.setAttribute('aria-hidden', 'false');
+    });
+    bindClick(closeSettingsBtn, () => closeModal(settingsModal));
+
+    bindSelectChange(difficultySelect, gameDifficulty, () => {
+      const nextDifficulty = difficultySelect.value;
+      gameDifficulty = difficultyMultipliers[nextDifficulty] ? nextDifficulty : 'medium';
+      localStorage.setItem(DIFFICULTY_KEY, gameDifficulty);
+      pushMessage(`Difficulty: ${gameDifficulty[0].toUpperCase()}${gameDifficulty.slice(1)}`);
+    });
+    bindSelectChange(superModeSelect, superModeEnabled ? 'on' : 'off', () => {
+      superModeEnabled = superModeSelect.value === 'on';
+      localStorage.setItem(SUPER_MODE_KEY, superModeEnabled ? 'on' : 'off');
+      syncAdminProgressToSelectedCharacter();
+      updateCharacterAvailability();
+      syncHud();
+      pushMessage(superModeEnabled
+        ? 'Super Mode enabled: all dashers and terrains unlocked.'
+        : 'Super Mode disabled. Normal unlock rules restored.');
+    });
+    bindSelectChange(terrain3dSelect, terrain3dEnabled ? 'on' : 'off', () => {
+      terrain3dEnabled = terrain3dSelect.value !== 'off';
+      localStorage.setItem(TERRAIN_3D_KEY, terrain3dEnabled ? 'on' : 'off');
+      updateThreeVisibility();
+      pushMessage(`3D Terrain: ${terrain3dEnabled ? 'On' : 'Off'}`);
+    });
+    bindSelectChange(musicToggleSelect, musicEnabled ? 'on' : 'off', () => {
+      musicEnabled = musicToggleSelect.value !== 'off';
+      localStorage.setItem(MUSIC_ENABLED_KEY, musicEnabled ? 'on' : 'off');
+      ensureAudioStarted();
+      syncAudioToRegion();
+      pushMessage(`Music: ${musicEnabled ? 'On' : 'Off'}`);
+    });
+    bindRangeInput(musicVolumeRange, Math.round(musicVolume * 100), () => {
+      musicVolume = Math.max(0, Math.min(1, Number(musicVolumeRange.value) / 100));
+      localStorage.setItem(MUSIC_VOLUME_KEY, String(musicVolume));
+      syncAudioToRegion();
+    });
+    bindRangeInput(sfxVolumeRange, Math.round(sfxVolume * 100), () => {
+      sfxVolume = Math.max(0, Math.min(1, Number(sfxVolumeRange.value) / 100));
+      localStorage.setItem(SFX_VOLUME_KEY, String(sfxVolume));
+      syncAudioToRegion();
+    });
+    bindClick(pastGamesBtn, () => {
+      if (!pastGamesModal) {
+        return;
+      }
+      renderPastGames();
+      pastGamesModal.classList.add('open');
+      pastGamesModal.setAttribute('aria-hidden', 'false');
+    });
+    bindClick(closePastGamesBtn, () => closeModal(pastGamesModal));
+    bindClick(closeFoodShopBtn, () => closeModal(foodShopModal));
+    bindClick(foodCheckoutBtn, checkoutFoodCart);
+    bindClick(clearFoodCartBtn, () => {
+      state.foodCartByCharacter[selectedCharacter] = {};
+      renderFoodShop();
+    });
+    bindClick(landingHelpBtn, () => {
+      if (!helpModal) {
+        return;
+      }
+      helpModal.classList.add('open');
+      helpModal.setAttribute('aria-hidden', 'false');
+    });
+    bindClick(closeHelpBtn, () => closeModal(helpModal));
+    bindClick(walkthroughNextBtn, () => {
+      walkthroughIndex = Math.min(walkthroughIndex + 1, walkthroughSteps.length - 1);
+      hydrateWalkthroughStep();
+    });
+    bindClick(walkthroughBeginBtn, closeWalkthroughAndStart);
+    bindClick(walkthroughSkipBtn, closeWalkthroughAndStart);
   }
 
   function bindLandingFlowControls() {
@@ -3243,6 +3981,7 @@
     checkApi();
     decorateCharacterButtons();
     applyCharacterSelectionTheme();
+    syncPlaybackButton();
     syncAudioToRegion();
     requestAnimationFrame(tick);
   }

@@ -46,8 +46,31 @@ The current browser build in `web/` now includes a visual/audio realism pass on 
    - Terrain-tinted selection title
    - Visual FAST/SLOW role badges on cards
    - Structured spec card for each character (power, food, costs, energy rates, lane profile, level scale)
+- Gameplay controls UI refresh:
+   - Compact icon controls instead of text-heavy dock buttons
+   - Food cart moved into HUD as a dedicated top cart icon
+   - Main run controls moved to a right-side vertical rail similar to the heart rail
+   - Single media-style play/pause control that changes icon by run state
+- Pause behavior update:
+   - Pausing freezes movement and falling items
+   - Food shopping and puzzle interactions remain usable while paused
+- Food shop update:
+   - Cart-based purchasing flow instead of one-click buy
+   - Character-specific food icons and special buff foods
+   - Special foods can temporarily reduce fast-character energy use or give slow characters wider lane access
+- Puzzle content refresh:
+   - Puzzle bank rewritten with an Australian setting/tone while preserving Alan Turing/computation themes
+   - Puzzle pools and hint strictness now scale with level/character tier
+- Finale update:
+   - Expedition completion now ends with a full-page smiling sunrise celebration screen
 - Landing Help modal now fully wired and interactive from menu
 - Runtime SFX for jump, hit, and collectible feedback
+- Broader terrain realism pass:
+   - Outback: fence posts, station remnants, tank/sign silhouettes, sand motion
+   - Bushland: logs, stumps, stones, drifting leaves/pollen
+   - Servo: towers, cabling, service pipes, data rain/glitch motion
+   - Coastline: jetty, fishing boats, palms, shoreline realism, rain/surf foam
+   - Tasmania: pines, cabin, frozen patches, snow drift motion
 - Settings panel controls for:
    - Difficulty (Easy/Medium/Hard)
    - 3D Terrain Pass (On/Off)
