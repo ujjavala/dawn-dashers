@@ -162,7 +162,7 @@ Character roster currently used in-game:
 - **Aurora Kookaburra** (Light Call)  
 - **Summit Quokka** (Calm Climb)  
 
-Latest character-system pass in the web runtime:
+Character-system behavior in the web runtime:
 
 - Every level now presents exactly **2 dasher options**:
 	- one **FAST** option (full-width movement, higher energy burn)
@@ -170,6 +170,8 @@ Latest character-system pass in the web runtime:
 - Characters scale by progression tier so later-level options feel stronger while preserving role identity.
 - Character profiles now include explicit per-action energy rates and food economy stats.
 - Super/admin character selection now also syncs the effective gameplay tier/level so choosing a late-game dasher plays like that level immediately.
+- Each level now has bonus puzzle-bank character unlocks with unique movement, energy, and food behavior.
+- Character cards now include direct wiki links so players can learn about each Australian animal.
 
 ---
 
@@ -182,7 +184,7 @@ To connect with Alan Turing’s legacy without slowing the action, I split logic
 
 This keeps momentum high during the run while making level progression feel earned.
 
-Latest puzzle-content refinement:
+Puzzle-content refinement in the web runtime:
 
 - Every logic/puzzle prompt now carries a clear Australian twist while preserving Alan Turing themes.
 - Examples now reference outback radios, bush telegraph clues, Bondi/Bush/Tasman/Servo settings, and Australian field gear.
@@ -198,11 +200,11 @@ To maintain arcade energy:
 - Combo multipliers for continuous movement  
 - Fragment-based progression system  
 - Level unlocks gated by solving a Test of the Chosen One after shard completion  
-- Heart carry-over between levels so rewards from trials remain meaningful  
+- Hearts are fixed to 3 in-run, reset to 3 at each new level, and can revive once per level  
 - Dynamic difficulty scaling (higher level = faster lane/object movement; low shard state = higher pressure)  
 - Strong visual feedback (glow bursts, UI pops, screen shake)  
 
-Recent economy + control tuning:
+Economy + control behavior:
 
 - Energy now depletes on **every movement action** (lane shift, jump, slide).
 - If energy runs out, movement halts until food is available.
@@ -234,7 +236,7 @@ Visual direction includes:
 
 As the solstice progresses, the world naturally transitions from darkness into sunrise.
 
-Latest visual upgrade applied in the playable web build:
+Visual systems in the playable web build:
 
 - Procedural biome texture synthesis (noise-driven terrain materials)
 - Optional Three.js 3D terrain pass with real lights/fog/shadows under gameplay
@@ -256,7 +258,26 @@ Latest visual upgrade applied in the playable web build:
 	- Coastline: jetty, fishing boats, palms, surf/rain layers
 	- Tasmania: pines, cabin silhouettes, frozen ground patches, snow drift motion
 
-Latest audio upgrade:
+Gameplay and UX behavior in the current web build:
+
+- Heart system locked to 3 hearts max in run HUD (no 7-heart rail).
+- Hearts reset to 3 at each level start (no heart carry-over between levels).
+- First full wipe in a level now offers a single revive path; second wipe in same level is game over.
+- Revive UX updated: the "Use 1 Revive" action is presented with the game-over popup context.
+- Special character unlock rule: collect 3 treasure chests in one run for that level.
+- Puzzle roles clarified and separated in flow:
+	- Treasure chest puzzle: gives food supplies.
+	- Heart revival challenge: restores hearts after zero-health state (once per level).
+	- Next-level unlock puzzle: gates progression to next terrain.
+- Help panel rewritten with clear rule explanations and objective framing.
+- Help panel visual style updated to a vintage treasure-scroll look.
+- Puzzle narration pass expanded to reduce technical tone and preserve storybook feel.
+- Hint UX polish:
+	- No repeated hint text while hint count decreases.
+	- Single-hint puzzles now show "Hint available" style messaging without misleading remaining-count text.
+	- Hint count grammar now uses singular/plural correctly.
+
+Audio behavior in the current web build:
 
 - Adaptive ambient music generated at runtime using WebAudio
 - Biome-reactive tonal shifts (dunes/forest/coast/servo/mountains)

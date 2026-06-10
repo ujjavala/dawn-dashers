@@ -14,6 +14,7 @@
   const startBtn = document.getElementById('startBtn');
   const roadEventBtn = document.getElementById('roadEventBtn');
   const hintBtn = document.getElementById('hintBtn');
+  const reviveBtn = document.getElementById('reviveBtn');
   const buyFoodBtn = document.getElementById('buyFoodBtn');
   const hudEl = document.querySelector('.hud');
   const missionEl = document.querySelector('.mission');
@@ -55,6 +56,7 @@
   const characterPanel = document.getElementById('characterPanel');
   const characterTitleEl = document.querySelector('.character-title');
   const characterPower = document.getElementById('characterPower');
+  const characterWikiLink = document.getElementById('characterWikiLink');
   const characterBackBtn = document.getElementById('characterBackBtn');
   const characterStartBtn = document.getElementById('characterStartBtn');
   const characterButtons = Array.from(document.querySelectorAll('.character-btn'));
@@ -95,6 +97,7 @@
   const MUSIC_VOLUME_KEY = 'dawn_dashers_music_volume_v1';
   const SFX_VOLUME_KEY = 'dawn_dashers_sfx_volume_v1';
   const TERRAIN_3D_KEY = 'dawn_dashers_terrain_3d_v1';
+  const PUZZLE_BANK_UNLOCKS_KEY = 'dawn_dashers_puzzle_bank_unlocks_v1';
   const difficultyMultipliers = {
     easy: 0.75,
     medium: 1,
@@ -539,12 +542,12 @@
   const walkthroughSteps = [
     {
       title: 'These Are Your Lives',
-      text: 'Hearts on the left are your lives. You start with 3 and solving puzzles gives +1 life.',
+      text: 'Hearts on the left are your lives. Each level starts with 3 hearts. If they drop to 0, one revive challenge can restore all 3 once per level.',
       visuals: []
     },
     {
       title: 'Choose Your Character',
-      text: 'Each level gives exactly 2 dashers: one fast (full-width, higher energy use) and one slow (restricted lanes, lower energy use).',
+      text: 'Each level gives exactly 2 dashers: one fast (full-width, higher energy use) and one slow (restricted lanes, lower energy use). Special dashers unlock when you collect 3 treasure chests in one run for that level.',
       visuals: []
     },
     {
@@ -665,8 +668,7 @@
     energy: 1000,
     maxEnergy: 1000,
     health: 3,
-    maxLives: 7,
-    carryHearts: null,
+    maxLives: 3,
     fragments: 0,
     objective: 'Tap Start and keep moving.',
     player: {
@@ -696,20 +698,40 @@
     continueFromLevelUnlock: false,
     lastTime: 0,
     swipeStart: null,
-    apiOnline: false
+    apiOnline: false,
+    pendingReviveOffer: null,
+    heartReviveUsedByLevel: {},
+    chestCollectsByLevelRun: {},
+    puzzleBankUnlocks: (() => {
+      try {
+        const raw = globalThis.localStorage.getItem(PUZZLE_BANK_UNLOCKS_KEY);
+        if (!raw) {
+          return {};
+        }
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' ? parsed : {};
+      } catch {
+        return {};
+      }
+    })()
   };
 
   const characters = gameData.characters || {
-    emu: { name: 'Elder Emu', emoji: '🦅', power: 'Dust Sprint', quirk: 'Fast lane weave, moderate hop drain.', unlockAt: 0, role: 'fast' },
-    wombat: { name: 'Digger Wombat', emoji: '🦫', power: 'Burrow Dodge', quirk: 'Cheaper slides in dunes/forest.', unlockAt: 0, role: 'slow' },
-    kangaroo: { name: 'Red Kangaroo', emoji: '🦘', power: 'Sky Hop', quirk: 'Jumps are most energy-efficient.', unlockAt: 1, role: 'fast' },
-    koala: { name: 'River Koala', emoji: '🐨', power: 'Grip Glide', quirk: 'Balanced and steady movement.', unlockAt: 1, role: 'slow' },
-    possum: { name: 'Lantern Possum', emoji: '🌟', power: 'Night Glide', quirk: 'Quick reactions at higher levels.', unlockAt: 2, role: 'fast' },
-    echidna: { name: 'Spike Echidna', emoji: '🦔', power: 'Quill Barrier', quirk: 'Stable lane control with low drift.', unlockAt: 2, role: 'slow' },
-    dingo: { name: 'Coastal Dingo', emoji: '🐕', power: 'Tide Dash', quirk: 'Aggressive full-width lane cuts.', unlockAt: 3, role: 'fast' },
-    bilby: { name: 'Desert Bilby', emoji: '🐇', power: 'Tunnel Pace', quirk: 'Short lane window, low energy burn.', unlockAt: 3, role: 'slow' },
-    kookaburra: { name: 'Aurora Kookaburra', emoji: '🐦', power: 'Light Call', quirk: 'Fast top-tier lane traversal.', unlockAt: 4, role: 'fast' },
-    quokka: { name: 'Summit Quokka', emoji: '🐹', power: 'Calm Climb', quirk: 'Highest efficiency but restricted lanes.', unlockAt: 4, role: 'slow' }
+    emu: { name: 'Elder Emu', emoji: '🦅', power: 'Dust Sprint', quirk: 'Fast lane weave, moderate hop drain.', unlockAt: 0, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Emu' },
+    wombat: { name: 'Digger Wombat', emoji: '🦫', power: 'Burrow Dodge', quirk: 'Cheaper slides in dunes/forest.', unlockAt: 0, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Wombat' },
+    wallaby: { name: 'Spinifex Wallaby', emoji: '🦘', power: 'Spring Drift', quirk: 'Lower jump drain, slightly higher move drain.', unlockAt: 0, role: 'fast', puzzleUnlockLevel: 0, wikiUrl: 'https://en.wikipedia.org/wiki/Wallaby' },
+    kangaroo: { name: 'Red Kangaroo', emoji: '🦘', power: 'Sky Hop', quirk: 'Jumps are most energy-efficient.', unlockAt: 1, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Red_kangaroo' },
+    koala: { name: 'River Koala', emoji: '🐨', power: 'Grip Glide', quirk: 'Balanced and steady movement.', unlockAt: 1, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Koala' },
+    platypus: { name: 'Cipher Platypus', emoji: '🦆', power: 'River Sense', quirk: 'Food restores more and slide is efficient.', unlockAt: 1, role: 'slow', puzzleUnlockLevel: 1, wikiUrl: 'https://en.wikipedia.org/wiki/Platypus' },
+    possum: { name: 'Lantern Possum', emoji: '🌟', power: 'Night Glide', quirk: 'Quick reactions at higher levels.', unlockAt: 2, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Possum' },
+    echidna: { name: 'Spike Echidna', emoji: '🦔', power: 'Quill Barrier', quirk: 'Stable lane control with low drift.', unlockAt: 2, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Echidna' },
+    cockatoo: { name: 'Signal Cockatoo', emoji: '🦜', power: 'Aerial Relay', quirk: 'Great movement efficiency on all actions.', unlockAt: 2, role: 'fast', puzzleUnlockLevel: 2, wikiUrl: 'https://en.wikipedia.org/wiki/Cockatoo' },
+    dingo: { name: 'Coastal Dingo', emoji: '🐕', power: 'Tide Dash', quirk: 'Aggressive full-width lane cuts.', unlockAt: 3, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Dingo' },
+    bilby: { name: 'Desert Bilby', emoji: '🐇', power: 'Tunnel Pace', quirk: 'Short lane window, low energy burn.', unlockAt: 3, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Bilby' },
+    tasdevil: { name: 'Storm Tassie Devil', emoji: '😈', power: 'Charge Burst', quirk: 'High movement speed with expensive jumps.', unlockAt: 3, role: 'fast', puzzleUnlockLevel: 3, wikiUrl: 'https://en.wikipedia.org/wiki/Tasmanian_devil' },
+    kookaburra: { name: 'Aurora Kookaburra', emoji: '🐦', power: 'Light Call', quirk: 'Fast top-tier lane traversal.', unlockAt: 4, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Kookaburra' },
+    quokka: { name: 'Summit Quokka', emoji: '🐹', power: 'Calm Climb', quirk: 'Highest efficiency but restricted lanes.', unlockAt: 4, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Quokka' },
+    numbat: { name: 'Logic Numbat', emoji: '🦝', power: 'Pattern Focus', quirk: 'Very low move drain and cheap food cost.', unlockAt: 4, role: 'slow', puzzleUnlockLevel: 4, wikiUrl: 'https://en.wikipedia.org/wiki/Numbat' }
   };
   const levelCharacterPairs = gameData.levelCharacterPairs || {
     0: { fast: 'emu', slow: 'wombat' },
@@ -721,14 +743,19 @@
   const characterFood = gameData.characterFood || {
     emu: { name: 'Seed Mix', icon: '🌾', cost: 220, restore: 250, moveCost: 50, jumpCost: 68, slideCost: 42 },
     wombat: { name: 'Root Pack', icon: '🥕', cost: 190, restore: 230, moveCost: 30, jumpCost: 48, slideCost: 24 },
+    wallaby: { name: 'Spinifex Shoots', icon: '🌱', cost: 210, restore: 260, moveCost: 46, jumpCost: 52, slideCost: 30 },
     kangaroo: { name: 'Grass Bundle', icon: '🥬', cost: 235, restore: 270, moveCost: 48, jumpCost: 60, slideCost: 38 },
     koala: { name: 'Eucalyptus', icon: '🍃', cost: 200, restore: 250, moveCost: 28, jumpCost: 44, slideCost: 22 },
+    platypus: { name: 'River Cray Pack', icon: '🦐', cost: 205, restore: 285, moveCost: 30, jumpCost: 42, slideCost: 20 },
     possum: { name: 'Berry Pouch', icon: '🍓', cost: 245, restore: 300, moveCost: 44, jumpCost: 56, slideCost: 34 },
     echidna: { name: 'Ant Cluster', icon: '🐜', cost: 210, restore: 275, moveCost: 26, jumpCost: 42, slideCost: 20 },
+    cockatoo: { name: 'Wattle Fruit', icon: '🍇', cost: 230, restore: 315, moveCost: 38, jumpCost: 50, slideCost: 28 },
     dingo: { name: 'Fish Strip', icon: '🐟', cost: 260, restore: 325, moveCost: 42, jumpCost: 54, slideCost: 34 },
     bilby: { name: 'Herb Bundle', icon: '🥦', cost: 225, restore: 300, moveCost: 24, jumpCost: 40, slideCost: 18 },
+    tasdevil: { name: 'Protein Haunch', icon: '🥩', cost: 285, restore: 360, moveCost: 41, jumpCost: 68, slideCost: 29 },
     kookaburra: { name: 'Worm Satchel', icon: '🪱', cost: 280, restore: 350, moveCost: 40, jumpCost: 50, slideCost: 30 },
-    quokka: { name: 'Summit Greens', icon: '🥗', cost: 230, restore: 330, moveCost: 22, jumpCost: 36, slideCost: 18 }
+    quokka: { name: 'Summit Greens', icon: '🥗', cost: 230, restore: 330, moveCost: 22, jumpCost: 36, slideCost: 18 },
+    numbat: { name: 'Termite Trail Mix', icon: '🫘', cost: 210, restore: 345, moveCost: 20, jumpCost: 34, slideCost: 16 }
   };
   state.foodStocks = Object.keys(characterFood).reduce((acc, key) => {
     acc[key] = 0;
@@ -737,23 +764,34 @@
   const characterRegionMap = gameData.characterRegionMap || {
     emu: 0,
     wombat: 0,
+    wallaby: 0,
     kangaroo: 1,
     koala: 1,
+    platypus: 1,
     possum: 2,
     echidna: 2,
+    cockatoo: 2,
     dingo: 3,
     bilby: 3,
+    tasdevil: 3,
     kookaburra: 4,
-    quokka: 4
+    quokka: 4,
+    numbat: 4
   };
   let selectedCharacter = 'emu';
   const puzzleState = {
     hintIndex: 0,
     currentIndex: 0,
+    activeCorePuzzleId: null,
     hintsUsedThisPuzzle: 0,
     hintRewardGrantedThisPuzzle: false,
     pendingAdvance: null,
-    pendingTreasure: null
+    pendingTreasure: null,
+    pendingHeartRevive: null,
+    seenTreasureIds: [],
+    lastTreasureId: null,
+    solvedByLevel: {},
+    usedCorePuzzleIds: []
   };
 
   const puzzleData = globalThis.DawnDashersPuzzleData || {};
@@ -970,10 +1008,11 @@
     state.paused = false;
     if (!keepProgress) {
       state.score = 0;
+      state.heartReviveUsedByLevel = {};
+      state.chestCollectsByLevelRun = {};
     }
-    const baseHearts = state.carryHearts ?? (keepProgress ? state.health : 3);
-    state.health = Math.max(1, Math.min(state.maxLives, baseHearts));
-    state.carryHearts = null;
+    state.pendingReviveOffer = null;
+    state.health = state.maxLives;
     state.fragments = 0;
     syncAdminProgressToSelectedCharacter();
     const tier = Math.max(0, characters[selectedCharacter]?.unlockAt || 0);
@@ -987,7 +1026,7 @@
     state.items = [];
     state.events = [];
     state.hintsUsed = 0;
-    state.message = keepProgress ? 'Run resumed with your earned hearts.' : 'Go!';
+    state.message = keepProgress ? 'New level started. Hearts reset to 3.' : 'Go!';
     state.difficulty = 1 + state.progressLevel * 0.45;
     state.distance = 0;
     state.regionIndex = characterRegionMap[selectedCharacter] ?? 0;
@@ -995,6 +1034,9 @@
     state.fragmentTimer = 7;
     state.continueFromLevelUnlock = false;
     puzzleState.pendingAdvance = null;
+    puzzleState.pendingTreasure = null;
+    puzzleState.pendingHeartRevive = null;
+    puzzleState.activeCorePuzzleId = null;
     closeModal(puzzleModal);
     setCharacterSelectionOpen(false);
     setLanding(false);
@@ -1072,6 +1114,10 @@
 
   function onStartButtonPressed(keepProgress = false) {
     ensureAudioStarted();
+    if (state.pendingReviveOffer) {
+      activateReviveOffer();
+      return;
+    }
     if (state.running && !state.ended) {
       togglePause();
       return;
@@ -1235,6 +1281,11 @@
       return;
     }
     if (!superModeEnabled && !isCharacterAvailableForCurrentLevel(id)) {
+      const puzzleUnlockLevel = characters[id]?.puzzleUnlockLevel;
+      if (Number.isInteger(puzzleUnlockLevel)) {
+        pushMessage(`Unlock ${characters[id].name} by collecting 3 treasure chests in one run at level ${puzzleUnlockLevel + 1}.`);
+        return;
+      }
       const lvl = Math.max(0, Math.min(regions.length - 1, state.progressLevel));
       const pair = levelCharacterPairs[lvl] || levelCharacterPairs[0];
       pushMessage(`Level ${lvl + 1} uses ${characters[pair.fast].name} (fast) or ${characters[pair.slow].name} (slow).`);
@@ -1297,7 +1348,59 @@
 
   function isCharacterAvailableForCurrentLevel(id) {
     const pair = getPairForLevel(state.progressLevel);
-    return id === pair.fast || id === pair.slow;
+    if (id === pair.fast || id === pair.slow) {
+      return true;
+    }
+    const puzzleUnlockLevel = characters[id]?.puzzleUnlockLevel;
+    if (!Number.isInteger(puzzleUnlockLevel)) {
+      return false;
+    }
+    return state.progressLevel >= puzzleUnlockLevel && state.puzzleBankUnlocks[puzzleUnlockLevel];
+  }
+
+  function persistPuzzleBankUnlocks() {
+    globalThis.localStorage.setItem(PUZZLE_BANK_UNLOCKS_KEY, JSON.stringify(state.puzzleBankUnlocks));
+  }
+
+  function unlockPuzzleBankCharactersForLevel(level) {
+    if (state.puzzleBankUnlocks[level]) {
+      return;
+    }
+    const unlockedIds = Object.keys(characters)
+      .filter((id) => characters[id]?.puzzleUnlockLevel === level);
+    if (!unlockedIds.length) {
+      return;
+    }
+    state.puzzleBankUnlocks[level] = true;
+    persistPuzzleBankUnlocks();
+    const names = unlockedIds.map((id) => characters[id].name).join(', ');
+    pushMessage(`Treasure scout milestone reached! New character unlocked: ${names}`);
+  }
+
+  function registerTreasureChestCollect(level) {
+    const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
+    state.chestCollectsByLevelRun[safeLevel] = (state.chestCollectsByLevelRun[safeLevel] || 0) + 1;
+    const chestCount = state.chestCollectsByLevelRun[safeLevel];
+    if (!state.puzzleBankUnlocks[safeLevel] && chestCount >= 3) {
+      unlockPuzzleBankCharactersForLevel(safeLevel);
+    }
+  }
+
+  function registerPuzzleBankSolve(puzzle) {
+    if (puzzleState.pendingAdvance || puzzleState.pendingTreasure) {
+      return;
+    }
+    const level = getPuzzleDifficultyLevel();
+    const puzzleId = turingPuzzles.indexOf(puzzle);
+    if (puzzleId < 0) {
+      return;
+    }
+    if (!Array.isArray(puzzleState.solvedByLevel[level])) {
+      puzzleState.solvedByLevel[level] = [];
+    }
+    if (!puzzleState.solvedByLevel[level].includes(puzzleId)) {
+      puzzleState.solvedByLevel[level].push(puzzleId);
+    }
   }
 
   function getCurrentFoodSpec() {
@@ -1565,6 +1668,7 @@
     const [minLane, maxLane] = getMovementLaneBounds();
     const laneMode = current.role === 'slow' ? `Restricted lanes ${minLane + 1}-${maxLane + 1}` : 'Full-width lanes';
     const energyScale = getEnergyScaleForLevel();
+    const puzzleUnlockLevel = Number.isInteger(current.puzzleUnlockLevel) ? current.puzzleUnlockLevel + 1 : null;
     characterPower.innerHTML = `
       <div class="spec-card role-${current.role}">
         <div class="spec-head">
@@ -1581,8 +1685,14 @@
           <div class="spec-item"><span>Energy Slide</span><strong>${getEnergyCost('slide')}</strong></div>
           <div class="spec-item"><span>Lanes</span><strong>${laneMode}</strong></div>
           <div class="spec-item"><span>Level Scale</span><strong>x${energyScale.toFixed(2)}</strong></div>
+          <div class="spec-item"><span>Special Unlock</span><strong>${puzzleUnlockLevel ? `Collect 3 chests in one run at Level ${puzzleUnlockLevel}` : 'Standard'}</strong></div>
         </div>
       </div>`;
+    if (characterWikiLink) {
+      characterWikiLink.href = current.wikiUrl || 'https://en.wikipedia.org/wiki/Australian_fauna';
+      characterWikiLink.textContent = `Learn more about ${current.name}`;
+      characterWikiLink.style.display = '';
+    }
   }
 
   function resumeSavedRun(run) {
@@ -1647,6 +1757,14 @@
     fragmentEl.textContent = `${state.fragments}/7`;
     objectiveEl.textContent = state.objective;
     messageEl.textContent = state.message;
+    if (reviveBtn) {
+      const canReviveNow = Boolean(state.pendingReviveOffer);
+      reviveBtn.style.display = canReviveNow ? 'grid' : 'none';
+      reviveBtn.disabled = !canReviveNow;
+      reviveBtn.classList.toggle('revive-ready', canReviveNow);
+      reviveBtn.title = canReviveNow ? 'Use revive option' : 'Revive';
+      reviveBtn.setAttribute('aria-label', canReviveNow ? 'Use revive option' : 'Revive unavailable');
+    }
     renderLives();
     updateCharacterAvailability();
     refreshCharacterBio();
@@ -1667,7 +1785,6 @@
   }
 
   function updateCharacterAvailability() {
-    const pair = getPairForLevel(state.progressLevel);
     decorateCharacterButtons();
     applyCharacterSelectionTheme();
     characterButtons.forEach((button) => {
@@ -1675,8 +1792,8 @@
       if (!id || !characters[id]) {
         return;
       }
-      const isUnlocked = superModeEnabled || (id === pair.fast || id === pair.slow);
-      button.classList.toggle('terrain-hidden', !isUnlocked && !superModeEnabled);
+      const isUnlocked = superModeEnabled || isCharacterAvailableForCurrentLevel(id);
+      button.classList.remove('terrain-hidden');
       button.classList.toggle('locked', !isUnlocked);
       button.setAttribute('aria-disabled', String(!isUnlocked));
       if (isUnlocked) {
@@ -1684,7 +1801,12 @@
           ? `${characters[id].power} (Super Mode unlocked)`
           : `${characters[id].power}`;
       } else {
-        button.title = `Available in level ${characters[id].unlockAt + 1}`;
+        const puzzleUnlockLevel = characters[id].puzzleUnlockLevel;
+        if (Number.isInteger(puzzleUnlockLevel)) {
+          button.title = `Unlock by collecting 3 treasure chests in one run at level ${puzzleUnlockLevel + 1}`;
+        } else {
+          button.title = `Available in level ${characters[id].unlockAt + 1}`;
+        }
       }
     });
   }
@@ -1713,6 +1835,7 @@
   function endGame(victory = false) {
     saveRunSnapshot();
     state.paused = false;
+    state.pendingReviveOffer = null;
 
     // Hard safety: level-unlock puzzle can only start after collecting all shards.
     if (victory && state.fragments < 7) {
@@ -1723,17 +1846,15 @@
       const nextLevel = state.progressLevel + 1;
       state.running = false;
       state.ended = false;
-      const carriedHearts = Math.max(1, Math.min(state.maxLives, state.health));
       const levelBonus = getLevelClearBonus(nextLevel);
       const unlockedNames = Object.keys(characters)
-        .filter((id) => characters[id].unlockAt === nextLevel)
+        .filter((id) => characters[id].unlockAt === nextLevel && !Number.isInteger(characters[id].puzzleUnlockLevel))
         .map((id) => characters[id].name)
         .join(', ');
 
       // Hard gate: solve one puzzle to unlock next level transition.
       puzzleState.pendingAdvance = {
         nextLevel,
-        carriedHearts,
         levelBonus,
         unlockedNames
       };
@@ -1887,6 +2008,9 @@
       if (puzzleState.pendingTreasure) {
         return `${regions[puzzleState.pendingTreasure.level].name} Treasure Case`;
       }
+      if (puzzleState.pendingHeartRevive) {
+        return `${regions[puzzleState.pendingHeartRevive.level].name} Heart Revival Challenge`;
+      }
       return `${regions[state.regionIndex].name} Puzzle Core`;
     };
 
@@ -1930,9 +2054,127 @@
 
   function getPuzzlePoolForLevel(level) {
     const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
-    const ids = levelPuzzlePools[safeLevel] || levelPuzzlePools[0];
+    const ids = levelPuzzlePools[safeLevel] || levelPuzzlePools[0] || [];
     const pool = ids.map((id) => turingPuzzles[id]).filter(Boolean);
     return pool.length ? pool : turingPuzzles;
+  }
+
+  function getPuzzlePoolIdsForLevel(level) {
+    const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
+    const ids = levelPuzzlePools[safeLevel] || levelPuzzlePools[0] || [];
+    const validIds = ids.filter((id) => Number.isInteger(id) && turingPuzzles[id]);
+    if (validIds.length) {
+      return validIds;
+    }
+    return turingPuzzles.map((_, id) => id);
+  }
+
+  function getSolvedPuzzleIdsForLevel(level) {
+    if (!Array.isArray(puzzleState.solvedByLevel[level])) {
+      puzzleState.solvedByLevel[level] = [];
+    }
+    return puzzleState.solvedByLevel[level];
+  }
+
+  function getHeartReviveProgress(level) {
+    const poolIds = getPuzzlePoolIdsForLevel(level);
+    const solvedIds = getSolvedPuzzleIdsForLevel(level);
+    const solvedCount = poolIds.filter((id) => solvedIds.includes(id)).length;
+    return { poolIds, solvedCount, totalCount: poolIds.length, solvedAll: poolIds.length > 0 && solvedCount >= poolIds.length };
+  }
+
+  function pickNextHeartRevivePuzzleId(level) {
+    const poolIds = getPuzzlePoolIdsForLevel(level);
+    const solvedIds = getSolvedPuzzleIdsForLevel(level);
+    const unsolved = poolIds.filter((id) => !solvedIds.includes(id));
+    if (!unsolved.length) {
+      return null;
+    }
+    const puzzleId = unsolved[Math.floor(Math.random() * unsolved.length)];
+    puzzleState.activeCorePuzzleId = puzzleId;
+    return puzzleId;
+  }
+
+  function beginHeartReviveChallenge(level) {
+    const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
+    if (state.heartReviveUsedByLevel[safeLevel]) {
+      return false;
+    }
+
+    state.pendingReviveOffer = null;
+    state.running = true;
+    state.ended = false;
+
+    const progress = getHeartReviveProgress(safeLevel);
+    if (progress.solvedAll) {
+      state.heartReviveUsedByLevel[safeLevel] = true;
+      state.health = state.maxLives;
+      state.paused = false;
+      state.hungerPaused = false;
+      pushMessage(`Heart revival triggered. ${state.maxLives} hearts restored.`);
+      syncHud();
+      syncPlaybackButton();
+      return true;
+    }
+
+    puzzleState.pendingHeartRevive = { level: safeLevel };
+    puzzleState.pendingTreasure = null;
+    puzzleState.pendingAdvance = null;
+    puzzleState.activeCorePuzzleId = null;
+    state.paused = true;
+    state.hungerPaused = false;
+
+    if (puzzleModal) {
+      puzzleModal.classList.add('open');
+      puzzleModal.setAttribute('aria-hidden', 'false');
+    }
+    if (puzzleTerrain) {
+      puzzleTerrain.textContent = `${regions[safeLevel].name} Heart Revival Challenge`;
+    }
+    hydratePuzzlePanel();
+    if (puzzleStatus) {
+      const left = Math.max(0, progress.totalCount - progress.solvedCount);
+      puzzleStatus.textContent = `Hearts depleted. Solve all level puzzles to revive. ${left} left.`;
+    }
+    state.message = 'Hearts at zero. Solve the heart revival challenge to continue.';
+    syncHud();
+    syncPlaybackButton();
+    return true;
+  }
+
+  function activateReviveOffer() {
+    if (!state.pendingReviveOffer) {
+      return false;
+    }
+    const level = state.pendingReviveOffer.level;
+    state.pendingReviveOffer = null;
+    const started = beginHeartReviveChallenge(level);
+    if (!started) {
+      endGame(false);
+      return false;
+    }
+    return true;
+  }
+
+  function pickNextCorePuzzleId(level) {
+    const levelIds = getPuzzlePoolIdsForLevel(level);
+    let candidates = levelIds.filter((id) => !puzzleState.usedCorePuzzleIds.includes(id));
+
+    if (!candidates.length) {
+      const globalUnseen = turingPuzzles
+        .map((_, id) => id)
+        .filter((id) => !puzzleState.usedCorePuzzleIds.includes(id));
+      candidates = globalUnseen;
+    }
+
+    if (!candidates.length) {
+      return null;
+    }
+
+    const puzzleId = candidates[Math.floor(Math.random() * candidates.length)];
+    puzzleState.usedCorePuzzleIds.push(puzzleId);
+    puzzleState.activeCorePuzzleId = puzzleId;
+    return puzzleId;
   }
 
   function getTreasurePoolForLevel(level) {
@@ -1942,8 +2184,42 @@
     return pool.length ? pool : treasurePuzzles;
   }
 
+  function chooseTreasurePuzzleId(level) {
+    const pool = getTreasurePoolForLevel(level);
+    const poolIds = pool
+      .map((puzzle) => treasurePuzzles.indexOf(puzzle))
+      .filter((id) => id >= 0);
+
+    let candidates = poolIds.filter((id) => !puzzleState.seenTreasureIds.includes(id));
+    if (!candidates.length) {
+      const unseenGlobal = treasurePuzzles
+        .map((_, id) => id)
+        .filter((id) => !puzzleState.seenTreasureIds.includes(id));
+      candidates = unseenGlobal;
+    }
+    if (!candidates.length) {
+      return null;
+    }
+
+    if (candidates.length > 1 && Number.isInteger(puzzleState.lastTreasureId)) {
+      const nonRepeat = candidates.filter((id) => id !== puzzleState.lastTreasureId);
+      if (nonRepeat.length) {
+        candidates = nonRepeat;
+      }
+    }
+
+    const puzzleId = candidates[Math.floor(Math.random() * candidates.length)];
+    if (!puzzleState.seenTreasureIds.includes(puzzleId)) {
+      puzzleState.seenTreasureIds.push(puzzleId);
+    }
+    puzzleState.lastTreasureId = puzzleId;
+    return puzzleId;
+  }
+
   function openTreasurePuzzleFromChest(item) {
     const rewardFood = Math.max(1, item.foodReward || 1);
+    const level = getPuzzleDifficultyLevel();
+    registerTreasureChestCollect(level);
     if (!treasurePuzzles.length) {
       state.foodStocks[selectedCharacter] = (state.foodStocks[selectedCharacter] || 0) + rewardFood;
       pushMessage(`Supply chest opened! +${rewardFood} food for ${characters[selectedCharacter].name}.`);
@@ -1951,10 +2227,13 @@
       return;
     }
 
-    const level = getPuzzleDifficultyLevel();
-    const pool = getTreasurePoolForLevel(level);
-    const chosenPuzzle = pool[Math.floor(Math.random() * pool.length)] || treasurePuzzles[0];
-    const puzzleId = Math.max(0, treasurePuzzles.indexOf(chosenPuzzle));
+    const puzzleId = chooseTreasurePuzzleId(level);
+    if (!Number.isInteger(puzzleId)) {
+      state.foodStocks[selectedCharacter] = (state.foodStocks[selectedCharacter] || 0) + rewardFood;
+      pushMessage(`Chest opened. Treasure puzzle bank exhausted this session, +${rewardFood} food granted.`);
+      syncHud();
+      return;
+    }
     puzzleState.pendingTreasure = { level, puzzleId, foodReward: rewardFood };
     state.paused = true;
     state.hungerPaused = false;
@@ -1978,6 +2257,31 @@
     return Math.max(1, 3 - Math.floor(level / 2));
   }
 
+  function getHintPoolForPuzzle(puzzle) {
+    const pool = Array.isArray(puzzle?.hints)
+      ? puzzle.hints.filter((hint) => typeof hint === 'string' && hint.trim().length > 0)
+      : [];
+    return pool.length ? pool : ['Think carefully about the clue words.'];
+  }
+
+  function getHintLimitForPuzzle(puzzle, level) {
+    return Math.max(1, Math.min(getHintLimitForLevel(level), getHintPoolForPuzzle(puzzle).length));
+  }
+
+  function formatHintCountLabel(count) {
+    return count === 1 ? '1 hint' : `${count} hints`;
+  }
+
+  function consumePuzzleHint(puzzle, level) {
+    const pool = getHintPoolForPuzzle(puzzle);
+    if (puzzleState.hintIndex >= pool.length) {
+      return null;
+    }
+    const rawHint = pool[puzzleState.hintIndex];
+    puzzleState.hintIndex += 1;
+    return formatHintForLevel(rawHint, level);
+  }
+
   function formatHintForLevel(text, level) {
     if (level <= 1) {
       return text;
@@ -1995,7 +2299,7 @@
   function revealPuzzleHint() {
     const puzzle = getCurrentPuzzle();
     const level = getPuzzleDifficultyLevel();
-    const hintLimit = getHintLimitForLevel(level);
+    const hintLimit = getHintLimitForPuzzle(puzzle, level);
     if (puzzleState.hintsUsedThisPuzzle >= hintLimit) {
       if (puzzleStatus) {
         puzzleStatus.textContent = `No more hints for this puzzle at level ${level + 1}.`;
@@ -2004,9 +2308,7 @@
       return;
     }
 
-    const rawHint = puzzle.hints[Math.min(puzzleState.hintIndex, puzzle.hints.length - 1)] || 'Think carefully about the puzzle rules.';
-    const hint = formatHintForLevel(rawHint, level);
-    puzzleState.hintIndex = Math.min(puzzleState.hintIndex + 1, puzzle.hints.length - 1);
+    const hint = consumePuzzleHint(puzzle, level) || 'Think carefully about the puzzle rules.';
     puzzleState.hintsUsedThisPuzzle += 1;
 
     if (puzzleState.hintsUsedThisPuzzle >= hintLimit && !puzzleState.hintRewardGrantedThisPuzzle) {
@@ -2022,7 +2324,9 @@
 
     if (puzzleStatus) {
       const remaining = Math.max(0, hintLimit - puzzleState.hintsUsedThisPuzzle);
-      puzzleStatus.textContent = `${hint} (${remaining} hints left)`;
+      puzzleStatus.textContent = hintLimit === 1
+        ? hint
+        : `${hint} (${formatHintCountLabel(remaining)} left)`;
     }
     pushMessage('Hint revealed.');
   }
@@ -2031,9 +2335,24 @@
     if (puzzleState.pendingTreasure) {
       return treasurePuzzles[puzzleState.pendingTreasure.puzzleId] || treasurePuzzles[0] || turingPuzzles[0];
     }
-    const level = getPuzzleDifficultyLevel();
-    const pool = getPuzzlePoolForLevel(level);
-    return pool[puzzleState.currentIndex % pool.length];
+    if (puzzleState.pendingHeartRevive) {
+      const level = puzzleState.pendingHeartRevive.level;
+      if (!Number.isInteger(puzzleState.activeCorePuzzleId)) {
+        pickNextHeartRevivePuzzleId(level);
+      }
+      if (Number.isInteger(puzzleState.activeCorePuzzleId)) {
+        return turingPuzzles[puzzleState.activeCorePuzzleId] || turingPuzzles[0];
+      }
+      return turingPuzzles[0];
+    }
+    if (!Number.isInteger(puzzleState.activeCorePuzzleId)) {
+      const level = getPuzzleDifficultyLevel();
+      pickNextCorePuzzleId(level);
+    }
+    if (Number.isInteger(puzzleState.activeCorePuzzleId)) {
+      return turingPuzzles[puzzleState.activeCorePuzzleId] || turingPuzzles[0];
+    }
+    return turingPuzzles[0];
   }
 
   function normalizeAnswer(value) {
@@ -2050,27 +2369,43 @@
   function hydratePuzzlePanel() {
     const puzzle = getCurrentPuzzle();
     const isTreasureCase = Boolean(puzzleState.pendingTreasure);
+    const isHeartRevive = Boolean(puzzleState.pendingHeartRevive);
     const level = getPuzzleDifficultyLevel();
-    const pool = getPuzzlePoolForLevel(level);
+    const levelPoolIds = getPuzzlePoolIdsForLevel(level);
+    const seenInLevelCount = levelPoolIds.filter((id) => puzzleState.usedCorePuzzleIds.includes(id)).length;
+    const reviveProgress = isHeartRevive ? getHeartReviveProgress(puzzleState.pendingHeartRevive.level) : null;
     puzzleState.hintIndex = 0;
     puzzleState.hintsUsedThisPuzzle = 0;
     puzzleState.hintRewardGrantedThisPuzzle = false;
     if (puzzleTitle) {
       puzzleTitle.textContent = isTreasureCase
         ? `Treasure Case: ${puzzle.title}`
-        : `${puzzle.title} (${(puzzleState.currentIndex % pool.length) + 1}/${pool.length})`;
+        : isHeartRevive
+          ? `Heart Revival: ${puzzle.title} (${reviveProgress.solvedCount + 1}/${reviveProgress.totalCount})`
+        : `${puzzle.title} (${Math.max(1, seenInLevelCount)}/${levelPoolIds.length})`;
     }
     if (puzzleInstruction) puzzleInstruction.textContent = puzzle.instruction;
-    if (puzzleQuestion) puzzleQuestion.textContent = `Question: ${puzzle.instruction}`;
+    if (puzzleQuestion) {
+      const chapter = isTreasureCase
+        ? 'Treasure Case Brief'
+        : isHeartRevive
+          ? 'Heart Revival Brief'
+          : 'Junior Codebreaker Brief';
+      const regionName = regions[state.regionIndex]?.name || 'Outback Sector';
+      puzzleQuestion.textContent = `${chapter} - ${regionName}: ${puzzle.instruction} Enter your decoded result in the field below to continue the expedition.`;
+    }
     if (puzzleAnswerInput) {
       puzzleAnswerInput.value = '';
       puzzleAnswerInput.focus();
     }
     if (puzzleLearnLink) puzzleLearnLink.href = puzzle.learnUrl;
     if (puzzleStatus) {
+      const hintLimit = getHintLimitForPuzzle(puzzle, level);
       puzzleStatus.textContent = isTreasureCase
-        ? `Treasure case loaded. Hints available: ${getHintLimitForLevel(level)}.`
-        : `Level ${level + 1} puzzle loaded. Hints available: ${getHintLimitForLevel(level)}.`;
+        ? `Treasure case loaded. ${hintLimit === 1 ? 'Hint available.' : `${formatHintCountLabel(hintLimit)} available.`}`
+        : isHeartRevive
+          ? `Revive challenge: solve all level puzzles to restore 3 hearts. ${Math.max(0, reviveProgress.totalCount - reviveProgress.solvedCount)} left.`
+        : `Level ${level + 1} puzzle loaded. ${hintLimit === 1 ? 'Hint available.' : `${formatHintCountLabel(hintLimit)} available.`}`;
     }
   }
 
@@ -2105,13 +2440,44 @@
     }
 
     puzzleState.pendingAdvance = null;
-    const carriedHearts = Math.max(1, Math.min(state.maxLives, state.health));
     state.progressLevel = next.nextLevel;
-    state.carryHearts = carriedHearts;
     state.score += next.levelBonus;
-    triggerLevelCelebrate(next.nextLevel, carriedHearts, next.levelBonus, next.unlockedNames);
+    triggerLevelCelebrate(next.nextLevel, next.levelBonus, next.unlockedNames);
     closeModal(puzzleModal);
     syncHud();
+    return true;
+  }
+
+  function handleSolvedHeartRevivePuzzle() {
+    if (!puzzleState.pendingHeartRevive) {
+      return false;
+    }
+
+    const level = puzzleState.pendingHeartRevive.level;
+    const progress = getHeartReviveProgress(level);
+    if (progress.solvedAll) {
+      puzzleState.pendingHeartRevive = null;
+      state.heartReviveUsedByLevel[level] = true;
+      state.health = state.maxLives;
+      state.paused = false;
+      state.hungerPaused = false;
+      state.objective = `Heart revival completed in ${regions[state.regionIndex].name}. Continue the run.`;
+      pushMessage(`Heart revival complete. ${state.maxLives} hearts restored.`);
+      closeModal(puzzleModal);
+      syncHud();
+      syncPlaybackButton();
+      return true;
+    }
+
+    puzzleState.activeCorePuzzleId = null;
+    if (puzzleStatus) {
+      puzzleStatus.textContent = `Great! ${progress.totalCount - progress.solvedCount} puzzles left to restore hearts.`;
+    }
+    setTimeout(() => {
+      if (puzzleModal?.classList.contains('open')) {
+        hydratePuzzlePanel();
+      }
+    }, 700);
     return true;
   }
 
@@ -2128,6 +2494,7 @@
       if (puzzleStatus) {
         puzzleStatus.textContent = `Correct! ${puzzle.rightExplain}`;
       }
+      registerPuzzleBankSolve(puzzle);
       syncHud();
 
       if (handleSolvedTreasureCase()) {
@@ -2138,7 +2505,11 @@
         return;
       }
 
-      puzzleState.currentIndex += 1;
+      if (handleSolvedHeartRevivePuzzle()) {
+        return;
+      }
+
+      puzzleState.activeCorePuzzleId = null;
       setTimeout(() => {
           if (puzzleModal?.classList.contains('open')) {
           hydratePuzzlePanel();
@@ -2147,12 +2518,47 @@
       return;
     }
 
-    const hint = puzzle.hints[Math.min(puzzleState.hintIndex, puzzle.hints.length - 1)];
-    puzzleState.hintIndex = Math.min(puzzleState.hintIndex + 1, puzzle.hints.length - 1);
+    const level = getPuzzleDifficultyLevel();
+    const hint = consumePuzzleHint(puzzle, level);
     if (puzzleStatus) {
-      puzzleStatus.textContent = `Oops, not quite. ${puzzle.wrongExplain} Hint: ${hint}`;
+      puzzleStatus.textContent = hint
+        ? `Oops, not quite. ${puzzle.wrongExplain} Hint: ${hint}`
+        : `Oops, not quite. ${puzzle.wrongExplain}`;
     }
     pushMessage('Oops, try again. Hint updated.');
+  }
+
+  function checkPuzzleAnswer() {
+    const puzzle = getCurrentPuzzle();
+    const guess = normalizeAnswer(puzzleAnswerInput ? puzzleAnswerInput.value : '');
+    const validAnswers = Array.isArray(puzzle.acceptedAnswers)
+      ? puzzle.acceptedAnswers.map(normalizeAnswer)
+      : [normalizeAnswer(puzzle.answer)];
+
+    if (!validAnswers.includes(guess)) {
+      const level = getPuzzleDifficultyLevel();
+      const hint = consumePuzzleHint(puzzle, level);
+      if (puzzleStatus) {
+        puzzleStatus.textContent = hint
+          ? `Oops, not quite. ${puzzle.wrongExplain} Hint: ${hint}`
+          : `Oops, not quite. ${puzzle.wrongExplain}`;
+      }
+      pushMessage('Not correct yet. Try again or use a hint.');
+      return;
+    }
+
+    if (puzzleStatus) {
+      if (puzzleState.pendingTreasure) {
+        puzzleStatus.textContent = `Correct answer. ${puzzle.rightExplain} Tap Submit to claim the chest reward.`;
+      } else if (puzzleState.pendingAdvance) {
+        puzzleStatus.textContent = `Correct answer. ${puzzle.rightExplain} Tap Submit to unlock the next level.`;
+      } else if (puzzleState.pendingHeartRevive) {
+        puzzleStatus.textContent = `Correct answer. ${puzzle.rightExplain} Tap Submit to continue the heart revival challenge.`;
+      } else {
+        puzzleStatus.textContent = `Correct answer. ${puzzle.rightExplain} Tap Submit to continue.`;
+      }
+    }
+    pushMessage('Answer is correct. Press Submit to continue.');
   }
 
   function skipPuzzle() {
@@ -2170,7 +2576,14 @@
       pushMessage('Treasure case must be solved to claim food supplies.');
       return;
     }
-    puzzleState.currentIndex += 1;
+    if (puzzleState.pendingHeartRevive) {
+      if (puzzleStatus) {
+        puzzleStatus.textContent = 'Cannot skip this one. Solve all level puzzles to restore hearts.';
+      }
+      pushMessage('Heart revival puzzle cannot be skipped.');
+      return;
+    }
+    puzzleState.activeCorePuzzleId = null;
     pushMessage('Puzzle skipped. Next puzzle queued in Puzzle Core.');
     if (puzzleStatus) {
       puzzleStatus.textContent = 'Skipped. Opening the next puzzle...';
@@ -2182,14 +2595,14 @@
     }, 700);
   }
 
-  function triggerLevelCelebrate(nextLevel, carriedHearts, levelBonus, unlockedNames) {
+  function triggerLevelCelebrate(nextLevel, levelBonus, unlockedNames) {
     const tMsg = levelTransitionMsgs[nextLevel];
     const unlockLine = unlockedNames ? `New dashers unlocked: ${unlockedNames}!` : '';
     const levelEmojis = ['', '🌿', '⚡', '🌊', '❄️'];
     if (lcEmoji) lcEmoji.textContent = levelEmojis[nextLevel] || '🎉';
     if (lcCongrats) lcCongrats.textContent = tMsg ? tMsg.congrats : `Level ${nextLevel} unlocked! 🎉`;
     if (lcTeaser) lcTeaser.textContent = tMsg ? tMsg.teaser : `Now entering ${regions[nextLevel].name}.`;
-    if (lcBonus) lcBonus.textContent = `${unlockLine ? unlockLine + '  ' : ''}+${levelBonus} level clear bonus · ${carriedHearts} ❤️ carried forward`;
+    if (lcBonus) lcBonus.textContent = `${unlockLine ? unlockLine + '  ' : ''}+${levelBonus} level clear bonus · next level starts at 3 hearts`;
     if (levelCompleteOverlay) {
       levelCompleteOverlay.classList.add('open');
       levelCompleteOverlay.setAttribute('aria-hidden', 'false');
@@ -2321,7 +2734,21 @@
     addScore(-penalty);
     pushMessage(`Bomb hit! -${penalty}`);
     if (state.health <= 0) {
-      endGame(false);
+      const level = getPuzzleDifficultyLevel();
+      if (!state.heartReviveUsedByLevel[level]) {
+        state.health = 0;
+        state.running = false;
+        state.ended = true;
+        state.paused = false;
+        state.hungerPaused = false;
+        state.pendingReviveOffer = { level };
+        state.objective = 'Game over, but one revive is still available.';
+        state.message = 'Game over. You have 1 revive option left. Tap Revive.';
+        syncHud();
+        syncPlaybackButton();
+      } else {
+        endGame(false);
+      }
     }
   }
 
@@ -3758,10 +4185,15 @@
       ctx.font = '700 34px Cinzel Decorative';
       ctx.fillText(state.fragments >= 7 ? 'Expedition Complete!' : 'Game Over', w / 2, h / 2 - 58);
       ctx.font = '18px sans-serif';
-      ctx.fillText(state.fragments >= 7 ? 'Sunrise restored. The expedition is complete.' : 'The night won this run. Try again.', w / 2, h / 2 - 26);
-      ctx.fillText(state.fragments >= 7 ? 'Expedition Complete!' : 'Run Ended', w / 2, h / 2 + 2);
+      if (state.pendingReviveOffer) {
+        ctx.fillText('You still have 1 revive option in this level.', w / 2, h / 2 - 26);
+        ctx.fillText('Tap Revive below to enter the heart revival challenge.', w / 2, h / 2 + 2);
+      } else {
+        ctx.fillText(state.fragments >= 7 ? 'Sunrise restored. The expedition is complete.' : 'The night won this run. Try again.', w / 2, h / 2 - 26);
+        ctx.fillText(state.fragments >= 7 ? 'Expedition Complete!' : 'Run Ended', w / 2, h / 2 + 2);
+      }
       ctx.fillText(`Score ${state.score} | Shards ${state.fragments}/7`, w / 2, h / 2 + 30);
-      ctx.fillText('Press Restart to play again.', w / 2, h / 2 + 58);
+      ctx.fillText(state.pendingReviveOffer ? 'Revive can be used only once in this level.' : 'Press Restart to play again.', w / 2, h / 2 + 58);
     }
   }
 
@@ -3774,7 +4206,11 @@
       return;
     }
     if (!state.running && (e.key === 'Enter' || e.key === ' ')) {
-      resetGame();
+      if (state.pendingReviveOffer) {
+        activateReviveOffer();
+      } else {
+        resetGame();
+      }
       return;
     }
     if (!state.running) return;
@@ -3842,7 +4278,18 @@
     if (roadEventBtn) {
       roadEventBtn.addEventListener('click', requestRoadEvent);
     }
-    hintBtn.addEventListener('click', requestHint);
+    if (hintBtn) {
+      hintBtn.addEventListener('click', requestHint);
+    }
+    if (reviveBtn) {
+      reviveBtn.addEventListener('click', () => {
+        if (!state.pendingReviveOffer) {
+          pushMessage('Revive is not available right now.');
+          return;
+        }
+        activateReviveOffer();
+      });
+    }
     if (buyFoodBtn) {
       buyFoodBtn.addEventListener('click', openFoodShop);
     }
@@ -3908,7 +4355,7 @@
       });
     }
     if (puzzleCheckBtn) {
-      puzzleCheckBtn.addEventListener('click', submitPuzzle);
+      puzzleCheckBtn.addEventListener('click', checkPuzzleAnswer);
     }
     if (puzzleSubmitBtn) {
       puzzleSubmitBtn.addEventListener('click', submitPuzzle);
@@ -3952,7 +4399,13 @@
 
   function bindModalControls() {
     bindClick(closeClueBtn, () => closeModal(clueModal));
-    bindClick(closePuzzleBtn, () => closeModal(puzzleModal));
+    bindClick(closePuzzleBtn, () => {
+      if (puzzleState.pendingAdvance || puzzleState.pendingTreasure || puzzleState.pendingHeartRevive) {
+        pushMessage('This puzzle flow is required. Solve it to continue.');
+        return;
+      }
+      closeModal(puzzleModal);
+    });
     bindClick(clueHintBtn, requestHint);
     bindClick(clueSolveBtn, () => {
       closeModal(clueModal);

@@ -18,7 +18,7 @@ This repository includes a production-style gameplay framework with:
 - Docker Compose stack for local web + backend runtime
 - Standalone mobile deployment folders and build scripts for Android/iOS
 
-## Web Runtime Update (Latest)
+## Web Runtime
 
 The current browser build in `web/` now includes a visual/audio realism pass on top of the existing gameplay loop:
 
@@ -46,6 +46,9 @@ The current browser build in `web/` now includes a visual/audio realism pass on 
    - Terrain-tinted selection title
    - Visual FAST/SLOW role badges on cards
    - Structured spec card for each character (power, food, costs, energy rates, lane profile, level scale)
+   - Special unlock characters per level with unique movement/energy/food profiles
+   - Special unlock rule: collect 3 treasure chests in one run for that level
+   - Character knowledge links: each card includes a wiki link for the selected animal
 - Gameplay controls UI refresh:
    - Compact icon controls instead of text-heavy dock buttons
    - Food cart remains an icon action in the right-side dock
@@ -67,7 +70,24 @@ The current browser build in `web/` now includes a visual/audio realism pass on 
 - Puzzle content refresh:
    - Puzzle bank rewritten with an Australian setting/tone while preserving Alan Turing/computation themes
    - Puzzle pools and hint strictness now scale with level/character tier
-- Finale update:
+- Heart + revive flow:
+   - Hearts are fixed to 3 max in run HUD
+   - Hearts reset to 3 at each level start
+   - Hearts do not carry forward between levels
+   - First full wipe in a level offers one revive path; second full wipe in same level ends run
+   - Revive action is presented in direct game-over popup context
+- Puzzle flow separation:
+   - Treasure chest puzzles grant food supplies
+   - Heart revival challenge restores hearts (once per level)
+   - Next-level unlock puzzle controls level progression
+- Help UX:
+   - Help modal now uses a vintage treasure-scroll/list visual style
+   - Rule explanations expanded for puzzle types, revive behavior, and objective
+- Hint behavior:
+   - Hint progression no longer repeats the same hint while remaining count drops
+   - Single-hint puzzles avoid misleading remaining-hint counters
+   - Hint labels use correct singular/plural grammar
+- Finale:
    - Expedition completion now ends with a full-page smiling sunrise celebration screen
 - Landing Help modal now fully wired and interactive from menu
 - Runtime SFX for jump, hit, and collectible feedback
