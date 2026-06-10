@@ -577,7 +577,10 @@
     }
   ];
 
-  const palette = {
+  const globalGameData = globalThis.DawnDashersGameData;
+  const scriptGameData = typeof DawnDashersGameData === 'undefined' ? null : DawnDashersGameData;
+  const gameData = globalGameData || scriptGameData || {};
+  const palette = gameData.palette || {
     bgTop: '#08101d',
     bgBottom: '#1f1332',
     gold: '#ffd166',
@@ -590,7 +593,7 @@
   };
 
   // Quirky congrats shown when advancing to the next level
-  const levelTransitionMsgs = [
+  const levelTransitionMsgs = gameData.levelTransitionMsgs || [
     null, // placeholder — level 0 is the start, no incoming transition
     {
       congrats: 'Wowww!! Outback: CLEARED! 🌵🔥',
@@ -610,7 +613,7 @@
     }
   ];
 
-  const regions = [
+  const regions = gameData.regions || [
     {
       name: 'Outback Ruins',
       top: '#d4a373',
@@ -698,7 +701,7 @@
     apiOnline: false
   };
 
-  const characters = {
+  const characters = gameData.characters || {
     emu: { name: 'Elder Emu', emoji: '🦅', power: 'Dust Sprint', quirk: 'Fast lane weave, moderate hop drain.', unlockAt: 0, role: 'fast' },
     wombat: { name: 'Digger Wombat', emoji: '🦫', power: 'Burrow Dodge', quirk: 'Cheaper slides in dunes/forest.', unlockAt: 0, role: 'slow' },
     kangaroo: { name: 'Red Kangaroo', emoji: '🦘', power: 'Sky Hop', quirk: 'Jumps are most energy-efficient.', unlockAt: 1, role: 'fast' },
@@ -710,14 +713,14 @@
     kookaburra: { name: 'Aurora Kookaburra', emoji: '🐦', power: 'Light Call', quirk: 'Fast top-tier lane traversal.', unlockAt: 4, role: 'fast' },
     quokka: { name: 'Summit Quokka', emoji: '🐹', power: 'Calm Climb', quirk: 'Highest efficiency but restricted lanes.', unlockAt: 4, role: 'slow' }
   };
-  const levelCharacterPairs = {
+  const levelCharacterPairs = gameData.levelCharacterPairs || {
     0: { fast: 'emu', slow: 'wombat' },
     1: { fast: 'kangaroo', slow: 'koala' },
     2: { fast: 'possum', slow: 'echidna' },
     3: { fast: 'dingo', slow: 'bilby' },
     4: { fast: 'kookaburra', slow: 'quokka' }
   };
-  const characterFood = {
+  const characterFood = gameData.characterFood || {
     emu: { name: 'Seed Mix', icon: '🌾', cost: 220, restore: 250, moveCost: 50, jumpCost: 68, slideCost: 42 },
     wombat: { name: 'Root Pack', icon: '🥕', cost: 190, restore: 230, moveCost: 30, jumpCost: 48, slideCost: 24 },
     kangaroo: { name: 'Grass Bundle', icon: '🥬', cost: 235, restore: 270, moveCost: 48, jumpCost: 60, slideCost: 38 },
@@ -733,7 +736,7 @@
     acc[key] = 0;
     return acc;
   }, {});
-  const characterRegionMap = {
+  const characterRegionMap = gameData.characterRegionMap || {
     emu: 0,
     wombat: 0,
     kangaroo: 1,
@@ -750,151 +753,32 @@
     hintIndex: 0,
     currentIndex: 0,
     hintsUsedThisPuzzle: 0,
+    hintRewardGrantedThisPuzzle: false,
     pendingAdvance: null
   };
 
-  const levelPuzzlePools = {
+  const puzzleData = globalThis.DawnDashersPuzzleData || {};
+  const levelPuzzlePools = puzzleData.levelPuzzlePools || {
     0: [0, 2],
     1: [3, 4],
     2: [8, 5],
     3: [1, 7],
     4: [6, 9]
   };
-
-  const turingPuzzles = [
-    {
-      title: 'Outback Reversed Message',
-      instruction: 'A dusty radio near an outback roadhouse reverses the name of the thinker who inspired this machine. Decode: N A L A.',
-      answer: 'ALAN',
-      acceptedAnswers: ['alan'],
-      hints: [
-        'Read the signal backward from right to left.',
-        'The last letter in the bush transmission comes first.',
-        'Reverse N A L A completely.'
-      ],
-      rightExplain: 'Correct. Reversing N A L A gives A L A N, the Turing clue hidden in the outback static.',
-      wrongExplain: 'Oops. This outback radio trick is a straight reversal, right-to-left.',
-      learnUrl: 'https://en.wikipedia.org/wiki/Turing_machine'
-    },
-    {
-      title: 'Bush Telegraph Shift',
-      instruction: 'A bush telegraph note says each letter is shifted forward once. Shift backward by one to decode: B M B O.',
-      answer: 'ALAM',
-      acceptedAnswers: ['alam', 'alan'],
-      hints: [
-        'Ask which letter comes just before B in the alphabet.',
-        'Shift each character back by one, one at a time.',
-        'This puzzle is aiming you toward ALAN even if one clue letter is a little scruffy.'
-      ],
-      rightExplain: 'Nice. Back-shifting the bush code reveals the intended Turing nod.',
-      wrongExplain: 'Oops. Move each letter one step backward through the alphabet.',
-      learnUrl: 'https://en.wikipedia.org/wiki/Binary_number'
-    },
-    {
-      title: 'The Odd One Outback',
-      instruction: 'Which item does NOT belong at a Turing research camp: Computer, Microchip, Calculator, Billy Can?',
-      answer: 'Billy Can',
-      acceptedAnswers: ['billy can', 'billycan'],
-      hints: [
-        'Three items are computing-related tools.',
-        'One is camp gear for boiling tea in the bush.'
-      ],
-      rightExplain: 'Correct. A billy can belongs by the fire, not inside a computing set.',
-      wrongExplain: 'Oops. Pick the item that is not part of an electronic/computing toolkit.',
-      learnUrl: 'https://en.wikipedia.org/wiki/Boolean_algebra'
-    },
-    {
-      title: 'Binary at Bondi',
-      instruction: 'A Bondi lifeguard board flashes the two symbols used by every binary machine. What are they?',
-      answer: '0 and 1',
-      acceptedAnswers: ['0 and 1', '0,1', '0 1', '01'],
-      hints: [
-        'Think of a surf warning light being OFF or ON.',
-        'Binary uses exactly two symbols.'
-      ],
-      rightExplain: 'Correct. Whether in Sydney or Cambridge, binary is built from 0 and 1.',
-      wrongExplain: 'Oops. Binary machines use only 0 and 1.',
-      learnUrl: 'https://en.wikipedia.org/wiki/Enigma_machine'
-    },
-    {
-      title: 'Tasman Tide Sequence',
-      instruction: 'A Tassie signal buoy doubles every cycle. Find the missing value: 2, 4, 8, 16, [ ? ], 64.',
-      answer: '32',
-      acceptedAnswers: ['32'],
-      hints: [
-        'Each buoy reading is twice the last one.',
-        'Double 16 to fill the gap.'
-      ],
-      rightExplain: 'Correct. The Tasman reading doubles cleanly to 32 before 64.',
-      wrongExplain: 'Oops. This coastal pattern doubles at each step.',
-      learnUrl: 'https://en.wikipedia.org/wiki/Halting_problem'
-    },
-    {
-      title: 'The Secret Identity Test',
-      instruction: 'At a Darwin pub quiz, one mate answers a giant multiplication instantly while the other stalls for 5 seconds. Who is the computer?',
-      answer: 'Player A',
-      acceptedAnswers: ['player a', 'a'],
-      hints: [
-        'Humans usually need time for huge arithmetic, even after a meat pie.',
-        'The instant responder is the stronger machine candidate.'
-      ],
-      rightExplain: 'Correct. Near-instant huge arithmetic strongly suggests Player A is the machine.',
-      wrongExplain: 'Oops. In a Turing-style test, instant huge arithmetic points to the computer.',
-      learnUrl: 'https://en.wikipedia.org/wiki/Turing_test'
-    },
-    {
-      title: 'The Enigma Plugboard Down Under',
-      instruction: 'A coastal cipher hut swaps A↔E and B↔X. What does B A B E become?',
-      answer: 'X E X A',
-      acceptedAnswers: ['x e x a', 'xexa', 'xexa '],
-      hints: [
-        'Swap each B for X wherever it appears.',
-        'Swap each A for E, and E back to A.'
-      ],
-      rightExplain: 'Correct. You applied the plugboard swaps in order, just like a tiny Enigma hut on the coast would.',
-      wrongExplain: 'Oops. Apply the plugboard swaps to each letter one by one.',
-      learnUrl: 'https://en.wikipedia.org/wiki/Enigma_machine'
-    },
-    {
-      title: 'The Bush Logic Route',
-      instruction: 'A survey robot crosses the bush track only if it is SUNNY AND weekend. Today is Saturday and raining. Does it walk?',
-      answer: 'No',
-      acceptedAnswers: ['no', 'n'],
-      hints: [
-        'AND means both conditions must be true together.',
-        'Weekend is true, but sunny is false.'
-      ],
-      rightExplain: 'Correct. A wet Saturday in the bush still fails the SUNNY AND weekend rule.',
-      wrongExplain: 'Oops. With AND logic, one false condition makes the whole route fail.',
-      learnUrl: 'https://en.wikipedia.org/wiki/Logic_gate'
-    },
-    {
-      title: 'The Codebreaker\'s Keycard',
-      instruction: 'A servo relay locker uses a 3-digit key: first digit 1, second is double the first, third is double the second. What code opens it?',
-      answer: '124',
-      acceptedAnswers: ['124'],
-      hints: [
-        'Start from 1 at the first dial.',
-        'Keep doubling the previous digit to get the next one.'
-      ],
-      rightExplain: 'Correct. 1 -> 2 -> 4 opens the servo locker with code 124.',
-      wrongExplain: 'Oops. This code doubles from the previous digit each time.',
-      learnUrl: 'https://en.wikipedia.org/wiki/Pattern_recognition'
-    },
-    {
-      title: 'The Turing Tape at the Tram Stop',
-      instruction: 'A Melbourne tram-stop machine follows one rule: if you see a 0, change it to 1 and stop. Tape: 1, 1, 0, 1. Final tape?',
-      answer: '1,1,1,1',
-      acceptedAnswers: ['1,1,1,1', '1 1 1 1', '1111'],
-      hints: [
-        'Leave each 1 unchanged as you scan.',
-        'Flip the first 0 you encounter, then stop immediately.'
-      ],
-      rightExplain: 'Correct. The lone 0 becomes 1, leaving an all-ones tape.',
-      wrongExplain: 'Oops. You flip only the encountered 0 to 1, then halt.',
-      learnUrl: 'https://en.wikipedia.org/wiki/Turing_machine'
-    }
-  ];
+  const turingPuzzles = Array.isArray(puzzleData.turingPuzzles) && puzzleData.turingPuzzles.length
+    ? puzzleData.turingPuzzles
+    : [
+      {
+        title: 'Outback Reversed Message',
+        instruction: 'A dusty radio near an outback roadhouse reverses the name of the thinker who inspired this machine. Decode: N A L A.',
+        answer: 'ALAN',
+        acceptedAnswers: ['alan'],
+        hints: ['Read the signal backward from right to left.'],
+        rightExplain: 'Correct. Reversing N A L A gives A L A N, the Turing clue hidden in the outback static.',
+        wrongExplain: 'Oops. This outback radio trick is a straight reversal, right-to-left.',
+        learnUrl: 'https://en.wikipedia.org/wiki/Turing_machine'
+      }
+    ];
 
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -1956,6 +1840,17 @@
     puzzleState.hintIndex = Math.min(puzzleState.hintIndex + 1, puzzle.hints.length - 1);
     puzzleState.hintsUsedThisPuzzle += 1;
 
+    if (puzzleState.hintsUsedThisPuzzle >= hintLimit && !puzzleState.hintRewardGrantedThisPuzzle) {
+      puzzleState.hintRewardGrantedThisPuzzle = true;
+      if (state.health < state.maxLives) {
+        state.health = Math.min(state.maxLives, state.health + 1);
+        pushMessage(`All level hints used. +1 heart (${state.health}/${state.maxLives})`);
+        syncHud();
+      } else {
+        pushMessage('All level hints used, but hearts are already full.');
+      }
+    }
+
     if (puzzleStatus) {
       const remaining = Math.max(0, hintLimit - puzzleState.hintsUsedThisPuzzle);
       puzzleStatus.textContent = `${hint} (${remaining} hints left)`;
@@ -1986,6 +1881,7 @@
     const pool = getPuzzlePoolForLevel(level);
     puzzleState.hintIndex = 0;
     puzzleState.hintsUsedThisPuzzle = 0;
+    puzzleState.hintRewardGrantedThisPuzzle = false;
     if (puzzleTitle) puzzleTitle.textContent = `${puzzle.title} (${(puzzleState.currentIndex % pool.length) + 1}/${pool.length})`;
     if (puzzleInstruction) puzzleInstruction.textContent = puzzle.instruction;
     if (puzzleQuestion) puzzleQuestion.textContent = `Question: ${puzzle.instruction}`;
@@ -3774,13 +3670,11 @@
     if (puzzleHintBtn) {
       puzzleHintBtn.addEventListener('click', () => {
         revealPuzzleHint();
-        registerHintUsage();
       });
     }
     if (puzzleTopHintBtn) {
       puzzleTopHintBtn.addEventListener('click', () => {
         revealPuzzleHint();
-        registerHintUsage();
       });
     }
     if (puzzleSkipBtn) {
