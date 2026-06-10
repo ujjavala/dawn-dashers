@@ -34,6 +34,7 @@
   const lcContinueBtn = document.getElementById('lcContinueBtn');
   const settingsModal = document.getElementById('settingsModal');
   const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+  const superModeRow = document.getElementById('superModeRow');
   const superModeSelect = document.getElementById('superModeSelect');
   const difficultySelect = document.getElementById('difficultySelect');
   const terrain3dSelect = document.getElementById('terrain3dSelect');
@@ -107,7 +108,18 @@
   if (!difficultyMultipliers[gameDifficulty]) {
     gameDifficulty = 'medium';
   }
-  let superModeEnabled = localStorage.getItem(SUPER_MODE_KEY) === 'on';
+  const appConfig = globalThis.DawnDashersAppConfig || {};
+  const isLocalHost = ['localhost', '127.0.0.1', '::1'].includes(globalThis.location?.hostname || '');
+  const superModeAllowed = (() => {
+    const raw = appConfig.enableSuperMode;
+    const flagEnabled = raw === true || raw === 'true' || raw === 1 || raw === '1' || raw === 'on';
+    return isLocalHost && flagEnabled;
+  })();
+  let superModeEnabled = superModeAllowed && localStorage.getItem(SUPER_MODE_KEY) === 'on';
+  if (!superModeAllowed) {
+    localStorage.setItem(SUPER_MODE_KEY, 'off');
+    superModeEnabled = false;
+  }
   let musicEnabled = localStorage.getItem(MUSIC_ENABLED_KEY) !== 'off';
   let musicVolume = Number.parseFloat(localStorage.getItem(MUSIC_VOLUME_KEY) || '0.7');
   let sfxVolume = Number.parseFloat(localStorage.getItem(SFX_VOLUME_KEY) || '0.75');
@@ -4426,7 +4438,24 @@
       localStorage.setItem(DIFFICULTY_KEY, gameDifficulty);
       pushMessage(`Difficulty: ${gameDifficulty[0].toUpperCase()}${gameDifficulty.slice(1)}`);
     });
+    if (superModeRow) {
+      superModeRow.style.display = superModeAllowed ? '' : 'none';
+    }
+    if (superModeSelect && !superModeAllowed) {
+      superModeSelect.value = 'off';
+      superModeSelect.disabled = true;
+    }
     bindSelectChange(superModeSelect, superModeEnabled ? 'on' : 'off', () => {
+      if (!superModeAllowed) {
+        superModeEnabled = false;
+        if (superModeSelect) {
+          superModeSelect.value = 'off';
+        }
+        localStorage.setItem(SUPER_MODE_KEY, 'off');
+        updateCharacterAvailability();
+        syncHud();
+        return;
+      }
       superModeEnabled = superModeSelect.value === 'on';
       localStorage.setItem(SUPER_MODE_KEY, superModeEnabled ? 'on' : 'off');
       syncAdminProgressToSelectedCharacter();
@@ -4540,6 +4569,10 @@
   function bindSystemEvents() {
     globalThis.addEventListener('keydown', onKeyDown);
     globalThis.addEventListener('resize', resize);
+    globalThis.addEventListener('orientationchange', resize);
+    if (globalThis.visualViewport) {
+      globalThis.visualViewport.addEventListener('resize', resize);
+    }
     globalThis.addEventListener('pointerdown', ensureAudioStarted, { passive: true });
   }
 

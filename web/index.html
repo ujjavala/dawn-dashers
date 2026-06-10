@@ -22,9 +22,9 @@
       --glass: rgba(26, 15, 8, 0.72);
       --glass-strong: rgba(26, 15, 8, 0.82);
     }
-    html, body { margin: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 18%, #3d2010 0%, #1a0f08 42%, #100a04 100%); overflow: hidden; font-family: 'Nunito', 'Segoe UI', sans-serif; }
+    html, body { margin: 0; width: 100%; height: 100%; min-height: 100dvh; background: radial-gradient(circle at 50% 18%, #3d2010 0%, #1a0f08 42%, #100a04 100%); overflow: hidden; font-family: 'Nunito', 'Segoe UI', sans-serif; }
     body { touch-action: none; }
-    .app { position: fixed; inset: 0; color: var(--paper); }
+    .app { position: fixed; inset: 0; min-height: 100dvh; color: var(--paper); }
     .app::before {
       content: "";
       position: absolute;
@@ -1335,7 +1335,7 @@
             <button id="closeSettingsBtn" class="modal-close">Close</button>
           </div>
           <div class="panel-list">
-            <div class="panel-item">
+            <div id="superModeRow" class="panel-item" style="display:none;">
               <span>Super Mode (Admin)</span>
               <select id="superModeSelect" class="modal-close" aria-label="Super Mode">
                 <option value="off" selected>Off</option>
@@ -1471,11 +1471,12 @@
       <button id="startBtn" class="dock-icon-btn" aria-label="Play or pause run" title="Play / Pause"><span class="icon-play"></span></button>
       <button id="buyFoodBtn" class="dock-icon-btn" aria-label="Open food cart" title="Food Cart"><span class="cart-shape"></span></button>
     </div>
-    <button id="reviveBtn" class="gameover-revive-btn" aria-label="Use revive option" title="Revive">Use 1 Revive ❤️</button>
+    <button id="reviveBtn" class="gameover-revive-btn" aria-label="Use 1 Revive ❤️" title="Revive">Use 1 Revive ❤️</button>
     <button id="mobileMenuBtn" class="mobile-menu-btn" aria-label="Pause and open menu" title="Pause and open menu"><span id="mobileMenuIcon" class="mobile-menu-icon">⏸</span></button>
   </div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r165/three.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/noisejs/2.1.0/perlin.min.js"></script>
+  <script src="https://unpkg.com/three@0.152.2/build/three.min.js" integrity="sha384-aUS0jUAjhhBFNPifgxTHTNcsZDqkbegLd/JKEhJzK3Lyg9nFF1PZ2J++mzKwd8Kz" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/noisejs@2.1.0/index.js" integrity="sha384-it7IeCHGyuUxuRxbmQDK57bIzKKSE0Eb71esb6kRc+yVUdW/KQf9LvallaHw5IUj" crossorigin="anonymous"></script>
+  <script src="/app-config.js"></script>
   <script src="/game-data.js"></script>
   <script src="/puzzles/level-1.js"></script>
   <script src="/puzzles/level-2.js"></script>

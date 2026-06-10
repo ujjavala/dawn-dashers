@@ -122,6 +122,12 @@ Included services:
 - `api`: FastAPI service (`/health`, `/dialogue`, `/hint`, `/road-event`)
 - `web`: Nginx static host and API reverse proxy
 
+Environment app config for Super Mode:
+
+- Local Docker: `web/app-config.local.js` is mounted as `web/app-config.js`, so Super Mode can be shown for local admin testing.
+- Production/Vercel: `web/app-config.js` (and `web/app-config.prod.js`) keep Super Mode disabled.
+- Runtime hard-gate still allows Super Mode only on local hosts (`localhost`/`127.0.0.1`/`::1`).
+
 Files:
 
 - `docker-compose.yml`

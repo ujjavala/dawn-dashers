@@ -17,4 +17,5 @@ services:
       - "8080:80"
     volumes:
       - ./web:/usr/share/nginx/html:ro
+      - ./web/app-config.local.js:/usr/share/nginx/html/app-config.js:ro
       - ./web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
