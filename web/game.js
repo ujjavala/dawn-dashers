@@ -100,6 +100,7 @@
   const SFX_VOLUME_KEY = 'dawn_dashers_sfx_volume_v1';
   const TERRAIN_3D_KEY = 'dawn_dashers_terrain_3d_v1';
   const PUZZLE_BANK_UNLOCKS_KEY = 'dawn_dashers_puzzle_bank_unlocks_v1';
+  const HUNGER_MODAL_RESURFACE_DELAY_MS = 5000;
   const difficultyMultipliers = {
     easy: 0.75,
     medium: 1,
@@ -701,6 +702,7 @@
     hintsUsed: 0,
     paused: false,
     hungerPaused: false,
+    hungerModalDismissedUntil: 0,
     activeBoostMoves: {
       slowFullWidth: 0,
       fastEfficiency: 0
@@ -1539,6 +1541,7 @@
     if (!hungerModal) {
       return;
     }
+    state.hungerModalDismissedUntil = 0;
     if (hungerText && characters[selectedCharacter]) {
       const currentName = characters[selectedCharacter].name;
       hungerText.textContent = `Oho! ${currentName} is hungry. You are out of food and energy is too low. Collect score tokens, open Food Cart, and buy supplies to continue.`;
@@ -1547,9 +1550,12 @@
     hungerModal.setAttribute('aria-hidden', 'false');
   }
 
-  function hideHungerModal() {
+  function hideHungerModal(manualDismiss = false) {
     if (!hungerModal) {
       return;
+    }
+    if (manualDismiss) {
+      state.hungerModalDismissedUntil = Date.now() + HUNGER_MODAL_RESURFACE_DELAY_MS;
     }
     hungerModal.classList.remove('open');
     hungerModal.setAttribute('aria-hidden', 'true');
@@ -2654,6 +2660,7 @@
     }
 
     if (state.hungerPaused && hungryNow && hungerModal && !hungerModal.classList.contains('open')
+      && Date.now() >= state.hungerModalDismissedUntil
       && !foodShopModal?.classList.contains('open')) {
       showHungerModal();
     }
@@ -2661,6 +2668,7 @@
     if (state.hungerPaused && !hungryNow) {
       state.hungerPaused = false;
       state.paused = false;
+      state.hungerModalDismissedUntil = 0;
       hideHungerModal();
       state.message = 'Food restored. Run resumed.';
       syncHud();
@@ -4390,9 +4398,21 @@
   }
 
   function bindClick(element, handler) {
-    if (element) {
-      element.addEventListener('click', handler);
+    if (!element) {
+      return;
     }
+    let lastTouchAt = 0;
+    element.addEventListener('touchend', (event) => {
+      lastTouchAt = Date.now();
+      event.preventDefault();
+      handler(event);
+    }, { passive: false });
+    element.addEventListener('click', (event) => {
+      if (Date.now() - lastTouchAt < 500) {
+        return;
+      }
+      handler(event);
+    });
   }
 
   function bindSelectChange(selectEl, initialValue, handler) {
@@ -4494,7 +4514,7 @@
     });
     bindClick(closePastGamesBtn, () => closeModal(pastGamesModal));
     bindClick(closeFoodShopBtn, () => closeModal(foodShopModal));
-    bindClick(closeHungerBtn, hideHungerModal);
+    bindClick(closeHungerBtn, () => hideHungerModal(true));
     bindClick(foodCheckoutBtn, checkoutFoodCart);
     bindClick(hungerOpenShopBtn, openFoodShop);
     bindClick(clearFoodCartBtn, () => {
