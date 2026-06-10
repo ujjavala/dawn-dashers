@@ -144,8 +144,77 @@
     }
   ];
 
+  const levelTreasurePools = {
+    0: [0],
+    1: [1],
+    2: [2],
+    3: [3],
+    4: [3]
+  };
+
+  const treasurePuzzles = [
+    {
+      title: 'Captcha Interrogation at Coober Pedy',
+      instruction: 'Case file: Three station workers at a Coober Pedy roadhouse were asked, "How do you feel about this weather?" Worker 1 talks about sore knees. Worker 2 complains about kitchen humidity. Worker 3 says, "As an AI, I do not have personal feelings about meteorological conditions." Which suspect failed the Turing test?',
+      answer: 'Suspect 3',
+      acceptedAnswers: ['suspect 3', 'worker 3', '3', 'the maid', 'suspect three'],
+      hints: [
+        'One answer sounds like a system prompt, not a human yarning about weather.',
+        'The suspect who literally says they are an AI fails immediately.',
+        'Pick the third suspect.'
+      ],
+      rightExplain: 'Spot on. Suspect 3 blew their cover and failed the Turing test in true outback detective style.',
+      wrongExplain: 'Not quite. The synthetic suspect gives the robotic weather-stat answer.',
+      learnUrl: 'https://en.wikipedia.org/wiki/Turing_test'
+    },
+    {
+      title: 'Enigma Typo at Bondi HQ',
+      instruction: 'Intercepted note from a clumsy spy near Bondi says to secure under "S B X B". Analyst note: decode by shifting each letter backward by one. What word do you get?',
+      answer: 'RAWA',
+      acceptedAnswers: ['rawa'],
+      hints: [
+        'Shift S -> R, B -> A, X -> W, B -> A.',
+        'Write each decoded letter in order after shifting back by one.',
+        'The decoded word is RAWA.'
+      ],
+      rightExplain: 'Correct. RAWA is the decoded text from the backward Shift-1 spy typo.',
+      wrongExplain: 'Try decoding each letter one step backward in the alphabet.',
+      learnUrl: 'https://en.wikipedia.org/wiki/Cryptanalysis'
+    },
+    {
+      title: 'Infinite Loop Alibi in Darwin',
+      instruction: 'Professor Loop claims: "I followed shampoo instructions between 4 and 5 PM: lather, rinse, repeat continuously, then left at 4:30." Using the Halting Problem idea, is this alibi possible?',
+      answer: 'No',
+      acceptedAnswers: ['no', 'not possible', 'impossible', 'n'],
+      hints: [
+        '"Repeat" with no stop condition is an infinite loop.',
+        'A non-halting process cannot magically finish by 4:30.',
+        'So the alibi is not possible.'
+      ],
+      rightExplain: 'Exactly. Without a halt condition, the loop never ends, so the alibi collapses.',
+      wrongExplain: 'If instructions never halt, the process cannot finish in finite time.',
+      learnUrl: 'https://en.wikipedia.org/wiki/Halting_problem'
+    },
+    {
+      title: 'Punch Card Recipe in Melbourne',
+      instruction: 'Universal machine runs MAKE_TEA.EXE. Step 4 says "Chill for five minutes." The machine interprets literally and moves the tea to the coldest place in the house. Where does it put it?',
+      answer: 'Freezer',
+      acceptedAnswers: ['freezer', 'fridge', 'refrigerator'],
+      hints: [
+        'The machine follows literal instructions, not slang.',
+        '"Chill" becomes physical cooling, not relaxing.',
+        'It stores the tea in the freezer/fridge.'
+      ],
+      rightExplain: 'Bang on. A literal universal machine would stash the tea in the freezer or fridge.',
+      wrongExplain: 'Think literal execution: where in a home is the coldest storage?',
+      learnUrl: 'https://en.wikipedia.org/wiki/Universal_Turing_machine'
+    }
+  ];
+
   globalScope.DawnDashersPuzzleData = {
     levelPuzzlePools,
-    turingPuzzles
+    turingPuzzles,
+    levelTreasurePools,
+    treasurePuzzles
   };
 })(globalThis);

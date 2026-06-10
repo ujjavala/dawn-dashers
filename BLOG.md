@@ -210,6 +210,10 @@ Recent economy + control tuning:
 - Food is character-specific (different cost/restore), reinforcing fast-vs-slow strategy choices.
 - Food buying now uses a dedicated cart/shop flow with character-specific food icons and special buff foods.
 - Pausing the run now freezes falling items and movement while still allowing shop and puzzle interactions.
+- Mobile HUD was simplified by removing non-essential Region/Mode labels from active run chips.
+- Android touch handling now uses lower swipe thresholds and tap-to-jump / tap-to-slide fallback.
+- On mobile during active play, the full dock collapses into a single quick-menu button; pausing reveals full controls.
+- While paused on mobile, the quick-menu button switches to a one-tap resume action.
 
 Each Sun Fragment recovered visibly restores light to the world, reinforcing the solstice transformation.
 
@@ -244,7 +248,7 @@ Latest visual upgrade applied in the playable web build:
 - Temporary Super Mode added for admin playtesting: all character locks bypassed so any terrain can be entered by selecting its mapped dasher
 - Simplified run loop pass for readability: shard and bomb focus with direct score feedback (+500 shard, -100 bomb hit)
 - Character select UX upgrade: terrain-themed title bar, explicit FAST/SLOW role badges, and a structured spec-card layout for character stats
-- Gameplay control refresh: icon-based controls, HUD cart icon, and right-side vertical control rail instead of a bottom-heavy dock
+- Gameplay control refresh: icon-based controls, right-side vertical control rail, and dock-based food cart action instead of a bottom-heavy dock
 - Terrain realism pass expanded across all major biomes with more grounded scene props and moving ambient elements:
 	- Outback: posts, station remnants, tanks, signs, drifting sand
 	- Bushland: logs, stumps, rocks, leaves, pollen
@@ -269,7 +273,7 @@ Latest audio upgrade:
 - Browser runtime prototype: HTML5 Canvas + JavaScript + Three.js + NoiseJS + WebAudio API
 - GitHub Copilot (agent-assisted development)  
 - Optional MCP + Gemini integration for dynamic content generation  
-- Deployment via itch.io / GitHub Pages  
+- Deployment via Vercel static hosting (current web runtime), plus optional itch.io / GitHub Pages for Unity WebGL builds  
 
 ---
 

@@ -9,7 +9,6 @@
   const foodEl = document.getElementById('food');
   const livesEl = document.getElementById('lives');
   const fragmentEl = document.getElementById('fragments');
-  const regionEl = document.getElementById('region');
   const objectiveEl = document.getElementById('objective');
   const messageEl = document.getElementById('message');
   const startBtn = document.getElementById('startBtn');
@@ -19,6 +18,8 @@
   const hudEl = document.querySelector('.hud');
   const missionEl = document.querySelector('.mission');
   const dockEl = document.querySelector('.dock');
+  const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+  const mobileMenuIcon = document.getElementById('mobileMenuIcon');
   const landingOverlay = document.getElementById('landingOverlay');
   const playNowBtn = document.getElementById('playNowBtn');
   const landingSettingsBtn = document.getElementById('landingSettingsBtn');
@@ -83,6 +84,9 @@
   const foodCartSummary = document.getElementById('foodCartSummary');
   const foodCheckoutBtn = document.getElementById('foodCheckoutBtn');
   const clearFoodCartBtn = document.getElementById('clearFoodCartBtn');
+  const hungerModal = document.getElementById('hungerModal');
+  const hungerText = document.getElementById('hungerText');
+  const hungerOpenShopBtn = document.getElementById('hungerOpenShopBtn');
   const RUNS_KEY = 'dawn_dashers_runs_v1';
   const WALKTHROUGH_KEY = 'dawn_dashers_walkthrough_seen';
   const DIFFICULTY_KEY = 'dawn_dashers_difficulty_v1';
@@ -140,8 +144,8 @@
     sfx: null,
     padA: null,
     padB: null,
-    windSource: null,
-    windFilter: null,
+    pulse: null,
+    pulseGain: null,
     started: false
   };
 
@@ -391,16 +395,6 @@
     audioState.sfx = sfx;
   }
 
-  function createNoiseBuffer(ctx, seconds = 2) {
-    const sampleCount = Math.floor(ctx.sampleRate * seconds);
-    const buffer = ctx.createBuffer(1, sampleCount, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < sampleCount; i++) {
-      data[i] = (Math.random() * 2 - 1) * 0.35;
-    }
-    return buffer;
-  }
-
   function startAmbientAudio() {
     ensureAudioContext();
     if (!audioState.ctx || audioState.started) {
@@ -410,47 +404,41 @@
 
     const padA = ctx.createOscillator();
     const padB = ctx.createOscillator();
+    const pulse = ctx.createOscillator();
     const padAGain = ctx.createGain();
     const padBGain = ctx.createGain();
+    const pulseGain = ctx.createGain();
     const musicFilter = ctx.createBiquadFilter();
     musicFilter.type = 'lowpass';
-    musicFilter.frequency.value = 680;
-    musicFilter.Q.value = 0.6;
+    musicFilter.frequency.value = 920;
+    musicFilter.Q.value = 0.42;
 
     padA.type = 'triangle';
     padB.type = 'sine';
-    padA.frequency.value = 92;
-    padB.frequency.value = 138;
-    padAGain.gain.value = 0.045;
-    padBGain.gain.value = 0.028;
+    pulse.type = 'triangle';
+    padA.frequency.value = 110;
+    padB.frequency.value = 165;
+    pulse.frequency.value = 2.2;
+    padAGain.gain.value = 0.03;
+    padBGain.gain.value = 0.02;
+    pulseGain.gain.value = 0.012;
 
     padA.connect(padAGain);
     padB.connect(padBGain);
+    pulse.connect(pulseGain);
     padAGain.connect(musicFilter);
     padBGain.connect(musicFilter);
+    pulseGain.connect(musicFilter);
     musicFilter.connect(audioState.music);
-
-    const windSource = ctx.createBufferSource();
-    windSource.buffer = createNoiseBuffer(ctx, 3);
-    windSource.loop = true;
-    const windFilter = ctx.createBiquadFilter();
-    windFilter.type = 'bandpass';
-    windFilter.frequency.value = 430;
-    windFilter.Q.value = 0.85;
-    const windGain = ctx.createGain();
-    windGain.gain.value = 0.04;
-    windSource.connect(windFilter);
-    windFilter.connect(windGain);
-    windGain.connect(audioState.music);
 
     padA.start();
     padB.start();
-    windSource.start();
+    pulse.start();
 
     audioState.padA = padA;
     audioState.padB = padB;
-    audioState.windSource = windSource;
-    audioState.windFilter = windFilter;
+    audioState.pulse = pulse;
+    audioState.pulseGain = pulseGain;
     audioState.started = true;
     syncAudioToRegion();
   }
@@ -478,30 +466,40 @@
     audioState.sfx.gain.cancelScheduledValues(now);
     audioState.sfx.gain.linearRampToValueAtTime(sfxVolume, now + 0.1);
 
-    let fA = 92;
-    let fB = 138;
-    let windF = 420;
+    let fA = 110;
+    let fB = 165;
+    let pulseRate = 2.2;
+    let pulseDepth = 0.012;
     if (terrain === 'forest') {
+      fA = 104;
+      fB = 156;
+      pulseRate = 2;
+      pulseDepth = 0.01;
+    } else if (terrain === 'beach') {
       fA = 98;
       fB = 147;
-      windF = 370;
-    } else if (terrain === 'beach') {
-      fA = 82;
-      fB = 124;
-      windF = 760;
+      pulseRate = 1.8;
+      pulseDepth = 0.008;
     } else if (terrain === 'industrial') {
-      fA = 112;
-      fB = 168;
-      windF = 980;
+      fA = 123;
+      fB = 184;
+      pulseRate = 2.8;
+      pulseDepth = 0.009;
     } else if (terrain === 'mountains') {
-      fA = 76;
-      fB = 114;
-      windF = 540;
+      fA = 92;
+      fB = 138;
+      pulseRate = 1.6;
+      pulseDepth = 0.007;
     }
 
     audioState.padA.frequency.setTargetAtTime(fA, now, 0.32);
     audioState.padB.frequency.setTargetAtTime(fB, now, 0.32);
-    audioState.windFilter.frequency.setTargetAtTime(windF, now, 0.24);
+    if (audioState.pulse) {
+      audioState.pulse.frequency.setTargetAtTime(pulseRate, now, 0.25);
+    }
+    if (audioState.pulseGain) {
+      audioState.pulseGain.gain.setTargetAtTime(pulseDepth, now, 0.3);
+    }
   }
 
   function playSfx(kind) {
@@ -754,7 +752,8 @@
     currentIndex: 0,
     hintsUsedThisPuzzle: 0,
     hintRewardGrantedThisPuzzle: false,
-    pendingAdvance: null
+    pendingAdvance: null,
+    pendingTreasure: null
   };
 
   const puzzleData = globalThis.DawnDashersPuzzleData || {};
@@ -779,6 +778,14 @@
         learnUrl: 'https://en.wikipedia.org/wiki/Turing_machine'
       }
     ];
+  const levelTreasurePools = puzzleData.levelTreasurePools || {
+    0: [0],
+    1: [1],
+    2: [2],
+    3: [3],
+    4: [3]
+  };
+  const treasurePuzzles = Array.isArray(puzzleData.treasurePuzzles) ? puzzleData.treasurePuzzles : [];
 
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -788,6 +795,7 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     terrainTextureCache.clear();
     resizeThreeTerrain();
+    syncMobileControlVisibility();
   }
 
   function clampColorChannel(value) {
@@ -1089,6 +1097,93 @@
     if (missionEl) missionEl.style.display = display;
     if (dockEl) dockEl.style.display = display;
     if (livesEl) livesEl.style.display = display;
+    syncMobileControlVisibility();
+  }
+
+  function syncMobileControlVisibility() {
+    if (!dockEl) {
+      return;
+    }
+    const gameplayVisible = hudEl?.style.display !== 'none';
+    const isMobileViewport = globalThis.matchMedia?.('(max-width: 720px)')?.matches;
+
+    if (!isMobileViewport || !gameplayVisible) {
+      dockEl.classList.remove('mobile-hidden');
+      updateMobileMenuButton(false, false);
+      return;
+    }
+
+    const quickMenuVisible = state.running && !state.ended;
+    const hideDockDuringRun = state.running && !state.paused && !state.ended;
+    dockEl.classList.toggle('mobile-hidden', hideDockDuringRun);
+    updateMobileMenuButton(quickMenuVisible, hideDockDuringRun);
+  }
+
+  function updateMobileMenuButton(visible, runningActive) {
+    if (!mobileMenuBtn) {
+      return;
+    }
+    if (!visible) {
+      mobileMenuBtn.classList.remove('show', 'state-pause', 'state-resume');
+      return;
+    }
+
+    mobileMenuBtn.classList.add('show');
+    mobileMenuBtn.classList.toggle('state-pause', runningActive);
+    mobileMenuBtn.classList.toggle('state-resume', !runningActive);
+    const isResumeState = !runningActive;
+    mobileMenuBtn.setAttribute('aria-label', isResumeState ? 'Resume run' : 'Pause and open menu');
+    mobileMenuBtn.setAttribute('title', isResumeState ? 'Resume run' : 'Pause and open menu');
+    if (mobileMenuIcon) {
+      mobileMenuIcon.textContent = isResumeState ? '▶' : '⏸';
+    }
+  }
+
+  function drawScoreToken(item) {
+    const isBonus = item.type === 'scoreBonus';
+    ctx.fillStyle = isBonus ? 'rgba(79, 214, 131, .95)' : 'rgba(233, 92, 92, .95)';
+    ctx.beginPath();
+    ctx.roundRect(-28, -16, 56, 32, 10);
+    ctx.fill();
+    ctx.strokeStyle = isBonus ? 'rgba(222, 255, 232, .9)' : 'rgba(255, 225, 225, .9)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#08110b';
+    ctx.font = '700 14px Nunito';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${isBonus ? '+' : '-'}${item.value}`, 0, 1);
+  }
+
+  function drawTreasureOrb(item) {
+    ctx.fillStyle = item.type === 'relic' ? palette.cyan : palette.orange;
+    ctx.beginPath();
+    ctx.arc(0, 0, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = palette.paper;
+    ctx.beginPath();
+    ctx.arc(0, 0, 7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawBombHazard() {
+    // Bomb icon for hazards.
+    ctx.fillStyle = '#121317';
+    ctx.beginPath();
+    ctx.arc(0, 0, 15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255, 228, 186, .9)';
+    ctx.fillRect(-2, -18, 4, 8);
+    ctx.strokeStyle = 'rgba(255, 196, 96, .9)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -18);
+    ctx.quadraticCurveTo(8, -26, 12, -18);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255, 126, 64, .8)';
+    ctx.beginPath();
+    ctx.arc(13, -18, 3, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   function setCharacterSelectionOpen(open) {
@@ -1323,6 +1418,26 @@
     foodShopModal.setAttribute('aria-hidden', 'false');
   }
 
+  function showHungerModal() {
+    if (!hungerModal) {
+      return;
+    }
+    if (hungerText && characters[selectedCharacter]) {
+      const currentName = characters[selectedCharacter].name;
+      hungerText.textContent = `Oho! ${currentName} is hungry. You are out of food and energy is too low. Collect score tokens, open Food Cart, and buy supplies to continue.`;
+    }
+    hungerModal.classList.add('open');
+    hungerModal.setAttribute('aria-hidden', 'false');
+  }
+
+  function hideHungerModal() {
+    if (!hungerModal) {
+      return;
+    }
+    hungerModal.classList.remove('open');
+    hungerModal.setAttribute('aria-hidden', 'true');
+  }
+
   function checkoutFoodCart() {
     const cart = getCartForSelectedCharacter();
     const items = getFoodShopItemsForCharacter();
@@ -1530,12 +1645,12 @@
       foodEl.textContent = String(state.foodStocks[selectedCharacter] || 0);
     }
     fragmentEl.textContent = `${state.fragments}/7`;
-    regionEl.textContent = regions[state.regionIndex].name;
     objectiveEl.textContent = state.objective;
     messageEl.textContent = state.message;
     renderLives();
     updateCharacterAvailability();
     refreshCharacterBio();
+    syncMobileControlVisibility();
   }
 
   function renderLives() {
@@ -1656,6 +1771,7 @@
     const lane = Math.floor(Math.random() * lanes.length);
     const shardDeficit = Math.max(0, 7 - state.fragments);
     const fragChance = Math.max(.26, .38 - state.progressLevel * .014 - shardDeficit * .008);
+    const treasureChestChance = Math.min(0.09, 0.04 + state.progressLevel * 0.01);
     const plus100Chance = 0.16;
     const plus500Chance = 0.08;
     const minus100Chance = 0.12;
@@ -1668,22 +1784,28 @@
       return;
     }
 
-    if (roll < fragChance + plus100Chance) {
+    if (roll < fragChance + treasureChestChance) {
+      const bonusFood = Math.max(1, Math.min(4, 1 + Math.floor(state.progressLevel / 2) + Math.floor(Math.random() * 2)));
+      state.items.push({ type: 'treasureChest', lane, xNorm: 0.12 + Math.random() * 0.76, z: 1, foodReward: bonusFood });
+      return;
+    }
+
+    if (roll < fragChance + treasureChestChance + plus100Chance) {
       state.items.push({ type: 'scoreBonus', lane, xNorm: 0.1 + Math.random() * 0.8, z: 1, value: 100 });
       return;
     }
 
-    if (roll < fragChance + plus100Chance + plus500Chance) {
+    if (roll < fragChance + treasureChestChance + plus100Chance + plus500Chance) {
       state.items.push({ type: 'scoreBonus', lane, xNorm: 0.1 + Math.random() * 0.8, z: 1, value: 500 });
       return;
     }
 
-    if (roll < fragChance + plus100Chance + plus500Chance + minus100Chance) {
+    if (roll < fragChance + treasureChestChance + plus100Chance + plus500Chance + minus100Chance) {
       state.items.push({ type: 'scorePenalty', lane, xNorm: 0.1 + Math.random() * 0.8, z: 1, value: 100 });
       return;
     }
 
-    if (roll < fragChance + plus100Chance + plus500Chance + minus100Chance + minus500Chance) {
+    if (roll < fragChance + treasureChestChance + plus100Chance + plus500Chance + minus100Chance + minus500Chance) {
       state.items.push({ type: 'scorePenalty', lane, xNorm: 0.1 + Math.random() * 0.8, z: 1, value: 500 });
       return;
     }
@@ -1758,13 +1880,21 @@
   }
 
   function requestHint() {
+    const getPuzzleTerrainLabel = () => {
+      if (puzzleState.pendingAdvance) {
+        return `${regions[state.regionIndex].name} Unlock Puzzle`;
+      }
+      if (puzzleState.pendingTreasure) {
+        return `${regions[puzzleState.pendingTreasure.level].name} Treasure Case`;
+      }
+      return `${regions[state.regionIndex].name} Puzzle Core`;
+    };
+
     if (puzzleModal) {
       puzzleModal.classList.add('open');
       puzzleModal.setAttribute('aria-hidden', 'false');
       if (puzzleTerrain) {
-        puzzleTerrain.textContent = puzzleState.pendingAdvance
-          ? `${regions[state.regionIndex].name} Unlock Puzzle`
-          : `${regions[state.regionIndex].name} Puzzle Core`;
+        puzzleTerrain.textContent = getPuzzleTerrainLabel();
       }
       hydratePuzzlePanel();
       return;
@@ -1803,6 +1933,45 @@
     const ids = levelPuzzlePools[safeLevel] || levelPuzzlePools[0];
     const pool = ids.map((id) => turingPuzzles[id]).filter(Boolean);
     return pool.length ? pool : turingPuzzles;
+  }
+
+  function getTreasurePoolForLevel(level) {
+    const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
+    const ids = levelTreasurePools[safeLevel] || levelTreasurePools[0] || [];
+    const pool = ids.map((id) => treasurePuzzles[id]).filter(Boolean);
+    return pool.length ? pool : treasurePuzzles;
+  }
+
+  function openTreasurePuzzleFromChest(item) {
+    const rewardFood = Math.max(1, item.foodReward || 1);
+    if (!treasurePuzzles.length) {
+      state.foodStocks[selectedCharacter] = (state.foodStocks[selectedCharacter] || 0) + rewardFood;
+      pushMessage(`Supply chest opened! +${rewardFood} food for ${characters[selectedCharacter].name}.`);
+      syncHud();
+      return;
+    }
+
+    const level = getPuzzleDifficultyLevel();
+    const pool = getTreasurePoolForLevel(level);
+    const chosenPuzzle = pool[Math.floor(Math.random() * pool.length)] || treasurePuzzles[0];
+    const puzzleId = Math.max(0, treasurePuzzles.indexOf(chosenPuzzle));
+    puzzleState.pendingTreasure = { level, puzzleId, foodReward: rewardFood };
+    state.paused = true;
+    state.hungerPaused = false;
+
+    if (puzzleModal) {
+      puzzleModal.classList.add('open');
+      puzzleModal.setAttribute('aria-hidden', 'false');
+    }
+    if (puzzleTerrain) {
+      puzzleTerrain.textContent = `${regions[level].name} Treasure Case`;
+    }
+    hydratePuzzlePanel();
+    if (puzzleStatus) {
+      puzzleStatus.textContent = 'Treasure chest found. Solve this case to claim food supplies.';
+    }
+    pushMessage('Treasure chest found! Solve the case to claim supplies.');
+    syncPlaybackButton();
   }
 
   function getHintLimitForLevel(level) {
@@ -1859,6 +2028,9 @@
   }
 
   function getCurrentPuzzle() {
+    if (puzzleState.pendingTreasure) {
+      return treasurePuzzles[puzzleState.pendingTreasure.puzzleId] || treasurePuzzles[0] || turingPuzzles[0];
+    }
     const level = getPuzzleDifficultyLevel();
     const pool = getPuzzlePoolForLevel(level);
     return pool[puzzleState.currentIndex % pool.length];
@@ -1877,12 +2049,17 @@
 
   function hydratePuzzlePanel() {
     const puzzle = getCurrentPuzzle();
+    const isTreasureCase = Boolean(puzzleState.pendingTreasure);
     const level = getPuzzleDifficultyLevel();
     const pool = getPuzzlePoolForLevel(level);
     puzzleState.hintIndex = 0;
     puzzleState.hintsUsedThisPuzzle = 0;
     puzzleState.hintRewardGrantedThisPuzzle = false;
-    if (puzzleTitle) puzzleTitle.textContent = `${puzzle.title} (${(puzzleState.currentIndex % pool.length) + 1}/${pool.length})`;
+    if (puzzleTitle) {
+      puzzleTitle.textContent = isTreasureCase
+        ? `Treasure Case: ${puzzle.title}`
+        : `${puzzle.title} (${(puzzleState.currentIndex % pool.length) + 1}/${pool.length})`;
+    }
     if (puzzleInstruction) puzzleInstruction.textContent = puzzle.instruction;
     if (puzzleQuestion) puzzleQuestion.textContent = `Question: ${puzzle.instruction}`;
     if (puzzleAnswerInput) {
@@ -1890,7 +2067,52 @@
       puzzleAnswerInput.focus();
     }
     if (puzzleLearnLink) puzzleLearnLink.href = puzzle.learnUrl;
-    if (puzzleStatus) puzzleStatus.textContent = `Level ${level + 1} puzzle loaded. Hints available: ${getHintLimitForLevel(level)}.`;
+    if (puzzleStatus) {
+      puzzleStatus.textContent = isTreasureCase
+        ? `Treasure case loaded. Hints available: ${getHintLimitForLevel(level)}.`
+        : `Level ${level + 1} puzzle loaded. Hints available: ${getHintLimitForLevel(level)}.`;
+    }
+  }
+
+  function handleSolvedTreasureCase() {
+    if (!puzzleState.pendingTreasure) {
+      return false;
+    }
+    const rewardFood = Math.max(1, puzzleState.pendingTreasure.foodReward || 1);
+    state.foodStocks[selectedCharacter] = (state.foodStocks[selectedCharacter] || 0) + rewardFood;
+    puzzleState.pendingTreasure = null;
+    state.paused = false;
+    state.objective = `Treasure solved in ${regions[state.regionIndex].name}. Supplies secured.`;
+    pushMessage(`Case solved! +${rewardFood} food supplies for ${characters[selectedCharacter].name}.`);
+    closeModal(puzzleModal);
+    syncHud();
+    syncPlaybackButton();
+    return true;
+  }
+
+  function handleSolvedAdvancePuzzle() {
+    if (!puzzleState.pendingAdvance) {
+      return false;
+    }
+    const next = puzzleState.pendingAdvance;
+    if (state.fragments < 7) {
+      puzzleState.pendingAdvance = null;
+      if (puzzleStatus) {
+        puzzleStatus.textContent = 'Collect all 7 shards first to unlock the next level.';
+      }
+      pushMessage('Need 7 shards before level unlock.');
+      return true;
+    }
+
+    puzzleState.pendingAdvance = null;
+    const carriedHearts = Math.max(1, Math.min(state.maxLives, state.health));
+    state.progressLevel = next.nextLevel;
+    state.carryHearts = carriedHearts;
+    state.score += next.levelBonus;
+    triggerLevelCelebrate(next.nextLevel, carriedHearts, next.levelBonus, next.unlockedNames);
+    closeModal(puzzleModal);
+    syncHud();
+    return true;
   }
 
   function submitPuzzle() {
@@ -1908,27 +2130,12 @@
       }
       syncHud();
 
-      if (puzzleState.pendingAdvance) {
-        const next = puzzleState.pendingAdvance;
+      if (handleSolvedTreasureCase()) {
+        return;
+      }
 
-        // Safety guard against stale pending state across runs.
-        if (state.fragments < 7) {
-          puzzleState.pendingAdvance = null;
-          if (puzzleStatus) {
-            puzzleStatus.textContent = 'Collect all 7 shards first to unlock the next level.';
-          }
-          pushMessage('Need 7 shards before level unlock.');
-          return;
-        }
-
-        puzzleState.pendingAdvance = null;
-        const carriedHearts = Math.max(1, Math.min(state.maxLives, state.health));
-        state.progressLevel = next.nextLevel;
-        state.carryHearts = carriedHearts;
-        state.score += next.levelBonus;
-        triggerLevelCelebrate(next.nextLevel, carriedHearts, next.levelBonus, next.unlockedNames);
-        closeModal(puzzleModal);
-        syncHud();
+      if (handleSolvedAdvancePuzzle()) {
+        return;
       }
 
       puzzleState.currentIndex += 1;
@@ -1954,6 +2161,13 @@
         puzzleStatus.textContent = 'Cannot skip this one. Solve it to unlock the next level.';
       }
       pushMessage('Solve required to continue.');
+      return;
+    }
+    if (puzzleState.pendingTreasure) {
+      if (puzzleStatus) {
+        puzzleStatus.textContent = 'Cannot skip this treasure case. Solve it to claim supplies.';
+      }
+      pushMessage('Treasure case must be solved to claim food supplies.');
       return;
     }
     puzzleState.currentIndex += 1;
@@ -2002,28 +2216,33 @@
       return;
     }
 
+    const hungryNow = shouldPauseForHunger();
+    if (hungryNow && !state.paused) {
+      state.paused = true;
+      state.hungerPaused = true;
+      state.message = 'Out of energy and food. Run paused. Buy food to continue.';
+      showHungerModal();
+      syncHud();
+      syncPlaybackButton();
+    }
+
+    if (state.hungerPaused && hungryNow && hungerModal && !hungerModal.classList.contains('open')
+      && !foodShopModal?.classList.contains('open')) {
+      showHungerModal();
+    }
+
+    if (state.hungerPaused && !hungryNow) {
+      state.hungerPaused = false;
+      state.paused = false;
+      hideHungerModal();
+      state.message = 'Food restored. Run resumed.';
+      syncHud();
+      syncPlaybackButton();
+    }
+
     if (state.paused) {
       render();
       return;
-    }
-
-    const hungryNow = shouldPauseForHunger();
-    if (hungryNow) {
-      if (!state.hungerPaused) {
-        state.hungerPaused = true;
-        state.message = 'Hungry: run paused. Buy food to continue.';
-        syncHud();
-        syncPlaybackButton();
-      }
-      render();
-      return;
-    }
-
-    if (state.hungerPaused) {
-      state.hungerPaused = false;
-      state.message = 'Food acquired. Run resumed.';
-      syncHud();
-      syncPlaybackButton();
     }
 
     advanceDifficulty(dt);
@@ -2129,6 +2348,12 @@
       playSfx('hit');
       addScore(-item.value);
       pushMessage(`-${item.value}`);
+      return;
+    }
+
+    if (item.type === 'treasureChest') {
+      playSfx('collect');
+      openTreasurePuzzleFromChest(item);
       return;
     }
 
@@ -3331,76 +3556,61 @@
       ctx.fillRect(-3, -9, 6, 18);
       ctx.shadowBlur = 0;
     } else if (item.type === 'scoreBonus' || item.type === 'scorePenalty') {
-      const isBonus = item.type === 'scoreBonus';
-      ctx.fillStyle = isBonus ? 'rgba(79, 214, 131, .95)' : 'rgba(233, 92, 92, .95)';
-      ctx.beginPath();
-      ctx.roundRect(-28, -16, 56, 32, 10);
-      ctx.fill();
-      ctx.strokeStyle = isBonus ? 'rgba(222, 255, 232, .9)' : 'rgba(255, 225, 225, .9)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.fillStyle = '#08110b';
-      ctx.font = '700 14px Nunito';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const sign = isBonus ? '+' : '-';
-      ctx.fillText(`${sign}${item.value}`, 0, 1);
+      drawScoreToken(item);
+    } else if (item.type === 'treasureChest') {
+      drawTreasureChestIcon();
     } else if (item.type === 'treasure' || item.type === 'relic') {
-      ctx.fillStyle = item.type === 'relic' ? palette.cyan : palette.orange;
-      ctx.beginPath();
-      ctx.arc(0, 0, 16, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = palette.paper;
-      ctx.beginPath();
-      ctx.arc(0, 0, 7, 0, Math.PI * 2);
-      ctx.fill();
+      drawTreasureOrb(item);
     } else {
-      // Bomb icon for hazards.
-      ctx.fillStyle = '#121317';
-      ctx.beginPath();
-      ctx.arc(0, 0, 15, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = 'rgba(255, 228, 186, .9)';
-      ctx.fillRect(-2, -18, 4, 8);
-      ctx.strokeStyle = 'rgba(255, 196, 96, .9)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(0, -18);
-      ctx.quadraticCurveTo(8, -26, 12, -18);
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(255, 126, 64, .8)';
-      ctx.beginPath();
-      ctx.arc(13, -18, 3, 0, Math.PI * 2);
-      ctx.fill();
+      drawBombHazard();
     }
 
-    if (isServoTech && (item.type === 'fragment' || item.type === 'treasure' || item.type === 'relic')) {
-      const phase = performance.now() * 0.006;
-      const pulse = 0.22 + (Math.sin(phase + item.z * 9) + 1) * 0.14;
-      ctx.strokeStyle = `rgba(108, 243, 255, ${pulse})`;
-      ctx.lineWidth = 1.6;
-
-      // Circuit bracket ring around collectible pickups in Servo only.
-      ctx.beginPath();
-      ctx.arc(0, 0, 22, 0.3, 1.1);
-      ctx.arc(0, 0, 22, 2, 2.8);
-      ctx.arc(0, 0, 22, 3.45, 4.25);
-      ctx.arc(0, 0, 22, 5.1, 5.9);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(-26, 0);
-      ctx.lineTo(-16, 0);
-      ctx.moveTo(26, 0);
-      ctx.lineTo(16, 0);
-      ctx.moveTo(0, -26);
-      ctx.lineTo(0, -16);
-      ctx.moveTo(0, 26);
-      ctx.lineTo(0, 16);
-      ctx.stroke();
+    if (isServoTech && (item.type === 'fragment' || item.type === 'treasure' || item.type === 'relic' || item.type === 'treasureChest')) {
+      drawServoPickupGlow(item);
     }
 
     ctx.restore();
+  }
+
+  function drawTreasureChestIcon() {
+    ctx.fillStyle = '#7a4d22';
+    ctx.beginPath();
+    ctx.roundRect(-20, -14, 40, 28, 7);
+    ctx.fill();
+    ctx.strokeStyle = '#f5d27b';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(-18, -2, 36, 4);
+    ctx.fillStyle = '#e9bf63';
+    ctx.fillRect(-4, -6, 8, 12);
+    ctx.strokeStyle = 'rgba(255, 234, 176, .8)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(-4, -6, 8, 12);
+  }
+
+  function drawServoPickupGlow(item) {
+    const phase = performance.now() * 0.006;
+    const pulse = 0.22 + (Math.sin(phase + item.z * 9) + 1) * 0.14;
+    ctx.strokeStyle = `rgba(108, 243, 255, ${pulse})`;
+    ctx.lineWidth = 1.6;
+
+    // Circuit bracket ring around collectible pickups in Servo only.
+    ctx.beginPath();
+    ctx.arc(0, 0, 22, 0.3, 1.1);
+    ctx.arc(0, 0, 22, 2, 2.8);
+    ctx.arc(0, 0, 22, 3.45, 4.25);
+    ctx.arc(0, 0, 22, 5.1, 5.9);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(-26, 0);
+    ctx.lineTo(-16, 0);
+    ctx.moveTo(26, 0);
+    ctx.lineTo(16, 0);
+    ctx.moveTo(0, -26);
+    ctx.lineTo(0, -16);
+    ctx.moveTo(0, 26);
+    ctx.lineTo(0, 16);
+    ctx.stroke();
   }
 
   function drawEvent(ev) {
@@ -3587,6 +3797,25 @@
     modal.setAttribute('aria-hidden', 'true');
   }
 
+  function getTouchAction(dx, dy, touchY) {
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+    const swipeThreshold = 20;
+    const tapThreshold = 14;
+
+    if (absDx < tapThreshold && absDy < tapThreshold) {
+      return touchY < canvas.clientHeight * 0.58 ? 'jump' : 'slide';
+    }
+    if (absDx > absDy) {
+      if (dx < -swipeThreshold) return 'left';
+      if (dx > swipeThreshold) return 'right';
+      return null;
+    }
+    if (dy < -swipeThreshold) return 'jump';
+    if (dy > swipeThreshold) return 'slide';
+    return null;
+  }
+
   function bindTouchControls() {
     canvas.addEventListener('touchstart', (e) => {
       if (state.paused) return;
@@ -3599,13 +3828,11 @@
       const t = e.changedTouches[0];
       const dx = t.clientX - state.swipeStart.x;
       const dy = t.clientY - state.swipeStart.y;
-      if (Math.abs(dx) > Math.abs(dy)) {
-        if (dx < -30) shiftLane(-1);
-        if (dx > 30) shiftLane(1);
-      } else {
-        if (dy < -30) jump();
-        if (dy > 30) slide();
-      }
+      const action = getTouchAction(dx, dy, t.clientY);
+      if (action === 'left') shiftLane(-1);
+      if (action === 'right') shiftLane(1);
+      if (action === 'jump') jump();
+      if (action === 'slide') slide();
       state.swipeStart = null;
     }, { passive: true });
   }
@@ -3619,10 +3846,29 @@
     if (buyFoodBtn) {
       buyFoodBtn.addEventListener('click', openFoodShop);
     }
+    if (mobileMenuBtn) {
+      mobileMenuBtn.addEventListener('click', () => {
+        if (state.running) {
+          togglePause();
+          return;
+        }
+        if (!state.running) {
+          onStartButtonPressed();
+        }
+      });
+    }
   }
 
   function togglePause() {
     if (!state.running || state.ended) {
+      return;
+    }
+    if (state.hungerPaused && shouldPauseForHunger()) {
+      state.paused = true;
+      state.message = 'Your dasher is still hungry. Buy food to continue.';
+      showHungerModal();
+      syncHud();
+      syncPlaybackButton();
       return;
     }
     state.paused = !state.paused;
@@ -3771,6 +4017,7 @@
     bindClick(closePastGamesBtn, () => closeModal(pastGamesModal));
     bindClick(closeFoodShopBtn, () => closeModal(foodShopModal));
     bindClick(foodCheckoutBtn, checkoutFoodCart);
+    bindClick(hungerOpenShopBtn, openFoodShop);
     bindClick(clearFoodCartBtn, () => {
       state.foodCartByCharacter[selectedCharacter] = {};
       renderFoodShop();
@@ -3845,7 +4092,6 @@
 
   function checkApi() {
     state.apiOnline = false;
-    document.getElementById('apiStatus').textContent = 'Local mode';
   }
 
   function tick(time) {

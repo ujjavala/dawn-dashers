@@ -48,9 +48,15 @@ The current browser build in `web/` now includes a visual/audio realism pass on 
    - Structured spec card for each character (power, food, costs, energy rates, lane profile, level scale)
 - Gameplay controls UI refresh:
    - Compact icon controls instead of text-heavy dock buttons
-   - Food cart moved into HUD as a dedicated top cart icon
+   - Food cart remains an icon action in the right-side dock
    - Main run controls moved to a right-side vertical rail similar to the heart rail
    - Single media-style play/pause control that changes icon by run state
+- Mobile controls and HUD pass:
+   - Region and Mode HUD chips removed from the web runtime to reduce clutter
+   - Mobile HUD now uses denser chip sizing and spacing on narrow screens
+   - During active runs on mobile, the full control dock auto-hides and a single quick-menu button is shown
+   - Tapping the quick-menu button pauses the run and reveals the full dock controls
+   - Swipe thresholds are reduced and short taps now map to jump/slide for better Android responsiveness
 - Pause behavior update:
    - Pausing freezes movement and falling items
    - Food shopping and puzzle interactions remain usable while paused
@@ -159,14 +165,18 @@ Optional tooling helper:
 
 Desktop/Web:
 
-- Move: A/D or Left/Right
-- Jump: Space
-- Ability: Left Shift or E
+- Move lanes: A/D or Left/Right
+- Jump: W, Up, or Space
+- Slide: S or Down
+- Pause/Resume: P or Escape
+- Open food cart: F
 
 Mobile:
 
-- Use on-screen touch controls via MobileInputButtons
-- Touch controls can be shown automatically by TouchControlsVisibility
+- On-screen controls use icon-only actions and compact HUD chips for smaller displays
+- During active runs, controls collapse into a single quick-menu button
+- Quick-menu button pauses to reveal full controls, then switches to resume action while paused
+- Swipe and tap gestures are tuned for responsive Android play
 
 ## Run in Editor
 
