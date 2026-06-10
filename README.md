@@ -1,6 +1,7 @@
 # Dawn Dashers
 
 Unity WebGL + Mobile adventure runner for the DEV June Solstice Game Jam.
+![Dawn Dashers Gameplay](web/Dawn%20dashers%20Gif%20(1).gif)
 
 ## Current Status
 
