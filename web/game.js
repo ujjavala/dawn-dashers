@@ -88,6 +88,7 @@
   const foodCheckoutBtn = document.getElementById('foodCheckoutBtn');
   const clearFoodCartBtn = document.getElementById('clearFoodCartBtn');
   const hungerModal = document.getElementById('hungerModal');
+  const closeHungerBtn = document.getElementById('closeHungerBtn');
   const hungerText = document.getElementById('hungerText');
   const hungerOpenShopBtn = document.getElementById('hungerOpenShopBtn');
   const RUNS_KEY = 'dawn_dashers_runs_v1';
@@ -1528,6 +1529,7 @@
     if (!foodShopModal) {
       return;
     }
+    hideHungerModal();
     renderFoodShop();
     foodShopModal.classList.add('open');
     foodShopModal.setAttribute('aria-hidden', 'false');
@@ -4411,13 +4413,7 @@
 
   function bindModalControls() {
     bindClick(closeClueBtn, () => closeModal(clueModal));
-    bindClick(closePuzzleBtn, () => {
-      if (puzzleState.pendingAdvance || puzzleState.pendingTreasure || puzzleState.pendingHeartRevive) {
-        pushMessage('This puzzle flow is required. Solve it to continue.');
-        return;
-      }
-      closeModal(puzzleModal);
-    });
+    bindClick(closePuzzleBtn, () => closeModal(puzzleModal));
     bindClick(clueHintBtn, requestHint);
     bindClick(clueSolveBtn, () => {
       closeModal(clueModal);
@@ -4498,6 +4494,7 @@
     });
     bindClick(closePastGamesBtn, () => closeModal(pastGamesModal));
     bindClick(closeFoodShopBtn, () => closeModal(foodShopModal));
+    bindClick(closeHungerBtn, hideHungerModal);
     bindClick(foodCheckoutBtn, checkoutFoodCart);
     bindClick(hungerOpenShopBtn, openFoodShop);
     bindClick(clearFoodCartBtn, () => {
@@ -4569,10 +4566,6 @@
   function bindSystemEvents() {
     globalThis.addEventListener('keydown', onKeyDown);
     globalThis.addEventListener('resize', resize);
-    globalThis.addEventListener('orientationchange', resize);
-    if (globalThis.visualViewport) {
-      globalThis.visualViewport.addEventListener('resize', resize);
-    }
     globalThis.addEventListener('pointerdown', ensureAudioStarted, { passive: true });
   }
 
