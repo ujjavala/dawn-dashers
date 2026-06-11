@@ -416,45 +416,7 @@
     if (!audioState.ctx || audioState.started) {
       return;
     }
-    const ctx = audioState.ctx;
-
-    const padA = ctx.createOscillator();
-    const padB = ctx.createOscillator();
-    const pulse = ctx.createOscillator();
-    const padAGain = ctx.createGain();
-    const padBGain = ctx.createGain();
-    const pulseGain = ctx.createGain();
-    const musicFilter = ctx.createBiquadFilter();
-    musicFilter.type = 'lowpass';
-    musicFilter.frequency.value = 920;
-    musicFilter.Q.value = 0.42;
-
-    padA.type = 'triangle';
-    padB.type = 'sine';
-    pulse.type = 'triangle';
-    padA.frequency.value = 110;
-    padB.frequency.value = 165;
-    pulse.frequency.value = 2.2;
-    padAGain.gain.value = 0.03;
-    padBGain.gain.value = 0.02;
-    pulseGain.gain.value = 0.012;
-
-    padA.connect(padAGain);
-    padB.connect(padBGain);
-    pulse.connect(pulseGain);
-    padAGain.connect(musicFilter);
-    padBGain.connect(musicFilter);
-    pulseGain.connect(musicFilter);
-    musicFilter.connect(audioState.music);
-
-    padA.start();
-    padB.start();
-    pulse.start();
-
-    audioState.padA = padA;
-    audioState.padB = padB;
-    audioState.pulse = pulse;
-    audioState.pulseGain = pulseGain;
+    // Ambient hum layer intentionally disabled; keep only gameplay SFX.
     audioState.started = true;
     syncAudioToRegion();
   }
@@ -474,48 +436,12 @@
     if (!audioState.ctx || !audioState.started) {
       return;
     }
-    const terrain = regions[state.regionIndex]?.terrain || 'dunes';
     const now = audioState.ctx.currentTime;
-    const musicGainTarget = musicEnabled ? musicVolume : 0;
+    const musicGainTarget = 0;
     audioState.music.gain.cancelScheduledValues(now);
     audioState.music.gain.linearRampToValueAtTime(musicGainTarget, now + 0.18);
     audioState.sfx.gain.cancelScheduledValues(now);
     audioState.sfx.gain.linearRampToValueAtTime(sfxVolume, now + 0.1);
-
-    let fA = 110;
-    let fB = 165;
-    let pulseRate = 2.2;
-    let pulseDepth = 0.012;
-    if (terrain === 'forest') {
-      fA = 104;
-      fB = 156;
-      pulseRate = 2;
-      pulseDepth = 0.01;
-    } else if (terrain === 'beach') {
-      fA = 98;
-      fB = 147;
-      pulseRate = 1.8;
-      pulseDepth = 0.008;
-    } else if (terrain === 'industrial') {
-      fA = 123;
-      fB = 184;
-      pulseRate = 2.8;
-      pulseDepth = 0.009;
-    } else if (terrain === 'mountains') {
-      fA = 92;
-      fB = 138;
-      pulseRate = 1.6;
-      pulseDepth = 0.007;
-    }
-
-    audioState.padA.frequency.setTargetAtTime(fA, now, 0.32);
-    audioState.padB.frequency.setTargetAtTime(fB, now, 0.32);
-    if (audioState.pulse) {
-      audioState.pulse.frequency.setTargetAtTime(pulseRate, now, 0.25);
-    }
-    if (audioState.pulseGain) {
-      audioState.pulseGain.gain.setTargetAtTime(pulseDepth, now, 0.3);
-    }
   }
 
   function playSfx(kind) {
@@ -2072,17 +1998,13 @@
     const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
     const ids = levelPuzzlePools[safeLevel] || levelPuzzlePools[0] || [];
     const pool = ids.map((id) => turingPuzzles[id]).filter(Boolean);
-    return pool.length ? pool : turingPuzzles;
+    return pool;
   }
 
   function getPuzzlePoolIdsForLevel(level) {
     const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
     const ids = levelPuzzlePools[safeLevel] || levelPuzzlePools[0] || [];
-    const validIds = ids.filter((id) => Number.isInteger(id) && turingPuzzles[id]);
-    if (validIds.length) {
-      return validIds;
-    }
-    return turingPuzzles.map((_, id) => id);
+    return ids.filter((id) => Number.isInteger(id) && turingPuzzles[id]);
   }
 
   function getSolvedPuzzleIdsForLevel(level) {
@@ -2092,22 +2014,54 @@
     return puzzleState.solvedByLevel[level];
   }
 
+  function getAdvancePuzzlePoolIdsForLevel(level) {
+    const ids = getPuzzlePoolIdsForLevel(level);
+    return ids.length ? [ids[0]] : [];
+  }
+
+  function getHeartPuzzlePoolIdsForLevel(level) {
+    const ids = getPuzzlePoolIdsForLevel(level);
+    if (ids.length > 1) {
+      return ids.slice(1);
+    }
+    return ids;
+  }
+
   function getHeartReviveProgress(level) {
-    const poolIds = getPuzzlePoolIdsForLevel(level);
+    const poolIds = getHeartPuzzlePoolIdsForLevel(level);
     const solvedIds = getSolvedPuzzleIdsForLevel(level);
     const solvedCount = poolIds.filter((id) => solvedIds.includes(id)).length;
-    return { poolIds, solvedCount, totalCount: poolIds.length, solvedAll: poolIds.length > 0 && solvedCount >= poolIds.length };
+    return { poolIds, solvedCount, totalCount: poolIds.length, solvedAll: solvedCount >= poolIds.length };
   }
 
   function pickNextHeartRevivePuzzleId(level) {
-    const poolIds = getPuzzlePoolIdsForLevel(level);
+    const poolIds = getHeartPuzzlePoolIdsForLevel(level);
     const solvedIds = getSolvedPuzzleIdsForLevel(level);
-    const unsolved = poolIds.filter((id) => !solvedIds.includes(id));
+    const unsolved = poolIds.filter((id) => !solvedIds.includes(id) && !puzzleState.usedCorePuzzleIds.includes(id));
     if (!unsolved.length) {
       return null;
     }
     const puzzleId = unsolved[Math.floor(Math.random() * unsolved.length)];
     puzzleState.activeCorePuzzleId = puzzleId;
+    if (!puzzleState.usedCorePuzzleIds.includes(puzzleId)) {
+      puzzleState.usedCorePuzzleIds.push(puzzleId);
+    }
+    return puzzleId;
+  }
+
+  function pickNextAdvancePuzzleId(level) {
+    const levelIds = getPuzzlePoolIdsForLevel(level);
+    let candidates = getAdvancePuzzlePoolIdsForLevel(level)
+      .filter((id) => !puzzleState.usedCorePuzzleIds.includes(id));
+    if (!candidates.length) {
+      candidates = levelIds.filter((id) => !puzzleState.usedCorePuzzleIds.includes(id));
+    }
+    if (!candidates.length) {
+      return null;
+    }
+    const puzzleId = candidates[Math.floor(Math.random() * candidates.length)];
+    puzzleState.activeCorePuzzleId = puzzleId;
+    puzzleState.usedCorePuzzleIds.push(puzzleId);
     return puzzleId;
   }
 
@@ -2173,15 +2127,8 @@
   }
 
   function pickNextCorePuzzleId(level) {
-    const levelIds = getPuzzlePoolIdsForLevel(level);
-    let candidates = levelIds.filter((id) => !puzzleState.usedCorePuzzleIds.includes(id));
-
-    if (!candidates.length) {
-      const globalUnseen = turingPuzzles
-        .map((_, id) => id)
-        .filter((id) => !puzzleState.usedCorePuzzleIds.includes(id));
-      candidates = globalUnseen;
-    }
+    const levelIds = getHeartPuzzlePoolIdsForLevel(level);
+    const candidates = levelIds.filter((id) => !puzzleState.usedCorePuzzleIds.includes(id));
 
     if (!candidates.length) {
       return null;
@@ -2197,7 +2144,7 @@
     const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
     const ids = levelTreasurePools[safeLevel] || levelTreasurePools[0] || [];
     const pool = ids.map((id) => treasurePuzzles[id]).filter(Boolean);
-    return pool.length ? pool : treasurePuzzles;
+    return pool;
   }
 
   function chooseTreasurePuzzleId(level) {
@@ -2207,12 +2154,6 @@
       .filter((id) => id >= 0);
 
     let candidates = poolIds.filter((id) => !puzzleState.seenTreasureIds.includes(id));
-    if (!candidates.length) {
-      const unseenGlobal = treasurePuzzles
-        .map((_, id) => id)
-        .filter((id) => !puzzleState.seenTreasureIds.includes(id));
-      candidates = unseenGlobal;
-    }
     if (!candidates.length) {
       return null;
     }
@@ -2314,6 +2255,10 @@
 
   function revealPuzzleHint() {
     const puzzle = getCurrentPuzzle();
+    if (!puzzle) {
+      pushMessage('No unique puzzle left for this challenge.');
+      return;
+    }
     const level = getPuzzleDifficultyLevel();
     const hintLimit = getHintLimitForPuzzle(puzzle, level);
     if (puzzleState.hintsUsedThisPuzzle >= hintLimit) {
@@ -2349,7 +2294,17 @@
 
   function getCurrentPuzzle() {
     if (puzzleState.pendingTreasure) {
-      return treasurePuzzles[puzzleState.pendingTreasure.puzzleId] || treasurePuzzles[0] || turingPuzzles[0];
+      return treasurePuzzles[puzzleState.pendingTreasure.puzzleId] || null;
+    }
+    if (puzzleState.pendingAdvance) {
+      const level = Math.max(0, Math.min(regions.length - 1, puzzleState.pendingAdvance.nextLevel || state.progressLevel));
+      if (!Number.isInteger(puzzleState.activeCorePuzzleId)) {
+        pickNextAdvancePuzzleId(level);
+      }
+      if (Number.isInteger(puzzleState.activeCorePuzzleId)) {
+        return turingPuzzles[puzzleState.activeCorePuzzleId] || null;
+      }
+      return null;
     }
     if (puzzleState.pendingHeartRevive) {
       const level = puzzleState.pendingHeartRevive.level;
@@ -2357,18 +2312,18 @@
         pickNextHeartRevivePuzzleId(level);
       }
       if (Number.isInteger(puzzleState.activeCorePuzzleId)) {
-        return turingPuzzles[puzzleState.activeCorePuzzleId] || turingPuzzles[0];
+        return turingPuzzles[puzzleState.activeCorePuzzleId] || null;
       }
-      return turingPuzzles[0];
+      return null;
     }
     if (!Number.isInteger(puzzleState.activeCorePuzzleId)) {
       const level = getPuzzleDifficultyLevel();
       pickNextCorePuzzleId(level);
     }
     if (Number.isInteger(puzzleState.activeCorePuzzleId)) {
-      return turingPuzzles[puzzleState.activeCorePuzzleId] || turingPuzzles[0];
+      return turingPuzzles[puzzleState.activeCorePuzzleId] || null;
     }
-    return turingPuzzles[0];
+    return null;
   }
 
   function normalizeAnswer(value) {
@@ -2384,6 +2339,29 @@
 
   function hydratePuzzlePanel() {
     const puzzle = getCurrentPuzzle();
+    if (!puzzle) {
+      if (puzzleStatus) {
+        puzzleStatus.textContent = 'No unique puzzle left in this pool.';
+      }
+      if (puzzleInstruction) {
+        puzzleInstruction.textContent = 'This challenge has no unused puzzle left in the current level pool.';
+      }
+      if (puzzleQuestion) {
+        puzzleQuestion.textContent = 'All puzzles in this pool were already used this session.';
+      }
+      if (puzzleAnswerInput) {
+        puzzleAnswerInput.value = '';
+      }
+      if (puzzleLearnLink) {
+        puzzleLearnLink.href = 'https://en.wikipedia.org/wiki/Alan_Turing';
+      }
+      if (puzzleState.pendingAdvance) {
+        setTimeout(() => {
+          handleSolvedAdvancePuzzle();
+        }, 0);
+      }
+      return;
+    }
     const isTreasureCase = Boolean(puzzleState.pendingTreasure);
     const isHeartRevive = Boolean(puzzleState.pendingHeartRevive);
     const level = getPuzzleDifficultyLevel();
@@ -2499,6 +2477,14 @@
 
   function submitPuzzle() {
     const puzzle = getCurrentPuzzle();
+    if (!puzzle) {
+      if (puzzleState.pendingAdvance) {
+        handleSolvedAdvancePuzzle();
+      } else if (puzzleStatus) {
+        puzzleStatus.textContent = 'No unique puzzle left for this pool.';
+      }
+      return;
+    }
     const guess = normalizeAnswer(puzzleAnswerInput ? puzzleAnswerInput.value : '');
     const validAnswers = Array.isArray(puzzle.acceptedAnswers)
       ? puzzle.acceptedAnswers.map(normalizeAnswer)
@@ -2546,6 +2532,12 @@
 
   function checkPuzzleAnswer() {
     const puzzle = getCurrentPuzzle();
+    if (!puzzle) {
+      if (puzzleStatus) {
+        puzzleStatus.textContent = 'No unique puzzle left for this pool.';
+      }
+      return;
+    }
     const guess = normalizeAnswer(puzzleAnswerInput ? puzzleAnswerInput.value : '');
     const validAnswers = Array.isArray(puzzle.acceptedAnswers)
       ? puzzle.acceptedAnswers.map(normalizeAnswer)
