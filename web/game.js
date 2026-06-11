@@ -94,6 +94,7 @@
   const WALKTHROUGH_KEY = 'dawn_dashers_walkthrough_seen';
   const DIFFICULTY_KEY = 'dawn_dashers_difficulty_v1';
   const PUZZLE_HISTORY_KEY = 'dawn_dashers_puzzle_history_v1';
+  const PUZZLE_SHOWN_SIGNATURES_KEY = 'dawn_dashers_puzzle_shown_signatures_v1';
   const SUPER_MODE_KEY = 'dawn_dashers_super_mode_v1';
   const MUSIC_ENABLED_KEY = 'dawn_dashers_music_enabled_v1';
   const MUSIC_VOLUME_KEY = 'dawn_dashers_music_volume_v1';
@@ -4318,7 +4319,7 @@
     swipeStart: null,
     apiOnline: false,
     pendingReviveOffer: null,
-    heartReviveUsed: false,
+    heartReviveUsedByLevel: {},
     chestCollectsByLevelRun: {},
     puzzleBankUnlocks: (() => {
       try {
@@ -4420,6 +4421,22 @@
       return parsed && typeof parsed === 'object' ? parsed : {};
     } catch {
       return {};
+    }
+  })();
+
+  const shownPuzzleSignatures = (() => {
+    try {
+      const raw = globalThis.localStorage.getItem(PUZZLE_SHOWN_SIGNATURES_KEY);
+      if (!raw) {
+        return [];
+      }
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+      return parsed.filter((entry) => typeof entry === 'string' && entry.length > 0);
+    } catch {
+      return [];
     }
   })();
 
@@ -4651,7 +4668,7 @@
     state.paused = false;
     if (!keepProgress) {
       state.score = 0;
-      state.heartReviveUsed = false;
+      state.heartReviveUsedByLevel = {};
       state.chestCollectsByLevelRun = {};
       puzzleState.seenTreasureRefs = [];
       puzzleState.lastTreasureRefKey = null;
@@ -5824,14 +5841,24 @@
     return `${ref.source}:${ref.id}`;
   }
 
-  function getPuzzleSignature(puzzle) {
+  function getPuzzleIdSignature(puzzle) {
+    if (!puzzle || typeof puzzle !== 'object') {
+      return '';
+    }
+    if (typeof puzzle.id === 'string' && puzzle.id.trim()) {
+      return `id:${puzzle.id.trim().toLowerCase()}`;
+    }
+    return '';
+  }
+
+  function getPuzzleContentSignature(puzzle) {
     if (!puzzle || typeof puzzle !== 'object') {
       return '';
     }
     const answers = Array.isArray(puzzle.answers)
       ? puzzle.answers.join('|')
       : (puzzle.answer || '');
-    return [
+    const normalized = [
       puzzle.title || '',
       puzzle.instruction || '',
       puzzle.question || '',
@@ -5840,6 +5867,11 @@
       .join('||')
       .trim()
       .toLowerCase();
+    return normalized ? `content:${normalized}` : '';
+  }
+
+  function getPuzzleSignature(puzzle) {
+    return getPuzzleIdSignature(puzzle) || getPuzzleContentSignature(puzzle);
   }
 
   function getPhaseHistorySignature(phase, level) {
@@ -5862,19 +5894,42 @@
   }
 
   function isPuzzleSignatureUsed(puzzle) {
-    const signature = getPuzzleSignature(puzzle);
-    if (!signature) {
+    const idSignature = getPuzzleIdSignature(puzzle);
+    const contentSignature = getPuzzleContentSignature(puzzle);
+    if (!idSignature && !contentSignature) {
       return false;
     }
-    return puzzleState.usedPuzzleSignatures.includes(signature);
+    if (idSignature && (puzzleState.usedPuzzleSignatures.includes(idSignature) || shownPuzzleSignatures.includes(idSignature))) {
+      return true;
+    }
+    if (contentSignature && (puzzleState.usedPuzzleSignatures.includes(contentSignature) || shownPuzzleSignatures.includes(contentSignature))) {
+      return true;
+    }
+    return false;
   }
 
   function markPuzzleSignatureUsed(puzzle) {
-    const signature = getPuzzleSignature(puzzle);
-    if (!signature || puzzleState.usedPuzzleSignatures.includes(signature)) {
+    const signatures = [getPuzzleIdSignature(puzzle), getPuzzleContentSignature(puzzle)].filter(Boolean);
+    if (!signatures.length) {
       return;
     }
-    puzzleState.usedPuzzleSignatures.push(signature);
+    let persistShownSignatures = false;
+    signatures.forEach((signature) => {
+      if (!puzzleState.usedPuzzleSignatures.includes(signature)) {
+        puzzleState.usedPuzzleSignatures.push(signature);
+      }
+      if (!shownPuzzleSignatures.includes(signature)) {
+        shownPuzzleSignatures.push(signature);
+        persistShownSignatures = true;
+      }
+    });
+    if (persistShownSignatures) {
+      try {
+        globalThis.localStorage.setItem(PUZZLE_SHOWN_SIGNATURES_KEY, JSON.stringify(shownPuzzleSignatures));
+      } catch {
+        // Ignore localStorage write failures in private mode/quota limits.
+      }
+    }
   }
 
   function getSolvedPuzzleIdsForLevel(level) {
@@ -5937,7 +5992,7 @@
 
   function beginHeartReviveChallenge(level) {
     const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
-    if (state.heartReviveUsed) {
+    if (state.heartReviveUsedByLevel[safeLevel]) {
       return false;
     }
 
@@ -6320,7 +6375,7 @@
 
     const level = puzzleState.pendingHeartRevive.level;
     puzzleState.pendingHeartRevive = null;
-    state.heartReviveUsed = true;
+    state.heartReviveUsedByLevel[level] = true;
     state.health = state.maxLives;
     state.paused = false;
     state.hungerPaused = false;
@@ -6620,7 +6675,7 @@
     pushMessage(`Bomb hit! -${penalty}`);
     if (state.health <= 0) {
       const level = getPuzzleDifficultyLevel();
-      if (state.heartReviveUsed) {
+      if (state.heartReviveUsedByLevel[level]) {
         endGame(false);
       } else {
         state.health = 0;
@@ -6629,7 +6684,7 @@
         state.paused = false;
         state.hungerPaused = false;
         state.pendingReviveOffer = { level };
-        state.objective = 'Game over, but one revive is still available this run.';
+        state.objective = 'Game over, but one revive is still available for this level.';
         state.message = 'Game over. You have 1 revive option left. Tap Revive.';
         syncHud();
         syncPlaybackButton();

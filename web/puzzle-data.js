@@ -67,8 +67,28 @@
 
   for (let level = 0; level < 5; level += 1) {
     const chunk = levels[level] || { turingPuzzles: [], treasurePuzzles: [] };
-    const levelCore = Array.isArray(chunk.turingPuzzles) ? chunk.turingPuzzles.map((puzzle) => softenPuzzleText(puzzle)) : [];
-    const levelTreasure = Array.isArray(chunk.treasurePuzzles) ? chunk.treasurePuzzles.map((puzzle) => softenPuzzleText(puzzle)) : [];
+    const levelCore = Array.isArray(chunk.turingPuzzles)
+      ? chunk.turingPuzzles.map((puzzle, idx) => {
+          const shaped = softenPuzzleText(puzzle) || {};
+          return {
+            ...shaped,
+            id: typeof shaped.id === 'string' && shaped.id.trim().length
+              ? shaped.id.trim()
+              : `L${level + 1}-CORE-${idx + 1}`
+          };
+        })
+      : [];
+    const levelTreasure = Array.isArray(chunk.treasurePuzzles)
+      ? chunk.treasurePuzzles.map((puzzle, idx) => {
+          const shaped = softenPuzzleText(puzzle) || {};
+          return {
+            ...shaped,
+            id: typeof shaped.id === 'string' && shaped.id.trim().length
+              ? shaped.id.trim()
+              : `L${level + 1}-TREASURE-${idx + 1}`
+          };
+        })
+      : [];
 
     const coreStart = turingPuzzles.length;
     turingPuzzles.push(...levelCore);
