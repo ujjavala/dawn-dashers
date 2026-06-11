@@ -33,7 +33,6 @@
     dashers: {
       emu: '/Assets/GLTF/animals/emu.glb',
       wombat: '/Assets/GLTF/animals/wombat.glb',
-      wallaby: '/Assets/GLTF/animals/wallaby.glb',
       kangaroo: '/Assets/GLTF/animals/kangaroo.glb',
       koala: '/Assets/GLTF/animals/koala.glb',
       platypus: '/Assets/GLTF/animals/platypus.glb',

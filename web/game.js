@@ -93,6 +93,7 @@
   const RUNS_KEY = 'dawn_dashers_runs_v1';
   const WALKTHROUGH_KEY = 'dawn_dashers_walkthrough_seen';
   const DIFFICULTY_KEY = 'dawn_dashers_difficulty_v1';
+  const PUZZLE_HISTORY_KEY = 'dawn_dashers_puzzle_history_v1';
   const SUPER_MODE_KEY = 'dawn_dashers_super_mode_v1';
   const MUSIC_ENABLED_KEY = 'dawn_dashers_music_enabled_v1';
   const MUSIC_VOLUME_KEY = 'dawn_dashers_music_volume_v1';
@@ -3050,7 +3051,6 @@
   const DEFAULT_DASHER_GLTF_MANIFEST = {
     emu: '/Assets/GLTF/animals/emu.glb',
     wombat: '/Assets/GLTF/animals/wombat.glb',
-    wallaby: '/Assets/GLTF/animals/wallaby.glb',
     kangaroo: '/Assets/GLTF/animals/kangaroo.glb',
     koala: '/Assets/GLTF/animals/koala.glb',
     platypus: '/Assets/GLTF/animals/platypus.glb',
@@ -3168,7 +3168,6 @@
   const DASHER_VISUAL_PRESETS = {
     emu: { rig: 'birdTall', fast: true, body: 0x8c6c4d, accent: 0x5a3824, glow: 0xf4d6a2, trail: 0xd7c0a2, speed: 8.6, bob: 0.09, hop: 0.06 },
     wombat: { rig: 'burrower', fast: false, body: 0x8d6f54, accent: 0x5d4028, glow: 0xbfa68e, frameRate: 8, roll: 0.07 },
-    wallaby: { rig: 'hopper', fast: true, body: 0x9a6d57, accent: 0x563924, glow: 0xf4c36f, trail: 0xf1caa0, speed: 9.4, bob: 0.1, hop: 0.28 },
     kangaroo: { rig: 'hopper', fast: true, body: 0xa16d54, accent: 0x5b3922, glow: 0xffd28a, trail: 0xe9bd73, speed: 9.8, bob: 0.11, hop: 0.34 },
     koala: { rig: 'burrower', fast: false, body: 0x8d909a, accent: 0x42464e, glow: 0xd6efff, frameRate: 8, breathe: true },
     platypus: { rig: 'platypus', fast: false, body: 0xa5754b, accent: 0x2f5265, glow: 0xaee9ff, frameRate: 8, tail: 0x8b6141 },
@@ -3300,7 +3299,7 @@
       addPart(legR, 'legR', 0.16, 0.07, -0.02, -0.88, 0, 0.14);
       const tail = makeLimb(0.06, 0.1, 1.1, accentMat, 5);
       addPart(tail, 'tail', 0, 0.28, -0.52, 0.1, 0, 1.3);
-      if (charKey === 'kangaroo' || charKey === 'wallaby') {
+      if (charKey === 'kangaroo') {
         const pouch = makeMesh(new THREE.SphereGeometry(0.14, 8, 6), lightMat, false);
         pouch.scale.set(1.0, 0.82, 0.7);
         addPart(pouch, 'pouch', 0.02, 0.55, 0.2);
@@ -3986,11 +3985,6 @@
         collect: () => tone('triangle', 440, 720, 0.13, 0.1),
         hit:     () => { tone('square', 160, 80, 0.2, 0.15); tone('triangle', 80, 50, 0.15, 0.08); }
       },
-      wallaby: {
-        jump:    () => tone('triangle', 120, 240, 0.18, 0.11),
-        collect: () => tone('triangle', 480, 760, 0.12, 0.1),
-        hit:     () => tone('square', 180, 90, 0.18, 0.13)
-      },
       wombat: {
         jump:    () => tone('sawtooth', 100, 160, 0.2, 0.14),        // chunky thud
         collect: () => tone('triangle', 380, 580, 0.14, 0.1),
@@ -4090,7 +4084,7 @@
     },
     {
       title: 'Choose Your Character',
-      text: 'Each level gives exactly 2 dashers: one fast (full-width, higher energy use) and one slow (restricted lanes, lower energy use). Special dashers unlock when you collect 3 treasure chests in one run for that level.',
+      text: 'Each level gives exactly 2 dashers: one fast (full-width, higher energy use) and one slow (restricted lanes, lower energy use). Only the first 3 treasure chests appear per run. Solve the three-chest cipher in a level, then clear into the next level to wake that next level\'s special dasher. There are 4 special dashers total, and they begin after Level 1.',
       visuals: []
     },
     {
@@ -4341,21 +4335,20 @@
   };
 
   const characters = gameData.characters || {
-    emu: { name: 'Elder Emu', emoji: '🦅', power: 'Dust Sprint', quirk: 'Fast lane weave, moderate hop drain.', unlockAt: 0, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Emu' },
-    wombat: { name: 'Digger Wombat', emoji: '🦫', power: 'Burrow Dodge', quirk: 'Cheaper slides in dunes/forest.', unlockAt: 0, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Wombat' },
-    wallaby: { name: 'Spinifex Wallaby', emoji: '🐾', power: 'Spring Drift', quirk: 'Lower jump drain, slightly higher move drain.', unlockAt: 0, role: 'fast', puzzleUnlockLevel: 0, wikiUrl: 'https://en.wikipedia.org/wiki/Wallaby' },
-    kangaroo: { name: 'Red Kangaroo', emoji: '🦘', power: 'Sky Hop', quirk: 'Jumps are most energy-efficient.', unlockAt: 1, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Red_kangaroo' },
-    koala: { name: 'River Koala', emoji: '🐨', power: 'Grip Glide', quirk: 'Balanced and steady movement.', unlockAt: 1, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Koala' },
-    platypus: { name: 'Cipher Platypus', emoji: '🦆', power: 'River Sense', quirk: 'Food restores more and slide is efficient.', unlockAt: 1, role: 'slow', puzzleUnlockLevel: 1, wikiUrl: 'https://en.wikipedia.org/wiki/Platypus' },
-    possum: { name: 'Lantern Possum', emoji: '🌟', power: 'Night Glide', quirk: 'Quick reactions at higher levels.', unlockAt: 2, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Possum' },
-    echidna: { name: 'Spike Echidna', emoji: '🦔', power: 'Quill Barrier', quirk: 'Stable lane control with low drift.', unlockAt: 2, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Echidna' },
-    cockatoo: { name: 'Signal Cockatoo', emoji: '🦜', power: 'Aerial Relay', quirk: 'Great movement efficiency on all actions.', unlockAt: 2, role: 'fast', puzzleUnlockLevel: 2, wikiUrl: 'https://en.wikipedia.org/wiki/Cockatoo' },
-    dingo: { name: 'Coastal Dingo', emoji: '🐕', power: 'Tide Dash', quirk: 'Aggressive full-width lane cuts.', unlockAt: 3, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Dingo' },
-    bilby: { name: 'Desert Bilby', emoji: '🐇', power: 'Tunnel Pace', quirk: 'Short lane window, low energy burn.', unlockAt: 3, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Bilby' },
-    tasdevil: { name: 'Storm Tassie Devil', emoji: '😈', power: 'Charge Burst', quirk: 'High movement speed with expensive jumps.', unlockAt: 3, role: 'fast', puzzleUnlockLevel: 3, wikiUrl: 'https://en.wikipedia.org/wiki/Tasmanian_devil' },
-    kookaburra: { name: 'Aurora Kookaburra', emoji: '🐦', power: 'Light Call', quirk: 'Fast top-tier lane traversal.', unlockAt: 4, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Kookaburra' },
-    quokka: { name: 'Summit Quokka', emoji: '🐹', power: 'Calm Climb', quirk: 'Highest efficiency but restricted lanes.', unlockAt: 4, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Quokka' },
-    numbat: { name: 'Logic Numbat', emoji: '🦝', power: 'Pattern Focus', quirk: 'Very low move drain and cheap food cost.', unlockAt: 4, role: 'slow', puzzleUnlockLevel: 4, wikiUrl: 'https://en.wikipedia.org/wiki/Numbat' }
+    emu: { name: 'Enigma Emu', emoji: '🦅', power: 'Dust Sprint', quirk: 'Fast lane weave, moderate hop drain.', unlockAt: 0, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Emu' },
+    wombat: { name: 'Wheeler Wombat', emoji: '🦫', power: 'Burrow Dodge', quirk: 'Cheaper slides in dunes/forest.', unlockAt: 0, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Wombat' },
+    kangaroo: { name: 'Kleene Kangaroo', emoji: '🦘', power: 'Sky Hop', quirk: 'Jumps are most energy-efficient.', unlockAt: 1, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Red_kangaroo' },
+    koala: { name: 'Knuth Koala', emoji: '🐨', power: 'Grip Glide', quirk: 'Balanced and steady movement.', unlockAt: 1, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Koala' },
+    platypus: { name: 'Prefix Platypus', emoji: '🦆', power: 'River Sense', quirk: 'Food restores more and slide is efficient.', unlockAt: 1, role: 'slow', puzzleUnlockLevel: 1, wikiUrl: 'https://en.wikipedia.org/wiki/Platypus' },
+    possum: { name: 'Protocol Possum', emoji: '🌟', power: 'Night Glide', quirk: 'Quick reactions at higher levels.', unlockAt: 2, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Possum' },
+    echidna: { name: 'Epsilon Echidna', emoji: '🦔', power: 'Quill Barrier', quirk: 'Stable lane control with low drift.', unlockAt: 2, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Echidna' },
+    cockatoo: { name: 'Compiler Cockatoo', emoji: '🦜', power: 'Aerial Relay', quirk: 'Great movement efficiency on all actions.', unlockAt: 2, role: 'fast', puzzleUnlockLevel: 2, wikiUrl: 'https://en.wikipedia.org/wiki/Cockatoo' },
+    dingo: { name: 'Digital Dingo', emoji: '🐕', power: 'Tide Dash', quirk: 'Aggressive full-width lane cuts.', unlockAt: 3, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Dingo' },
+    bilby: { name: 'Bit Bilby', emoji: '🐇', power: 'Tunnel Pace', quirk: 'Short lane window, low energy burn.', unlockAt: 3, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Bilby' },
+    tasdevil: { name: 'Turing Tassie Devil', emoji: '😈', power: 'Charge Burst', quirk: 'High movement speed with expensive jumps.', unlockAt: 3, role: 'fast', puzzleUnlockLevel: 3, wikiUrl: 'https://en.wikipedia.org/wiki/Tasmanian_devil' },
+    kookaburra: { name: 'Kernel Kookaburra', emoji: '🐦', power: 'Light Call', quirk: 'Fast top-tier lane traversal.', unlockAt: 4, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Kookaburra' },
+    quokka: { name: 'Quine Quokka', emoji: '🐹', power: 'Calm Climb', quirk: 'Highest efficiency but restricted lanes.', unlockAt: 4, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Quokka' },
+    numbat: { name: 'Null Numbat', emoji: '🦝', power: 'Pattern Focus', quirk: 'Very low move drain and cheap food cost.', unlockAt: 4, role: 'slow', puzzleUnlockLevel: 4, wikiUrl: 'https://en.wikipedia.org/wiki/Numbat' }
   };
   const levelCharacterPairs = gameData.levelCharacterPairs || {
     0: { fast: 'emu', slow: 'wombat' },
@@ -4367,7 +4360,6 @@
   const characterFood = gameData.characterFood || {
     emu: { name: 'Seed Mix', icon: '🌾', cost: 220, restore: 250, moveCost: 50, jumpCost: 68, slideCost: 42 },
     wombat: { name: 'Root Pack', icon: '🥕', cost: 190, restore: 230, moveCost: 30, jumpCost: 48, slideCost: 24 },
-    wallaby: { name: 'Spinifex Shoots', icon: '🌱', cost: 210, restore: 260, moveCost: 46, jumpCost: 52, slideCost: 30 },
     kangaroo: { name: 'Grass Bundle', icon: '🥬', cost: 235, restore: 270, moveCost: 48, jumpCost: 60, slideCost: 38 },
     koala: { name: 'Eucalyptus', icon: '🍃', cost: 200, restore: 250, moveCost: 28, jumpCost: 44, slideCost: 22 },
     platypus: { name: 'River Cray Pack', icon: '🦐', cost: 205, restore: 285, moveCost: 30, jumpCost: 42, slideCost: 20 },
@@ -4388,7 +4380,6 @@
   const characterRegionMap = gameData.characterRegionMap || {
     emu: 0,
     wombat: 0,
-    wallaby: 0,
     kangaroo: 1,
     koala: 1,
     platypus: 1,
@@ -4412,11 +4403,25 @@
     pendingAdvance: null,
     pendingTreasure: null,
     pendingHeartRevive: null,
-    seenTreasureIds: [],
-    lastTreasureId: null,
+    seenTreasureRefs: [],
+    lastTreasureRefKey: null,
     solvedByLevel: {},
-    usedCorePuzzleIds: []
+    usedCorePuzzleIds: [],
+    usedPuzzleSignatures: []
   };
+
+  const puzzleHistory = (() => {
+    try {
+      const raw = globalThis.localStorage.getItem(PUZZLE_HISTORY_KEY);
+      if (!raw) {
+        return {};
+      }
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  })();
 
   const puzzleData = globalThis.DawnDashersPuzzleData || {};
   const levelPuzzlePools = puzzleData.levelPuzzlePools || {
@@ -4448,6 +4453,49 @@
     4: [3]
   };
   const treasurePuzzles = Array.isArray(puzzleData.treasurePuzzles) ? puzzleData.treasurePuzzles : [];
+  const TREASURE_CHEST_LIMIT_PER_RUN = 3;
+  const dataSplit = puzzleData.puzzleSplit && typeof puzzleData.puzzleSplit === 'object'
+    ? puzzleData.puzzleSplit
+    : {};
+  const PER_LEVEL_PUZZLE_SPLIT = {
+    heart: Number.isInteger(dataSplit.heart) ? dataSplit.heart : 8,
+    advance: Number.isInteger(dataSplit.advance) ? dataSplit.advance : 8,
+    treasure: Number.isInteger(dataSplit.treasure) ? dataSplit.treasure : 7
+  };
+
+  function buildLevelRolePools() {
+    const pools = {};
+    const levelCount = Math.max(regions.length, 5);
+    for (let level = 0; level < levelCount; level += 1) {
+      const coreIds = (levelPuzzlePools[level] || levelPuzzlePools[0] || [])
+        .filter((id) => Number.isInteger(id) && turingPuzzles[id]);
+      const treasureIds = (levelTreasurePools[level] || levelTreasurePools[0] || [])
+        .filter((id) => Number.isInteger(id) && treasurePuzzles[id]);
+
+      const heartCoreIds = coreIds.slice(0, PER_LEVEL_PUZZLE_SPLIT.heart);
+      const advanceStart = heartCoreIds.length;
+      const advanceCoreIds = coreIds.slice(advanceStart, advanceStart + PER_LEVEL_PUZZLE_SPLIT.advance);
+
+      const neededCoreForTreasure = Math.max(0, PER_LEVEL_PUZZLE_SPLIT.treasure - treasureIds.length);
+      const treasureCoreStart = advanceStart + advanceCoreIds.length;
+      const treasureCoreIds = coreIds.slice(treasureCoreStart, treasureCoreStart + neededCoreForTreasure);
+      const treasureRefs = [
+        ...treasureCoreIds.map((id) => ({ source: 'core', id })),
+        ...treasureIds.map((id) => ({ source: 'treasure', id }))
+      ].slice(0, PER_LEVEL_PUZZLE_SPLIT.treasure);
+
+      pools[level] = {
+        heartCoreIds,
+        advanceCoreIds,
+        treasureRefs
+      };
+    }
+    return pools;
+  }
+
+  const levelRolePools = puzzleData.levelRolePools && typeof puzzleData.levelRolePools === 'object'
+    ? puzzleData.levelRolePools
+    : buildLevelRolePools();
 
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -4605,10 +4653,11 @@
       state.score = 0;
       state.heartReviveUsed = false;
       state.chestCollectsByLevelRun = {};
-      puzzleState.seenTreasureIds = [];
-      puzzleState.lastTreasureId = null;
+      puzzleState.seenTreasureRefs = [];
+      puzzleState.lastTreasureRefKey = null;
       puzzleState.solvedByLevel = {};
       puzzleState.usedCorePuzzleIds = [];
+      puzzleState.usedPuzzleSignatures = [];
     }
     state.pendingReviveOffer = null;
     state.health = state.maxLives;
@@ -4884,7 +4933,10 @@
     if (!superModeEnabled && !isCharacterAvailableForCurrentLevel(id)) {
       const puzzleUnlockLevel = characters[id]?.puzzleUnlockLevel;
       if (Number.isInteger(puzzleUnlockLevel)) {
-        pushMessage(`Unlock ${characters[id].name} by collecting 3 treasure chests in one run at level ${puzzleUnlockLevel + 1}.`);
+        const requirement = getSpecialUnlockRequirement(puzzleUnlockLevel);
+        if (requirement) {
+          pushMessage(`Unlock ${characters[id].name} by collecting 3 chests in Level ${requirement.sourceLevel + 1} and clearing to Level ${requirement.targetLevel + 1}.`);
+        }
         return;
       }
       const lvl = Math.max(0, Math.min(regions.length - 1, state.progressLevel));
@@ -4924,6 +4976,17 @@
     characterTitleEl.textContent = `Choose Your Dasher - ${region.name}`;
   }
 
+  function isSpecialDasher(id) {
+    return Number.isInteger(characters[id]?.puzzleUnlockLevel) && characters[id].puzzleUnlockLevel > 0;
+  }
+
+  function getCharacterDisplayLabel(id) {
+    if (isSpecialDasher(id)) {
+      return 'SPECIAL';
+    }
+    return (characters[id]?.role || 'fast').toUpperCase();
+  }
+
   function decorateCharacterButtons() {
     characterButtons.forEach((button) => {
       const id = button.dataset.character;
@@ -4931,21 +4994,41 @@
       if (!role) {
         return;
       }
-      button.classList.toggle('role-fast', role === 'fast');
-      button.classList.toggle('role-slow', role === 'slow');
+      const special = isSpecialDasher(id);
+      button.classList.toggle('role-fast', !special && role === 'fast');
+      button.classList.toggle('role-slow', !special && role === 'slow');
+      button.classList.toggle('role-special', special);
       let pill = button.querySelector('.role-pill');
       if (!pill) {
         pill = document.createElement('span');
         pill.className = 'role-pill';
         button.appendChild(pill);
       }
-      pill.textContent = role.toUpperCase();
+      pill.textContent = getCharacterDisplayLabel(id);
     });
   }
 
   function getPairForLevel(level) {
     const safe = Math.max(0, Math.min(regions.length - 1, level));
     return levelCharacterPairs[safe] || levelCharacterPairs[0];
+  }
+
+  function getSpecialUnlockRequirement(puzzleUnlockLevel) {
+    if (!Number.isInteger(puzzleUnlockLevel) || puzzleUnlockLevel <= 0) {
+      return null;
+    }
+    return {
+      sourceLevel: puzzleUnlockLevel - 1,
+      targetLevel: puzzleUnlockLevel
+    };
+  }
+
+  function getSpecialUnlockText(puzzleUnlockLevel) {
+    const requirement = getSpecialUnlockRequirement(puzzleUnlockLevel);
+    if (!requirement) {
+      return 'Standard';
+    }
+    return `Collect 3 chests in Level ${requirement.sourceLevel + 1} and clear to Level ${requirement.targetLevel + 1}`;
   }
 
   function isCharacterAvailableForCurrentLevel(id) {
@@ -4957,6 +5040,9 @@
     if (!Number.isInteger(puzzleUnlockLevel)) {
       return false;
     }
+    if (puzzleUnlockLevel === 0) {
+      return true;
+    }
     return state.progressLevel >= puzzleUnlockLevel && state.puzzleBankUnlocks[puzzleUnlockLevel];
   }
 
@@ -4964,28 +5050,43 @@
     globalThis.localStorage.setItem(PUZZLE_BANK_UNLOCKS_KEY, JSON.stringify(state.puzzleBankUnlocks));
   }
 
-  function unlockPuzzleBankCharactersForLevel(level) {
+  function unlockPuzzleBankCharactersForLevel(level, announce = true) {
     if (state.puzzleBankUnlocks[level]) {
-      return;
+      return '';
     }
     const unlockedIds = Object.keys(characters)
       .filter((id) => characters[id]?.puzzleUnlockLevel === level);
     if (!unlockedIds.length) {
-      return;
+      return '';
     }
     state.puzzleBankUnlocks[level] = true;
     persistPuzzleBankUnlocks();
     const names = unlockedIds.map((id) => characters[id].name).join(', ');
-    pushMessage(`Treasure scout milestone reached! New character unlocked: ${names}`);
+    if (announce) {
+      pushMessage(`Turing solstice milestone reached! New dashers unlocked: ${names}`);
+    }
+    return names;
   }
 
   function registerTreasureChestCollect(level) {
     const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
     state.chestCollectsByLevelRun[safeLevel] = (state.chestCollectsByLevelRun[safeLevel] || 0) + 1;
     const chestCount = state.chestCollectsByLevelRun[safeLevel];
-    if (!state.puzzleBankUnlocks[safeLevel] && chestCount >= 3) {
-      unlockPuzzleBankCharactersForLevel(safeLevel);
+    if (chestCount === TREASURE_CHEST_LIMIT_PER_RUN) {
+      const targetLevel = safeLevel + 1;
+      if (targetLevel <= regions.length - 1 && !state.puzzleBankUnlocks[targetLevel]) {
+        pushMessage(`Solstice chest milestone ready. Clear to Level ${targetLevel + 1} to unlock that next level's special dasher.`);
+      }
     }
+  }
+
+  function getTreasureChestCollectTotalRun() {
+    return Object.values(state.chestCollectsByLevelRun)
+      .reduce((sum, count) => sum + (Number.isFinite(count) ? count : 0), 0);
+  }
+
+  function hasReachedTreasureChestLimitForRun() {
+    return getTreasureChestCollectTotalRun() >= TREASURE_CHEST_LIMIT_PER_RUN;
   }
 
   function registerPuzzleBankSolve(puzzle) {
@@ -5275,12 +5376,13 @@
     const [minLane, maxLane] = getMovementLaneBounds();
     const laneMode = current.role === 'slow' ? `Restricted lanes ${minLane + 1}-${maxLane + 1}` : 'Full-width lanes';
     const energyScale = getEnergyScaleForLevel();
-    const puzzleUnlockLevel = Number.isInteger(current.puzzleUnlockLevel) ? current.puzzleUnlockLevel + 1 : null;
+    const specialUnlockText = getSpecialUnlockText(current.puzzleUnlockLevel);
+    const displayLabel = getCharacterDisplayLabel(selectedCharacter);
     characterPower.innerHTML = `
-      <div class="spec-card role-${current.role}">
+      <div class="spec-card ${isSpecialDasher(selectedCharacter) ? 'role-special' : `role-${current.role}`}">
         <div class="spec-head">
           <span class="spec-name">${current.name}</span>
-          <span class="spec-role">${current.role.toUpperCase()}</span>
+          <span class="spec-role">${displayLabel}</span>
         </div>
         <div class="spec-grid">
           <div class="spec-item"><span>Power</span><strong>${current.power}</strong></div>
@@ -5292,7 +5394,7 @@
           <div class="spec-item"><span>Energy Slide</span><strong>${getEnergyCost('slide')}</strong></div>
           <div class="spec-item"><span>Lanes</span><strong>${laneMode}</strong></div>
           <div class="spec-item"><span>Level Scale</span><strong>x${energyScale.toFixed(2)}</strong></div>
-          <div class="spec-item"><span>Special Unlock</span><strong>${puzzleUnlockLevel ? `Collect 3 chests in one run at Level ${puzzleUnlockLevel}` : 'Standard'}</strong></div>
+          <div class="spec-item"><span>Special Unlock</span><strong>${specialUnlockText}</strong></div>
         </div>
         <a id="characterWikiLink" class="small character-wiki-link" href="${current.wikiUrl || 'https://en.wikipedia.org/wiki/Australian_fauna'}" target="_blank" rel="noopener noreferrer">Learn more about ${current.name}</a>
       </div>`;
@@ -5408,7 +5510,7 @@
       } else {
         const puzzleUnlockLevel = characters[id].puzzleUnlockLevel;
         if (Number.isInteger(puzzleUnlockLevel)) {
-          button.title = `Unlock by collecting 3 treasure chests in one run at level ${puzzleUnlockLevel + 1}`;
+          button.title = getSpecialUnlockText(puzzleUnlockLevel);
         } else {
           button.title = `Available in level ${characters[id].unlockAt + 1}`;
         }
@@ -5497,7 +5599,9 @@
     const lane = getNextSpawnLane();
     const shardDeficit = Math.max(0, 7 - state.fragments);
     const fragChance = Math.max(.26, .38 - state.progressLevel * .014 - shardDeficit * .008);
-    const treasureChestChance = Math.min(0.09, 0.04 + state.progressLevel * 0.01);
+    const treasureChestChance = hasReachedTreasureChestLimitForRun()
+      ? 0
+      : Math.min(0.09, 0.04 + state.progressLevel * 0.01);
     const plus100Chance = 0.16;
     const plus500Chance = 0.08;
     const minus100Chance = 0.12;
@@ -5689,8 +5793,7 @@
   }
 
   function getPuzzlePoolForLevel(level) {
-    const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
-    const ids = levelPuzzlePools[safeLevel] || levelPuzzlePools[0] || [];
+    const ids = getPuzzlePoolIdsForLevel(level);
     const pool = ids.map((id) => turingPuzzles[id]).filter(Boolean);
     return pool;
   }
@@ -5701,6 +5804,79 @@
     return ids.filter((id) => Number.isInteger(id) && turingPuzzles[id]);
   }
 
+  function getPuzzleByRef(ref) {
+    if (!ref || typeof ref !== 'object') {
+      return null;
+    }
+    if (ref.source === 'core') {
+      return turingPuzzles[ref.id] || null;
+    }
+    if (ref.source === 'treasure') {
+      return treasurePuzzles[ref.id] || null;
+    }
+    return null;
+  }
+
+  function getTreasureRefKey(ref) {
+    if (!ref || typeof ref !== 'object') {
+      return '';
+    }
+    return `${ref.source}:${ref.id}`;
+  }
+
+  function getPuzzleSignature(puzzle) {
+    if (!puzzle || typeof puzzle !== 'object') {
+      return '';
+    }
+    const answers = Array.isArray(puzzle.answers)
+      ? puzzle.answers.join('|')
+      : (puzzle.answer || '');
+    return [
+      puzzle.title || '',
+      puzzle.instruction || '',
+      puzzle.question || '',
+      answers
+    ]
+      .join('||')
+      .trim()
+      .toLowerCase();
+  }
+
+  function getPhaseHistorySignature(phase, level) {
+    const key = `${phase}:${Math.max(0, Math.min(regions.length - 1, level))}`;
+    const value = puzzleHistory[key];
+    return typeof value === 'string' ? value : '';
+  }
+
+  function setPhaseHistorySignature(phase, level, signature) {
+    if (!signature) {
+      return;
+    }
+    const key = `${phase}:${Math.max(0, Math.min(regions.length - 1, level))}`;
+    puzzleHistory[key] = signature;
+    try {
+      globalThis.localStorage.setItem(PUZZLE_HISTORY_KEY, JSON.stringify(puzzleHistory));
+    } catch {
+      // Ignore localStorage write failures in private mode/quota limits.
+    }
+  }
+
+  function isPuzzleSignatureUsed(puzzle) {
+    const signature = getPuzzleSignature(puzzle);
+    if (!signature) {
+      return false;
+    }
+    return puzzleState.usedPuzzleSignatures.includes(signature);
+  }
+
+  function markPuzzleSignatureUsed(puzzle) {
+    const signature = getPuzzleSignature(puzzle);
+    if (!signature || puzzleState.usedPuzzleSignatures.includes(signature)) {
+      return;
+    }
+    puzzleState.usedPuzzleSignatures.push(signature);
+  }
+
   function getSolvedPuzzleIdsForLevel(level) {
     if (!Array.isArray(puzzleState.solvedByLevel[level])) {
       puzzleState.solvedByLevel[level] = [];
@@ -5709,47 +5885,54 @@
   }
 
   function getAdvancePuzzlePoolIdsForLevel(level) {
-    const ids = getPuzzlePoolIdsForLevel(level);
-    return ids.length ? [ids[0]] : [];
+    const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
+    const pool = levelRolePools[safeLevel] || levelRolePools[0] || { advanceCoreIds: [] };
+    return pool.advanceCoreIds;
   }
 
   function getHeartPuzzlePoolIdsForLevel(level) {
-    const ids = getPuzzlePoolIdsForLevel(level);
-    if (!ids.length) {
-      return [];
-    }
-    const revivePuzzleId = ids.length > 1 ? ids[1] : ids[0];
-    return [revivePuzzleId];
+    const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
+    const pool = levelRolePools[safeLevel] || levelRolePools[0] || { heartCoreIds: [] };
+    return pool.heartCoreIds;
   }
 
-  function pickNextHeartRevivePuzzleId(level) {
-    const poolIds = getHeartPuzzlePoolIdsForLevel(level);
-    const unseen = poolIds.filter((id) => !puzzleState.usedCorePuzzleIds.includes(id));
-    if (!unseen.length) {
-      return null;
-    }
-    const puzzleId = unseen[Math.floor(Math.random() * unseen.length)];
-    puzzleState.activeCorePuzzleId = puzzleId;
-    if (!puzzleState.usedCorePuzzleIds.includes(puzzleId)) {
-      puzzleState.usedCorePuzzleIds.push(puzzleId);
-    }
-    return puzzleId;
-  }
+  function pickUnusedCorePuzzleIdFromPool(poolIds, phase, level) {
+    let candidates = poolIds.filter((id) => {
+      if (puzzleState.usedCorePuzzleIds.includes(id)) {
+        return false;
+      }
+      const puzzle = turingPuzzles[id];
+      return !isPuzzleSignatureUsed(puzzle);
+    });
 
-  function pickNextAdvancePuzzleId(level) {
-    const levelIds = getPuzzlePoolIdsForLevel(level);
-    let candidates = getAdvancePuzzlePoolIdsForLevel(level)
-      .filter((id) => !puzzleState.usedCorePuzzleIds.includes(id));
-    if (!candidates.length) {
-      candidates = levelIds.filter((id) => !puzzleState.usedCorePuzzleIds.includes(id));
+    const lastSignature = getPhaseHistorySignature(phase, level);
+    if (lastSignature && candidates.length > 1) {
+      const nonRepeat = candidates.filter((id) => getPuzzleSignature(turingPuzzles[id]) !== lastSignature);
+      if (nonRepeat.length) {
+        candidates = nonRepeat;
+      }
     }
+
     if (!candidates.length) {
       return null;
     }
     const puzzleId = candidates[Math.floor(Math.random() * candidates.length)];
     puzzleState.activeCorePuzzleId = puzzleId;
     puzzleState.usedCorePuzzleIds.push(puzzleId);
+    const picked = turingPuzzles[puzzleId];
+    markPuzzleSignatureUsed(picked);
+    setPhaseHistorySignature(phase, level, getPuzzleSignature(picked));
     return puzzleId;
+  }
+
+  function pickNextHeartRevivePuzzleId(level) {
+    const poolIds = getHeartPuzzlePoolIdsForLevel(level);
+    return pickUnusedCorePuzzleIdFromPool(poolIds, 'heart', level);
+  }
+
+  function pickNextAdvancePuzzleId(level) {
+    const poolIds = getAdvancePuzzlePoolIdsForLevel(level);
+    return pickUnusedCorePuzzleIdFromPool(poolIds, 'advance', level);
   }
 
   function beginHeartReviveChallenge(level) {
@@ -5801,50 +5984,55 @@
   }
 
   function pickNextCorePuzzleId(level) {
-    const levelIds = getHeartPuzzlePoolIdsForLevel(level);
-    const candidates = levelIds.filter((id) => !puzzleState.usedCorePuzzleIds.includes(id));
-
-    if (!candidates.length) {
-      return null;
-    }
-
-    const puzzleId = candidates[Math.floor(Math.random() * candidates.length)];
-    puzzleState.usedCorePuzzleIds.push(puzzleId);
-    puzzleState.activeCorePuzzleId = puzzleId;
-    return puzzleId;
+    const poolIds = getPuzzlePoolIdsForLevel(level);
+    return pickUnusedCorePuzzleIdFromPool(poolIds, 'core', level);
   }
 
-  function getTreasurePoolForLevel(level) {
+  function getTreasureRefPoolForLevel(level) {
     const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
-    const ids = levelTreasurePools[safeLevel] || levelTreasurePools[0] || [];
-    const pool = ids.map((id) => treasurePuzzles[id]).filter(Boolean);
-    return pool;
+    const pool = levelRolePools[safeLevel] || levelRolePools[0] || { treasureRefs: [] };
+    return pool.treasureRefs;
   }
 
-  function chooseTreasurePuzzleId(level) {
-    const pool = getTreasurePoolForLevel(level);
-    const poolIds = pool
-      .map((puzzle) => treasurePuzzles.indexOf(puzzle))
-      .filter((id) => id >= 0);
+  function chooseTreasurePuzzleRef(level) {
+    const refs = getTreasureRefPoolForLevel(level);
 
-    let candidates = poolIds.filter((id) => !puzzleState.seenTreasureIds.includes(id));
+    let candidates = refs.filter((ref) => {
+      const key = getTreasureRefKey(ref);
+      if (!key || puzzleState.seenTreasureRefs.includes(key)) {
+        return false;
+      }
+      return !isPuzzleSignatureUsed(getPuzzleByRef(ref));
+    });
     if (!candidates.length) {
       return null;
     }
 
-    if (candidates.length > 1 && Number.isInteger(puzzleState.lastTreasureId)) {
-      const nonRepeat = candidates.filter((id) => id !== puzzleState.lastTreasureId);
+    const lastSignature = getPhaseHistorySignature('treasure', level);
+    if (lastSignature && candidates.length > 1) {
+      const nonRepeatBySignature = candidates.filter((ref) => getPuzzleSignature(getPuzzleByRef(ref)) !== lastSignature);
+      if (nonRepeatBySignature.length) {
+        candidates = nonRepeatBySignature;
+      }
+    }
+
+    if (candidates.length > 1 && puzzleState.lastTreasureRefKey) {
+      const nonRepeat = candidates.filter((ref) => getTreasureRefKey(ref) !== puzzleState.lastTreasureRefKey);
       if (nonRepeat.length) {
         candidates = nonRepeat;
       }
     }
 
-    const puzzleId = candidates[Math.floor(Math.random() * candidates.length)];
-    if (!puzzleState.seenTreasureIds.includes(puzzleId)) {
-      puzzleState.seenTreasureIds.push(puzzleId);
+    const puzzleRef = candidates[Math.floor(Math.random() * candidates.length)];
+    const key = getTreasureRefKey(puzzleRef);
+    if (key && !puzzleState.seenTreasureRefs.includes(key)) {
+      puzzleState.seenTreasureRefs.push(key);
     }
-    puzzleState.lastTreasureId = puzzleId;
-    return puzzleId;
+    const picked = getPuzzleByRef(puzzleRef);
+    markPuzzleSignatureUsed(picked);
+    setPhaseHistorySignature('treasure', level, getPuzzleSignature(picked));
+    puzzleState.lastTreasureRefKey = key;
+    return puzzleRef;
   }
 
   function openTreasurePuzzleFromChest(item) {
@@ -5858,14 +6046,14 @@
       return;
     }
 
-    const puzzleId = chooseTreasurePuzzleId(level);
-    if (!Number.isInteger(puzzleId)) {
+    const puzzleRef = chooseTreasurePuzzleRef(level);
+    if (!puzzleRef) {
       state.foodStocks[selectedCharacter] = (state.foodStocks[selectedCharacter] || 0) + rewardFood;
       pushMessage(`Chest opened. Treasure puzzle bank exhausted this session, +${rewardFood} food granted.`);
       syncHud();
       return;
     }
-    puzzleState.pendingTreasure = { level, puzzleId, foodReward: rewardFood };
+    puzzleState.pendingTreasure = { level, puzzleRef, foodReward: rewardFood };
     state.paused = true;
     state.hungerPaused = false;
 
@@ -5968,7 +6156,7 @@
 
   function getCurrentPuzzle() {
     if (puzzleState.pendingTreasure) {
-      return treasurePuzzles[puzzleState.pendingTreasure.puzzleId] || null;
+      return getPuzzleByRef(puzzleState.pendingTreasure.puzzleRef);
     }
     if (puzzleState.pendingAdvance) {
       const level = Math.max(0, Math.min(regions.length - 1, puzzleState.pendingAdvance.nextLevel || state.progressLevel));
@@ -6107,9 +6295,19 @@
     }
 
     puzzleState.pendingAdvance = null;
+    const previousLevel = Math.max(0, next.nextLevel - 1);
+    const chestCountForPreviousLevel = state.chestCollectsByLevelRun[previousLevel] || 0;
+    let specialUnlockedNames = '';
+    if (next.nextLevel > 0 && chestCountForPreviousLevel >= TREASURE_CHEST_LIMIT_PER_RUN) {
+      specialUnlockedNames = unlockPuzzleBankCharactersForLevel(next.nextLevel, false);
+    }
+    const allUnlockedNames = [next.unlockedNames, specialUnlockedNames].filter(Boolean).join(', ');
     state.progressLevel = next.nextLevel;
     state.score += next.levelBonus;
-    triggerLevelCelebrate(next.nextLevel, next.levelBonus, next.unlockedNames);
+    triggerLevelCelebrate(next.nextLevel, next.levelBonus, allUnlockedNames);
+    if (specialUnlockedNames) {
+      pushMessage(`Solstice special unlocked for ${regions[next.nextLevel].name}: ${specialUnlockedNames}.`);
+    }
     closeModal(puzzleModal);
     syncHud();
     return true;
@@ -6467,6 +6665,10 @@
     }
 
     if (item.type === 'treasureChest') {
+      if (hasReachedTreasureChestLimitForRun()) {
+        pushMessage(`Treasure chest cap reached for this run (${TREASURE_CHEST_LIMIT_PER_RUN}/${TREASURE_CHEST_LIMIT_PER_RUN}).`);
+        return;
+      }
       playSfx('collect');
       openTreasurePuzzleFromChest(item);
       return;
@@ -8265,7 +8467,7 @@
     const isWombat = charKey === 'wombat';
     const isPlatypus = charKey === 'platypus';
     const isEchidna = charKey === 'echidna';
-    const isKangaroo = charKey === 'kangaroo' || charKey === 'wallaby';
+    const isKangaroo = charKey === 'kangaroo';
     const isFastBird = charKey === 'kookaburra' || charKey === 'cockatoo';
 
     if (isBird) {
@@ -8321,7 +8523,7 @@
       ctx.fill();
     }
 
-    // Kangaroo/Wallaby tail swish effect
+    // Kangaroo tail swish effect
     if (isKangaroo) {
       ctx.strokeStyle = 'rgba(200, 150, 100, 0.15)';
       ctx.lineWidth = 2;
@@ -8336,7 +8538,7 @@
     const t = performance.now() * 0.001;
     const sliding = state.player.sliding > 0;
     const isBird = charKey === 'emu' || charKey === 'kookaburra' || charKey === 'cockatoo';
-    const isKangaroo = charKey === 'kangaroo' || charKey === 'wallaby';
+    const isKangaroo = charKey === 'kangaroo';
     const isWombat = charKey === 'wombat';
 
     // Character-specific aura size and pulsation
@@ -8418,7 +8620,6 @@
     kookaburra: { body: '#7a5c18', wings: '#3a2808', beak: '#d09828', eye: '#1a0e06', chest: '#f0e0a0' },
     cockatoo:   { body: '#f0ece0', wings: '#d8c880', crest: '#ffd000', beak: '#c09048', eye: '#2a1808' },
     kangaroo:   { body: '#c08050', belly: '#e0b880', ear: '#d09060', eye: '#2a1808' },
-    wallaby:    { body: '#a07040', belly: '#c89870', ear: '#b08060', eye: '#2a1808' },
     wombat:     { body: '#5a4030', belly: '#7a6050', eye: '#2a1808', nose: '#321a10' },
     koala:      { body: '#888080', belly: '#d0c0b8', ear: '#a09090', nose: '#382030', eye: '#281820' },
     possum:     { body: '#706858', tail: '#605848', belly: '#c0b8a0', eye: '#281820' },

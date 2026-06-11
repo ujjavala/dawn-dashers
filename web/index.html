@@ -978,6 +978,11 @@
       border-color: rgba(160, 240, 150, 0.75);
       color: #132f0e;
     }
+    .character-btn.role-special .role-pill {
+      background: rgba(255, 221, 120, 0.9);
+      border-color: rgba(255, 221, 120, 0.82);
+      color: #352108;
+    }
     .character-btn.active {
       border-color: #d4a373;
       box-shadow: 0 0 18px rgba(212, 163, 115, 0.35);
@@ -1017,6 +1022,10 @@
     .spec-card.role-slow {
       border-color: rgba(166, 235, 137, 0.5);
     }
+    .spec-card.role-special {
+      border-color: rgba(255, 221, 120, 0.58);
+      box-shadow: inset 0 0 0 1px rgba(255, 241, 204, 0.1);
+    }
     .spec-head {
       display: flex;
       justify-content: space-between;
@@ -1051,6 +1060,11 @@
       background: rgba(160, 240, 150, 0.82);
       border-color: rgba(160, 240, 150, 0.78);
       color: #132f0e;
+    }
+    .spec-card.role-special .spec-role {
+      background: rgba(255, 221, 120, 0.9);
+      border-color: rgba(255, 221, 120, 0.8);
+      color: #352108;
     }
     .spec-grid {
       display: grid;
@@ -1256,66 +1270,62 @@
             <div class="character-row">
             <button class="character-btn active" data-character="emu" data-emoji="🦅" data-unlock="0">
               <span class="emoji">🦅</span>
-              Elder Emu
+              Enigma Emu
             </button>
             <button class="character-btn" data-character="wombat" data-emoji="🦫" data-unlock="0">
               <span class="emoji">🦫</span>
-              Digger Wombat
-            </button>
-            <button class="character-btn" data-character="wallaby" data-emoji="🐾" data-unlock="0">
-              <span class="emoji">🐾</span>
-              Spinifex Wallaby
+              Wheeler Wombat
             </button>
             <button class="character-btn" data-character="kangaroo" data-emoji="🦘" data-unlock="1">
               <span class="emoji">🦘</span>
-              Red Kangaroo
+              Kleene Kangaroo
             </button>
             <button class="character-btn" data-character="koala" data-emoji="🐨" data-unlock="1">
               <span class="emoji">🐨</span>
-              River Koala
+              Knuth Koala
             </button>
             <button class="character-btn" data-character="platypus" data-emoji="🦆" data-unlock="1">
               <span class="emoji">🦆</span>
-              Cipher Platypus
+              Prefix Platypus
             </button>
             <button class="character-btn" data-character="possum" data-emoji="🌟" data-unlock="2">
               <span class="emoji">🌟</span>
-              Lantern Possum
+              Protocol Possum
             </button>
             <button class="character-btn" data-character="echidna" data-emoji="🦔" data-unlock="2">
               <span class="emoji">🦔</span>
-              Spike Echidna
+              Epsilon Echidna
             </button>
             <button class="character-btn" data-character="cockatoo" data-emoji="🦜" data-unlock="2">
               <span class="emoji">🦜</span>
-              Signal Cockatoo
+              Compiler Cockatoo
             </button>
             <button class="character-btn" data-character="dingo" data-emoji="🐕" data-unlock="3">
               <span class="emoji">🐕</span>
-              Coastal Dingo
+              Digital Dingo
             </button>
             <button class="character-btn" data-character="bilby" data-emoji="🐇" data-unlock="3">
               <span class="emoji">🐇</span>
-              Desert Bilby
+              Bit Bilby
             </button>
             <button class="character-btn" data-character="tasdevil" data-emoji="😈" data-unlock="3">
               <span class="emoji">😈</span>
-              Storm Tassie Devil
+              Turing Tassie Devil
             </button>
             <button class="character-btn" data-character="kookaburra" data-emoji="🐦" data-unlock="4">
               <span class="emoji">🐦</span>
-              Aurora Kookaburra
+              Kernel Kookaburra
             </button>
             <button class="character-btn" data-character="quokka" data-emoji="🐹" data-unlock="4">
               <span class="emoji">🐹</span>
-              Summit Quokka
+              Quine Quokka
             </button>
             <button class="character-btn" data-character="numbat" data-emoji="🦝" data-unlock="4">
               <span class="emoji">🦝</span>
-              Logic Numbat
+              Null Numbat
             </button>
             </div>
-            <div id="characterPower" class="character-power">Elder Emu power: Dust Sprint | Fast lane weave, moderate hop drain. | Energy cost scale at this level: x1.25 (drops each level)</div>
+            <div id="characterPower" class="character-power">Enigma Emu power: Dust Sprint | Fast lane weave, moderate hop drain. | Energy cost scale at this level: x1.25 (drops each level)</div>
           </div>
           <div class="character-footer">
             <div class="character-actions">
@@ -1454,14 +1464,14 @@
           </div>
           <div class="panel-list help-scroll-list">
             <div class="panel-item"><span>Adventure Objective</span><strong>You are a dawn runner in the Southern Hemisphere. Cross Outback, Bushland, Servo, Coastline, and Tasmania, collect 7 shards in each level, and make the sun rise again.</strong></div>
-            <div class="panel-item"><span>Puzzle Type 1: Treasure Chest</span><strong>Find a chest in the run, solve its treasure puzzle, and earn food supplies only.</strong></div>
+            <div class="panel-item"><span>Puzzle Type 1: Treasure Chest</span><strong>Find a chest in the run, solve its treasure puzzle, and earn food supplies only. After 3 chest pickups in a run, no more treasure chests spawn. If those 3 are collected in a level, clearing into the next level unlocks that next level's special dasher.</strong></div>
             <div class="panel-item"><span>Puzzle Type 2: Heart Revival</span><strong>If hearts hit 0, one heart revival challenge opens once per run. Solve 1 puzzle to restore all 3 hearts.</strong></div>
             <div class="panel-item"><span>Puzzle Type 3: Next-Level Unlock</span><strong>After clearing a level, solve the unlock puzzle to proceed to the next terrain.</strong></div>
             <div class="panel-item"><span>Heart Rules</span><strong>You always have 3 hearts. Each new level resets to 3. Hearts do not carry to next level. Revival can happen only once per run; if hearts hit 0 again after revive, game over.</strong></div>
             <div class="panel-item"><span>Falling Objects</span><strong>Collect shards and positive score tokens. Avoid bombs and negative score tokens.</strong></div>
             <div class="panel-item"><span>Scoring</span><strong>Score comes from score tokens and level clear bonus.</strong></div>
             <div class="panel-item"><span>Energy and Food</span><strong>Move, jump, and slide consume energy. Buy food with score and it auto-uses when energy is low.</strong></div>
-            <div class="panel-item"><span>Character Pairs</span><strong>Each level gives 2 dashers: one fast and one slow. Special dashers unlock by collecting 3 treasure chests in one run for that level.</strong></div>
+            <div class="panel-item"><span>Character Pairs</span><strong>Each level gives 2 dashers: one fast and one slow. The four special dashers stay locked unless you collect all 3 chests in the previous level and then qualify into that next level.</strong></div>
             <div class="panel-item"><span>Controls</span><strong>Arrows/WASD move, Up/Space jump, Down slide, F opens Food Cart.</strong></div>
           </div>
         </div>

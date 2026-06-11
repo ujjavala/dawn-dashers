@@ -58,6 +58,12 @@
   const treasurePuzzles = [];
   const levelPuzzlePools = {};
   const levelTreasurePools = {};
+  const levelRolePools = {};
+  const puzzleSplit = {
+    heart: 8,
+    advance: 8,
+    treasure: 7
+  };
 
   for (let level = 0; level < 5; level += 1) {
     const chunk = levels[level] || { turingPuzzles: [], treasurePuzzles: [] };
@@ -66,17 +72,38 @@
 
     const coreStart = turingPuzzles.length;
     turingPuzzles.push(...levelCore);
-    levelPuzzlePools[level] = levelCore.map((_, idx) => coreStart + idx);
+    const coreIds = levelCore.map((_, idx) => coreStart + idx);
+    levelPuzzlePools[level] = coreIds;
 
     const treasureStart = treasurePuzzles.length;
     treasurePuzzles.push(...levelTreasure);
-    levelTreasurePools[level] = levelTreasure.map((_, idx) => treasureStart + idx);
+    const treasureIds = levelTreasure.map((_, idx) => treasureStart + idx);
+    levelTreasurePools[level] = treasureIds;
+
+    const heartCoreIds = coreIds.slice(0, puzzleSplit.heart);
+    const advanceStart = heartCoreIds.length;
+    const advanceCoreIds = coreIds.slice(advanceStart, advanceStart + puzzleSplit.advance);
+    const neededCoreForTreasure = Math.max(0, puzzleSplit.treasure - treasureIds.length);
+    const treasureCoreStart = advanceStart + advanceCoreIds.length;
+    const treasureCoreIds = coreIds.slice(treasureCoreStart, treasureCoreStart + neededCoreForTreasure);
+    const treasureRefs = [
+      ...treasureCoreIds.map((id) => ({ source: 'core', id })),
+      ...treasureIds.map((id) => ({ source: 'treasure', id }))
+    ].slice(0, puzzleSplit.treasure);
+
+    levelRolePools[level] = {
+      heartCoreIds,
+      advanceCoreIds,
+      treasureRefs
+    };
   }
 
   globalThis.DawnDashersPuzzleData = {
     turingPuzzles,
     treasurePuzzles,
     levelPuzzlePools,
-    levelTreasurePools
+    levelTreasurePools,
+    levelRolePools,
+    puzzleSplit
   };
 })();
