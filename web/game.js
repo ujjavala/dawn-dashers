@@ -256,6 +256,331 @@
     };
   }
 
+  // ─── Three.js scene props registry ──────────────────────────────────────────
+  // Each region populates threeState.props (array of THREE.Object3D)
+  // so they can be cleared when switching regions.
+
+  function clearThreeProps() {
+    if (!threeState.scene || !threeState.props) return;
+    threeState.props.forEach(p => threeState.scene.remove(p));
+    threeState.props = [];
+  }
+
+  function makeMesh(geo, mat) {
+    const m = new globalThis.THREE.Mesh(geo, mat);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    return m;
+  }
+
+  function addProp(obj) {
+    threeState.scene.add(obj);
+    threeState.props.push(obj);
+  }
+
+  // Build a simple palm tree group
+  function buildPalmTree(x, z, h) {
+    const THREE = globalThis.THREE;
+    const grp = new THREE.Group();
+    // Trunk
+    const trunk = makeMesh(
+      new THREE.CylinderGeometry(0.12, 0.22, h, 6),
+      new THREE.MeshStandardMaterial({ color: 0x7a5030, roughness: 0.9 })
+    );
+    trunk.position.set(0, h * 0.5, 0);
+    grp.add(trunk);
+    // Fronds
+    const frondMat = new THREE.MeshStandardMaterial({ color: 0x4a8830, roughness: 0.8, side: THREE.DoubleSide });
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const frond = makeMesh(new THREE.ConeGeometry(0.1, 1.4, 4), frondMat);
+      frond.position.set(Math.cos(angle) * 0.7, h + 0.2, Math.sin(angle) * 0.7);
+      frond.rotation.set(-0.6, angle, 0);
+      grp.add(frond);
+    }
+    grp.position.set(x, 0, z);
+    return grp;
+  }
+
+  // Build a eucalyptus / gum tree
+  function buildGumTree(x, z, h) {
+    const THREE = globalThis.THREE;
+    const grp = new THREE.Group();
+    const trunk = makeMesh(
+      new THREE.CylinderGeometry(0.1, 0.2, h, 5),
+      new THREE.MeshStandardMaterial({ color: 0x9a8060, roughness: 0.95 })
+    );
+    trunk.position.set(0, h * 0.5, 0);
+    grp.add(trunk);
+    const canopyMat = new THREE.MeshStandardMaterial({ color: 0x6a9a4a, roughness: 0.85, transparent: true, opacity: 0.92 });
+    for (let i = 0; i < 3; i++) {
+      const blob = makeMesh(new THREE.SphereGeometry(0.55 + i * 0.15, 7, 5), canopyMat);
+      blob.position.set((i - 1) * 0.5, h + 0.3 + i * 0.2, (i % 2 === 0 ? 0.3 : -0.2));
+      grp.add(blob);
+    }
+    grp.position.set(x, 0, z);
+    return grp;
+  }
+
+  // Build a sandstone mesa / rock
+  function buildMesa(x, z, w2, h) {
+    const THREE = globalThis.THREE;
+    const mat = new THREE.MeshStandardMaterial({ color: 0xb46838, roughness: 1.0, metalness: 0 });
+    const base = makeMesh(new THREE.BoxGeometry(w2, h * 0.7, w2 * 0.7), mat);
+    base.position.set(x, h * 0.35, z);
+    const cap = makeMesh(new THREE.BoxGeometry(w2 * 0.75, h * 0.32, w2 * 0.55), mat);
+    cap.position.set(x + w2 * 0.05, h * 0.86, z);
+    const grp = new THREE.Group();
+    grp.add(base, cap);
+    return grp;
+  }
+
+  // Build an iceberg / snow rock
+  function buildSnowRock(x, z, r) {
+    const THREE = globalThis.THREE;
+    const grp = new THREE.Group();
+    const rock = makeMesh(
+      new THREE.DodecahedronGeometry(r, 0),
+      new THREE.MeshStandardMaterial({ color: 0x8899bb, roughness: 0.9 })
+    );
+    rock.position.set(x, r * 0.4, z);
+    const snow = makeMesh(
+      new THREE.SphereGeometry(r * 0.6, 6, 5),
+      new THREE.MeshStandardMaterial({ color: 0xe8f4ff, roughness: 0.7 })
+    );
+    snow.position.set(x, r * 1.1, z);
+    grp.add(rock, snow);
+    return grp;
+  }
+
+  // Build a servo pylon / antenna mast
+  function buildPylon(x, z, h) {
+    const THREE = globalThis.THREE;
+    const mat = new THREE.MeshStandardMaterial({ color: 0x4070a0, roughness: 0.5, metalness: 0.6 });
+    const grp = new THREE.Group();
+    const shaft = makeMesh(new THREE.CylinderGeometry(0.08, 0.14, h, 4), mat);
+    shaft.position.set(x, h * 0.5, z);
+    const ring1 = makeMesh(new THREE.TorusGeometry(0.28, 0.04, 6, 12), mat);
+    ring1.position.set(x, h * 0.55, z);
+    ring1.rotation.x = Math.PI / 2;
+    const ring2 = makeMesh(new THREE.TorusGeometry(0.18, 0.03, 6, 10), mat);
+    ring2.position.set(x, h * 0.82, z);
+    ring2.rotation.x = Math.PI / 2;
+    grp.add(shaft, ring1, ring2);
+    return grp;
+  }
+
+  // Build a simple boat hull
+  function buildBoat(x, z) {
+    const THREE = globalThis.THREE;
+    const grp = new THREE.Group();
+    const hull = makeMesh(
+      new THREE.BoxGeometry(1.8, 0.4, 0.7),
+      new THREE.MeshStandardMaterial({ color: 0x6a4828, roughness: 0.85 })
+    );
+    hull.position.set(x, -0.2, z);
+    const mast = makeMesh(
+      new THREE.CylinderGeometry(0.04, 0.04, 1.6, 4),
+      new THREE.MeshStandardMaterial({ color: 0x9a7850, roughness: 0.9 })
+    );
+    mast.position.set(x, 0.8, z);
+    const sail = makeMesh(
+      new THREE.ConeGeometry(0.55, 1.1, 3),
+      new THREE.MeshStandardMaterial({ color: 0xf0e8d0, roughness: 0.8, side: THREE.DoubleSide })
+    );
+    sail.position.set(x + 0.25, 1.0, z);
+    sail.rotation.set(0, 0, 0.35);
+    grp.add(hull, mast, sail);
+    return grp;
+  }
+
+  // Build a realistic lighthouse
+  function buildLighthouse(x, z) {
+    const THREE = globalThis.THREE;
+    const grp = new THREE.Group();
+    // Tower base (white cylinder)
+    const tower = makeMesh(
+      new THREE.CylinderGeometry(0.28, 0.32, 3.8, 12),
+      new THREE.MeshStandardMaterial({ color: 0xf5f5f0, roughness: 0.75, metalness: 0.1 })
+    );
+    tower.position.set(x, 1.9, z);
+    grp.add(tower);
+    // Red stripe around middle
+    const stripe = makeMesh(
+      new THREE.CylinderGeometry(0.30, 0.30, 0.6, 12),
+      new THREE.MeshStandardMaterial({ color: 0xc83a2a, roughness: 0.7 })
+    );
+    stripe.position.set(x, 2.0, z);
+    grp.add(stripe);
+    // Lantern room (glass dome)
+    const lantern = makeMesh(
+      new THREE.SphereGeometry(0.35, 10, 8),
+      new THREE.MeshStandardMaterial({ color: 0x80b8d0, roughness: 0.4, metalness: 0.3, transparent: true, opacity: 0.7 })
+    );
+    lantern.position.set(x, 3.9, z);
+    grp.add(lantern);
+    // Light beam glow
+    const light = makeMesh(
+      new THREE.ConeGeometry(0.4, 1.2, 10),
+      new THREE.MeshStandardMaterial({ color: 0xffff88, emissive: 0xffff44, roughness: 0.3, transparent: true, opacity: 0.4 })
+    );
+    light.position.set(x, 4.2, z);
+    grp.add(light);
+    return grp;
+  }
+
+  // Build realistic bush/shrub
+  function buildBush(x, z, size) {
+    const THREE = globalThis.THREE;
+    const grp = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({ color: 0x5a8a3a, roughness: 0.9 });
+    // 3-4 overlapping spheres for organic shape
+    const radii = [size * 0.6, size * 0.55, size * 0.48];
+    radii.forEach((r, i) => {
+      const sphere = makeMesh(new THREE.SphereGeometry(r, 6, 5), mat);
+      sphere.position.set((i - 1) * size * 0.3, size * 0.4 + i * 0.15, (i % 2 === 0 ? 1 : -1) * size * 0.2);
+      grp.add(sphere);
+    });
+    grp.position.set(x, 0, z);
+    return grp;
+  }
+
+  // Build tall fern cluster
+  function buildFernCluster(x, z) {
+    const THREE = globalThis.THREE;
+    const grp = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({ color: 0x4a7a2a, roughness: 0.95, side: THREE.DoubleSide });
+    for (let i = 0; i < 5; i++) {
+      const angle = (i / 5) * Math.PI * 2;
+      const frond = makeMesh(new THREE.ConeGeometry(0.08, 1.2, 4), mat);
+      frond.position.set(Math.cos(angle) * 0.3, 0.6, Math.sin(angle) * 0.3);
+      frond.rotation.set(-0.7, angle, 0);
+      grp.add(frond);
+    }
+    grp.position.set(x, 0, z);
+    return grp;
+  }
+
+  function buildRegionProps(terrain) {
+    clearThreeProps();
+    if (!hasThree) return;
+
+    if (terrain === 'dunes') {
+      // Sandstone mesas mid-distance
+      [[-8, -22, 3.2, 4.8], [5, -18, 2.4, 3.6], [-3, -30, 2.8, 4.0], [10, -26, 2.0, 3.2]].forEach(([x, z, w2, h]) => {
+        const grp = buildMesa(x, z, w2, h);
+        addProp(grp);
+      });
+      // Sparse dead scrub
+      for (let i = 0; i < 14; i++) {
+        const x = (i % 2 === 0 ? -1 : 1) * (5 + (i * 1.3) % 7);
+        const z = -8 - (i * 2.2) % 28;
+        const stump = makeMesh(
+          new globalThis.THREE.CylinderGeometry(0.06, 0.12, 0.6 + (i % 3) * 0.3, 4),
+          new globalThis.THREE.MeshStandardMaterial({ color: 0x6a4020, roughness: 1.0 })
+        );
+        stump.position.set(x, 0.3, z);
+        addProp(stump);
+      }
+    }
+
+    if (terrain === 'forest') {
+      // Tall gum trees lining both sides
+      const treePositions = [
+        [-7, -10], [-9, -16], [-6, -22], [-8, -30],
+        [7, -8],  [9, -14],  [7, -20],  [10, -28],
+        [-5, -36], [8, -34]
+      ];
+      treePositions.forEach(([x, z]) => {
+        const h = 4.2 + (Math.abs(x + z) % 4) * 1.1;
+        addProp(buildGumTree(x, z, h));
+      });
+      // Dense undergrowth: bushes and shrubs
+      const bushPositions = [
+        [-4, -8, 0.6], [-2, -14, 0.5], [-6, -18, 0.7], [3, -10, 0.6], [5, -15, 0.55],
+        [-3, -24, 0.6], [2, -22, 0.65], [-8, -26, 0.5], [6, -25, 0.7], [-1, -32, 0.6]
+      ];
+      bushPositions.forEach(([x, z, sz]) => addProp(buildBush(x, z, sz)));
+      // Fern clusters for understory
+      const fernPositions = [[0, -10], [-5, -15], [4, -18], [-2, -25], [3, -30]];
+      fernPositions.forEach(([x, z]) => addProp(buildFernCluster(x, z)));
+      // Fallen logs
+      for (let i = 0; i < 5; i++) {
+        const log = makeMesh(
+          new globalThis.THREE.CylinderGeometry(0.16, 0.20, 2.8 + i * 0.5, 7),
+          new globalThis.THREE.MeshStandardMaterial({ color: 0x4a2810, roughness: 1.0 })
+        );
+        log.rotation.set(0, 0, Math.PI / 2 + (i * 0.4));
+        log.position.set(-5 + i * 2.8, 0.2, -4 - i * 5.5);
+        addProp(log);
+      }
+    }
+
+    if (terrain === 'beach') {
+      // Palm trees on the sides
+      [[-8, -12, 3.2], [-6, -20, 2.8], [8, -10, 3.0], [7, -18, 2.6]].forEach(([x, z, h]) => {
+        addProp(buildPalmTree(x, z, h));
+      });
+      // Realistic lighthouse
+      addProp(buildLighthouse(0, -26));
+      // Boats on the water plane
+      [[-4, -14], [3, -20]].forEach(([x, z]) => {
+        addProp(buildBoat(x, z));
+      });
+      // Rocky outcrops and larger boulders
+      const boulderPositions = [
+        [-6, -10, 0.5], [-3, -12, 0.45], [2, -11, 0.4],
+        [6, -16, 0.55], [-8, -22, 0.6], [5, -24, 0.48],
+        [-2, -28, 0.52], [7, -30, 0.58]
+      ];
+      boulderPositions.forEach(([x, z, r]) => {
+        const boulder = makeMesh(
+          new globalThis.THREE.DodecahedronGeometry(r, 0),
+          new globalThis.THREE.MeshStandardMaterial({ color: 0xa8967a, roughness: 0.98 })
+        );
+        boulder.position.set(x, r * 0.35, z);
+        addProp(boulder);
+      });
+    }
+
+    if (terrain === 'industrial') {
+      // Servo pylons / antennas
+      [[-7, -10, 4.5], [7, -12, 5.2], [-5, -20, 3.8], [9, -18, 4.0], [0, -28, 5.8]].forEach(([x, z, h]) => {
+        addProp(buildPylon(x, z, h));
+      });
+      // Metal container blocks
+      for (let i = 0; i < 5; i++) {
+        const crate = makeMesh(
+          new globalThis.THREE.BoxGeometry(1.2 + (i % 2) * 0.4, 0.7, 0.7),
+          new globalThis.THREE.MeshStandardMaterial({ color: 0x2a4a6a, roughness: 0.6, metalness: 0.5 })
+        );
+        crate.position.set(-6 + i * 2.8, 0.35, -4 - i * 2);
+        addProp(crate);
+      }
+    }
+
+    if (terrain === 'mountains') {
+      // Snowy rocks and pines
+      [[-7, -12, 1.0], [6, -10, 0.8], [-4, -22, 1.3], [8, -20, 0.9], [-9, -30, 1.1]].forEach(([x, z, r]) => {
+        addProp(buildSnowRock(x, z, r));
+      });
+      // Conifer silhouettes (stacked cones)
+      for (let i = 0; i < 8; i++) {
+        const x = (i % 2 === 0 ? -1 : 1) * (4 + (i * 1.7) % 6);
+        const z = -8 - (i * 3.1) % 24;
+        const grp = new globalThis.THREE.Group();
+        const cMat = new globalThis.THREE.MeshStandardMaterial({ color: 0x2a4a38, roughness: 0.9 });
+        [2.2, 1.5, 0.9].forEach((cr, ki) => {
+          const cone = makeMesh(new globalThis.THREE.ConeGeometry(cr * 0.5, cr * 0.9, 6), cMat);
+          cone.position.set(0, ki * 0.9 + cr * 0.45, 0);
+          grp.add(cone);
+        });
+        grp.position.set(x, 0, z);
+        addProp(grp);
+      }
+    }
+  }
+
   function initThreeTerrain() {
     if (!hasThree || !threeRoot || threeState.ready) {
       return;
@@ -285,6 +610,11 @@
     sun.shadow.mapSize.width = 1024;
     sun.shadow.mapSize.height = 1024;
     scene.add(sun);
+
+    // Second fill light for depth on props
+    const fillLight = new globalThis.THREE.DirectionalLight(0xb0d0ff, 0.38);
+    fillLight.position.set(-8, 6, 10);
+    scene.add(fillLight);
 
     const skyGeo = new globalThis.THREE.SphereGeometry(90, 24, 16);
     const skyMat = new globalThis.THREE.MeshBasicMaterial({ color: 0x1a2439, side: globalThis.THREE.BackSide });
@@ -322,7 +652,9 @@
     threeState.terrainGeo = terrainGeo;
     threeState.terrainBase = base;
     threeState.sun = sun;
+    threeState.fillLight = fillLight;
     threeState.sky = sky;
+    threeState.props = [];
     applyRegionThreeTheme(regions[state.regionIndex]);
     updateThreeVisibility();
   }
@@ -341,9 +673,23 @@
     const theme = terrainTheme(region.terrain);
     threeState.terrain.material.color.setHex(theme.base);
     threeState.terrain.material.emissive.setHex(theme.emissive);
-    threeState.scene.fog = new globalThis.THREE.Fog(theme.fog, 16, 58);
+    threeState.scene.fog = new globalThis.THREE.Fog(theme.fog, theme.fogNear || 16, theme.fogFar || 58);
     threeState.sky.material.color.setHex(theme.sky);
-    threeState.sun.color.setHex(region.terrain === 'industrial' ? 0x8de4ff : 0xffdfbe);
+
+    // Tune sun colour per region
+    const sunColors = {
+      dunes:      0xffcc80,
+      forest:     0xd8f0c0,
+      beach:      0x90d0ff,
+      industrial: 0x8de4ff,
+      mountains:  0xd0e8ff
+    };
+    threeState.sun.color.setHex(sunColors[region.terrain] || 0xffdfbe);
+    threeState.sun.intensity = theme.sunIntensity || 1.15;
+    threeState.ambient.intensity = theme.ambientIntensity || 0.55;
+
+    // Rebuild props for the new region
+    buildRegionProps(region.terrain);
     threeState.terrainType = region.terrain;
   }
 
@@ -357,20 +703,138 @@
     }
     const theme = terrainTheme(terrain);
     threeState.t += dt;
+    const t = threeState.t;
 
     const pos = threeState.terrainGeo.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       const bx = threeState.terrainBase[i * 3];
       const by = threeState.terrainBase[i * 3 + 1];
       const bz = threeState.terrainBase[i * 3 + 2];
-      const nA = octaveNoise(bx * theme.freq + threeState.t * theme.speed, bz * theme.freq - 7.7);
-      const nB = octaveNoise(bx * (theme.freq * 2.4) - 11.3, bz * (theme.freq * 2.1) + threeState.t * theme.speed * 0.7);
-      const lift = (nA * 0.72 + nB * 0.28) * theme.amp;
+      // Multi-octave displacement for richer detail
+      const nA = octaveNoise(bx * theme.freq + t * theme.speed, bz * theme.freq - 7.7);
+      const nB = octaveNoise(bx * (theme.freq * 2.4) - 11.3, bz * (theme.freq * 2.1) + t * theme.speed * 0.7);
+      const nHi = theme.freqHi ? octaveNoise(bx * theme.freqHi + 43.2, bz * theme.freqHi + 11.8) : 0;
+      const lift = (nA * 0.65 + nB * 0.25 + nHi * 0.1) * theme.amp + (theme.ampHi ? nHi * theme.ampHi * 0.4 : 0);
       pos.setXYZ(i, bx, by + lift, bz);
     }
     pos.needsUpdate = true;
     threeState.terrainGeo.computeVertexNormals();
+
+    // Animate props
+    if (threeState.props) {
+      threeState.props.forEach((p, idx) => {
+        if (terrain === 'beach') {
+          // Boats bob on water
+          if (p.children && p.children.length > 1) {
+            p.position.y = Math.sin(t * 1.1 + idx) * 0.12;
+            p.rotation.z = Math.sin(t * 0.8 + idx * 0.7) * 0.04;
+          }
+        }
+        if (terrain === 'mountains') {
+          // Very slight sway on conifers
+          p.rotation.z = Math.sin(t * 0.6 + idx * 1.3) * 0.02;
+        }
+        if (terrain === 'industrial') {
+          // Pylons pulse emissive
+          p.traverse(child => {
+            if (child.material && child.material.emissive) {
+              const pulse = 0.12 + Math.sin(t * 2.4 + idx) * 0.08;
+              child.material.emissiveIntensity = pulse;
+              child.material.emissive.setHex(0x5be7ff);
+            }
+          });
+        }
+      });
+    }
+
+    // Subtle camera sway
+    const camSwayX = Math.sin(t * 0.22) * 0.18;
+    const camSwayY = Math.cos(t * 0.17) * 0.08 + 11.8;
+    threeState.camera.position.set(camSwayX, camSwayY, 17.2);
+    threeState.camera.lookAt(0, 0, -7);
+
     threeState.renderer.render(threeState.scene, threeState.camera);
+  }
+
+  function buildAuroraAustral() {
+    const THREE = globalThis.THREE;
+    if (!THREE) return null;
+    // Create rippling aurora shader material
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        time: { value: 0 },
+        color1: { value: new THREE.Color(0x00ff88) },
+        color2: { value: new THREE.Color(0x00ffdd) },
+        color3: { value: new THREE.Color(0x0088ff) }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        varying float vY;
+        void main() {
+          vUv = uv;
+          vY = position.y;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float time;
+        uniform vec3 color1;
+        uniform vec3 color2;
+        uniform vec3 color3;
+        varying vec2 vUv;
+        varying float vY;
+        
+        float wave(float x, float t) {
+          return sin(x * 3.0 + t) * cos(x * 1.5 - t * 0.7);
+        }
+        
+        void main() {
+          float w1 = wave(vUv.x * 2.0, time * 0.4);
+          float w2 = wave(vUv.x * 1.2 - 2.0, time * 0.3);
+          float w3 = wave(vUv.x * 1.8 + 1.5, time * 0.5);
+          
+          float height = vY / 90.0 + 0.3;
+          float alpha = height * (0.4 + w1 * 0.2 + w2 * 0.15 + w3 * 0.2);
+          
+          vec3 col = mix(color1, color2, sin(vUv.x * 2.0 + time * 0.2) * 0.5 + 0.5);
+          col = mix(col, color3, sin(vUv.x * 0.8 - time * 0.15) * 0.5 + 0.5);
+          
+          gl_FragColor = vec4(col, alpha * 0.5);
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      side: THREE.BackSide
+    });
+    
+    const geometry = new THREE.SphereGeometry(85, 32, 24);
+    const aurora = new THREE.Mesh(geometry, material);
+    aurora.userData.isAurora = true;
+    return aurora;
+  }
+
+  function updateAurora(dt) {
+    if (!threeState.scene || !threeState.ready) return;
+    const terrain = regions[state.regionIndex]?.terrain || 'dunes';
+    const auroraObj = threeState.scene.getObjectByProperty('userData.isAurora', true);
+    
+    if (terrain === 'mountains') {
+      if (!auroraObj) {
+        const aurora = buildAuroraAustral();
+        if (aurora) {
+          threeState.scene.add(aurora);
+          threeState.aurora = aurora;
+        }
+      }
+      if (threeState.aurora && threeState.aurora.material.uniforms) {
+        threeState.aurora.material.uniforms.time.value += dt * 0.6;
+      }
+    } else {
+      if (auroraObj) {
+        threeState.scene.remove(auroraObj);
+        threeState.aurora = null;
+      }
+    }
   }
 
   function resizeThreeTerrain() {
@@ -449,32 +913,160 @@
       return;
     }
     const now = audioState.ctx.currentTime;
-    const osc = audioState.ctx.createOscillator();
-    const gain = audioState.ctx.createGain();
-    osc.type = kind === 'hit' ? 'square' : 'triangle';
-    if (kind === 'collect') {
-      osc.frequency.setValueAtTime(420, now);
-      osc.frequency.exponentialRampToValueAtTime(760, now + 0.08);
-      gain.gain.setValueAtTime(0.001, now);
-      gain.gain.exponentialRampToValueAtTime(0.11, now + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
-    } else if (kind === 'jump') {
-      osc.frequency.setValueAtTime(210, now);
-      osc.frequency.exponentialRampToValueAtTime(320, now + 0.09);
-      gain.gain.setValueAtTime(0.001, now);
-      gain.gain.exponentialRampToValueAtTime(0.08, now + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-    } else {
-      osc.frequency.setValueAtTime(180, now);
-      osc.frequency.exponentialRampToValueAtTime(92, now + 0.12);
-      gain.gain.setValueAtTime(0.001, now);
-      gain.gain.exponentialRampToValueAtTime(0.12, now + 0.008);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+    // Helper to play a shaped tone
+    function tone(type, freqStart, freqEnd, durSec, gainPeak, freqMidTime) {
+      const osc = audioState.ctx.createOscillator();
+      const env = audioState.ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freqStart, now);
+      if (freqMidTime !== undefined) {
+        osc.frequency.exponentialRampToValueAtTime(freqEnd, now + freqMidTime);
+        osc.frequency.exponentialRampToValueAtTime(freqStart * 0.7, now + durSec);
+      } else {
+        osc.frequency.exponentialRampToValueAtTime(freqEnd, now + durSec * 0.6);
+      }
+      env.gain.setValueAtTime(0.001, now);
+      env.gain.exponentialRampToValueAtTime(gainPeak, now + 0.012);
+      env.gain.exponentialRampToValueAtTime(0.001, now + durSec);
+      osc.connect(env);
+      env.connect(audioState.sfx);
+      osc.start(now);
+      osc.stop(now + durSec + 0.01);
     }
-    osc.connect(gain);
-    gain.connect(audioState.sfx);
-    osc.start(now);
-    osc.stop(now + 0.18);
+
+    // Helper for bird chirp (two quick notes)
+    function chirp(f1, f2, gap) {
+      tone('triangle', f1, f1 * 1.6, 0.09, 0.1);
+      const osc2 = audioState.ctx.createOscillator();
+      const env2 = audioState.ctx.createGain();
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(f2, now + gap);
+      osc2.frequency.exponentialRampToValueAtTime(f2 * 1.4, now + gap + 0.08);
+      env2.gain.setValueAtTime(0.001, now + gap);
+      env2.gain.exponentialRampToValueAtTime(0.12, now + gap + 0.01);
+      env2.gain.exponentialRampToValueAtTime(0.001, now + gap + 0.1);
+      osc2.connect(env2);
+      env2.connect(audioState.sfx);
+      osc2.start(now + gap);
+      osc2.stop(now + gap + 0.12);
+    }
+
+    // Character-specific sounds per action
+    const charSounds = {
+      emu: {
+        jump:    () => tone('sawtooth', 180, 320, 0.18, 0.09),      // low drumming boom
+        collect: () => tone('triangle', 360, 640, 0.14, 0.1),
+        hit:     () => { tone('square', 140, 80, 0.18, 0.14); tone('sawtooth', 90, 60, 0.12, 0.08); }
+      },
+      kookaburra: {
+        jump:    () => chirp(780, 900, 0.06),                        // kookaburra laugh fragment
+        collect: () => chirp(920, 1100, 0.05),
+        hit:     () => tone('square', 300, 140, 0.16, 0.12)
+      },
+      cockatoo: {
+        jump:    () => chirp(640, 820, 0.04),                        // cockatoo screech pair
+        collect: () => chirp(800, 1000, 0.045),
+        hit:     () => tone('square', 260, 100, 0.16, 0.13)
+      },
+      kangaroo: {
+        jump:    () => tone('triangle', 90, 200, 0.22, 0.13),        // heavy thump + spring
+        collect: () => tone('triangle', 440, 720, 0.13, 0.1),
+        hit:     () => { tone('square', 160, 80, 0.2, 0.15); tone('triangle', 80, 50, 0.15, 0.08); }
+      },
+      wallaby: {
+        jump:    () => tone('triangle', 120, 240, 0.18, 0.11),
+        collect: () => tone('triangle', 480, 760, 0.12, 0.1),
+        hit:     () => tone('square', 180, 90, 0.18, 0.13)
+      },
+      wombat: {
+        jump:    () => tone('sawtooth', 100, 160, 0.2, 0.14),        // chunky thud
+        collect: () => tone('triangle', 380, 580, 0.14, 0.1),
+        hit:     () => tone('square', 130, 72, 0.22, 0.16)
+      },
+      koala: {
+        jump:    () => tone('triangle', 140, 220, 0.16, 0.1),        // soft low grunt
+        collect: () => tone('triangle', 440, 680, 0.12, 0.1),
+        hit:     () => tone('square', 160, 82, 0.18, 0.13)
+      },
+      possum: {
+        jump:    () => tone('triangle', 300, 520, 0.15, 0.1),        // light quick hop
+        collect: () => chirp(560, 720, 0.06),
+        hit:     () => tone('square', 220, 100, 0.15, 0.12)
+      },
+      echidna: {
+        jump:    () => tone('sawtooth', 160, 260, 0.17, 0.1),        // shuffling scratch
+        collect: () => tone('triangle', 400, 660, 0.13, 0.1),
+        hit:     () => tone('square', 140, 75, 0.2, 0.14)
+      },
+      platypus: {
+        jump:    () => tone('triangle', 200, 340, 0.16, 0.1),        // splashing plop
+        collect: () => tone('triangle', 480, 760, 0.13, 0.1),
+        hit:     () => tone('square', 170, 88, 0.18, 0.12)
+      },
+      dingo: {
+        jump:    () => tone('sawtooth', 220, 380, 0.18, 0.12),       // dog yelp
+        collect: () => tone('triangle', 460, 720, 0.13, 0.1),
+        hit:     () => { tone('square', 200, 90, 0.18, 0.14); tone('sawtooth', 100, 60, 0.14, 0.09); }
+      },
+      bilby: {
+        jump:    () => tone('triangle', 340, 560, 0.14, 0.09),       // light scurry
+        collect: () => chirp(600, 780, 0.05),
+        hit:     () => tone('square', 200, 95, 0.15, 0.11)
+      },
+      tasdevil: {
+        jump:    () => { tone('sawtooth', 180, 280, 0.16, 0.13); tone('square', 120, 70, 0.1, 0.08); }, // growl
+        collect: () => tone('triangle', 360, 600, 0.14, 0.1),
+        hit:     () => { tone('square', 160, 70, 0.24, 0.18); tone('sawtooth', 100, 55, 0.2, 0.1); }
+      },
+      quokka: {
+        jump:    () => tone('triangle', 280, 460, 0.14, 0.1),        // cute soft hop
+        collect: () => chirp(640, 820, 0.05),
+        hit:     () => tone('square', 210, 100, 0.15, 0.11)
+      },
+      numbat: {
+        jump:    () => tone('triangle', 320, 520, 0.14, 0.09),       // quick dart
+        collect: () => chirp(560, 740, 0.055),
+        hit:     () => tone('square', 190, 92, 0.16, 0.12)
+      }
+    };
+
+    const charSfx = charSounds[selectedCharacter] || charSounds.emu;
+    if (kind === 'collect' && charSfx.collect) {
+      charSfx.collect();
+    } else if (kind === 'jump' && charSfx.jump) {
+      charSfx.jump();
+    } else if (kind === 'hit' && charSfx.hit) {
+      charSfx.hit();
+    } else {
+      // Fallback generic
+      const osc = audioState.ctx.createOscillator();
+      const gain = audioState.ctx.createGain();
+      osc.type = kind === 'hit' ? 'square' : 'triangle';
+      if (kind === 'collect') {
+        osc.frequency.setValueAtTime(420, now);
+        osc.frequency.exponentialRampToValueAtTime(760, now + 0.08);
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.exponentialRampToValueAtTime(0.11, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+      } else if (kind === 'jump') {
+        osc.frequency.setValueAtTime(210, now);
+        osc.frequency.exponentialRampToValueAtTime(320, now + 0.09);
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.exponentialRampToValueAtTime(0.08, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+      } else {
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(92, now + 0.12);
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.exponentialRampToValueAtTime(0.12, now + 0.008);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+      }
+      osc.connect(gain);
+      gain.connect(audioState.sfx);
+      osc.start(now);
+      osc.stop(now + 0.18);
+    }
   }
   let walkthroughIndex = 0;
   let levelCompleteTimer = null;
@@ -962,7 +1554,7 @@
     state.objective = keepProgress
       ? 'Continue your expedition and recover the next shard set.'
       : 'Traverse the expedition map and collect shards.';
-    state.player = { lane: laneCenterIndex, y: 0, jump: 0, sliding: 0, invincible: 0 };
+    state.player = { lane: laneCenterIndex, y: 0, jump: 0, sliding: 0, invincible: 0, expression: 'run', expressionTimer: 0 };
     state.items = [];
     state.events = [];
     state.hintsUsed = 0;
@@ -1897,6 +2489,7 @@
       }
       state.player.jump = .9;
       state.player.invincible = Math.max(state.player.invincible, .3);
+      setExpression('jump', 0.5);
       playSfx('jump');
       pushMessage('Jump!');
     }
@@ -2710,6 +3303,22 @@
     state.player.invincible = Math.max(0, state.player.invincible - dt);
     state.player.jump = Math.max(0, state.player.jump - dt * 1.8);
     state.player.sliding = Math.max(0, state.player.sliding - dt * 1.6);
+    if (state.player.expressionTimer > 0) {
+      state.player.expressionTimer = Math.max(0, state.player.expressionTimer - dt);
+      if (state.player.expressionTimer === 0) state.player.expression = 'run';
+    }
+  }
+
+  function setExpression(expr, duration) {
+    state.player.expression = expr;
+    state.player.expressionTimer = duration;
+  }
+
+  function getExpression() {
+    if (state.player.expressionTimer > 0) return state.player.expression;
+    if (state.player.sliding > 0) return 'slide';
+    if (state.player.jump > 0.1) return 'jump';
+    return 'run';
   }
 
   function updateItems(dt) {
@@ -2740,6 +3349,7 @@
     const penalty = Math.abs(item.penalty || 100);
     state.health -= 1;
     state.player.invincible = .7;
+    setExpression('hurt', 0.8);
     playSfx('hit');
     addScore(-penalty);
     pushMessage(`Bomb hit! -${penalty}`);
@@ -2765,6 +3375,7 @@
   function handleCollectedItem(item) {
     if (item.type === 'fragment') {
       state.fragments += 1;
+      setExpression('happy', 0.7);
       playSfx('collect');
       addScore(item.value);
       pushMessage(`+${item.value} Shard`);
@@ -3879,68 +4490,1043 @@
     return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
   }
 
-  function drawPlayerMotionEffects(isBird, isWombat, terrain, gait) {
+  function drawPlayerMotionEffects(charKey, terrain, gait) {
+    const isBird = charKey === 'emu' || charKey === 'kookaburra' || charKey === 'cockatoo';
+    const isWombat = charKey === 'wombat';
+    const isPlatypus = charKey === 'platypus';
+    const isEchidna = charKey === 'echidna';
+    const isKangaroo = charKey === 'kangaroo' || charKey === 'wallaby';
+    const isFastBird = charKey === 'kookaburra' || charKey === 'cockatoo';
+
     if (isBird) {
-      // Wing flutter streaks behind bird characters.
-      ctx.strokeStyle = 'rgba(255, 245, 220, .28)';
-      ctx.lineWidth = 2;
+      // Wing flutter streaks behind bird characters - intensity varies by species
+      const opacity = isFastBird ? 0.35 : 0.28;
+      ctx.strokeStyle = `rgba(255, 245, 220, ${opacity})`;
+      ctx.lineWidth = isFastBird ? 2.5 : 2;
       ctx.beginPath();
       ctx.moveTo(-22, -8);
-      ctx.quadraticCurveTo(-36, -16 - Math.abs(gait * 5), -16, -22);
+      ctx.quadraticCurveTo(-36, -16 - Math.abs(gait * (isFastBird ? 8 : 5)), -16, -22);
       ctx.moveTo(22, -8);
-      ctx.quadraticCurveTo(36, -16 - Math.abs(gait * 5), 16, -22);
+      ctx.quadraticCurveTo(36, -16 - Math.abs(gait * (isFastBird ? 8 : 5)), 16, -22);
       ctx.stroke();
       return;
     }
 
-    // Footstep pulses for land animals.
-    ctx.fillStyle = 'rgba(255, 209, 102, .2)';
+    // Footstep pulses for land animals - size based on weight
+    const footRadius = isWombat ? 8 : isKangaroo ? 7 : 5;
+    const pulseAlpha = isWombat ? 0.25 : 0.2;
+    ctx.fillStyle = `rgba(255, 209, 102, ${pulseAlpha})`;
     ctx.beginPath();
-    ctx.ellipse(-12, 22 + Math.abs(gait * 2), 6, 3, 0, 0, Math.PI * 2);
-    ctx.ellipse(12, 22 + Math.abs(gait * 2), 6, 3, 0, 0, Math.PI * 2);
+    ctx.ellipse(-12, 22 + Math.abs(gait * (isKangaroo ? 3 : 2)), footRadius, footRadius * 0.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(12, 22 + Math.abs(gait * (isKangaroo ? 3 : 2)), footRadius, footRadius * 0.5, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Wombat gets visible burrow behavior in dunes/forest while sliding.
+    // Platypus water ripples
+    if (isPlatypus) {
+      ctx.strokeStyle = 'rgba(180, 220, 255, 0.3)';
+      ctx.lineWidth = 1.5;
+      const rippleSpread = Math.abs(gait) * 8;
+      ctx.beginPath();
+      ctx.ellipse(0, 24, 10 + rippleSpread, 3 + rippleSpread * 0.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Echidna shuffle dust
+    if (isEchidna) {
+      ctx.fillStyle = 'rgba(160, 120, 80, 0.18)';
+      for (let i = 0; i < 3; i++) {
+        const offset = Math.sin(gait * 2 + i) * 4;
+        ctx.beginPath();
+        ctx.ellipse(-10 + offset, 28 + i * 2, 4, 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Wombat burrow behavior in dunes/forest while sliding.
     if (isWombat && (terrain === 'dunes' || terrain === 'forest')) {
-      const burrowDepth = state.player.sliding > 0 ? 13 : 6;
+      const burrowDepth = 13;
       ctx.fillStyle = 'rgba(30, 18, 10, .42)';
       ctx.beginPath();
       ctx.ellipse(0, 22 + burrowDepth, 22, 8, 0, 0, Math.PI * 2);
       ctx.fill();
     }
+
+    // Kangaroo/Wallaby tail swish effect
+    if (isKangaroo) {
+      ctx.strokeStyle = 'rgba(200, 150, 100, 0.15)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(8, 10);
+      ctx.quadraticCurveTo(16 + gait * 8, 20, 20, 35 - Math.abs(gait) * 4);
+      ctx.stroke();
+    }
   }
 
-  function drawPlayerAura(regionAccent) {
-    ctx.fillStyle = hexToRgba(regionAccent, .28);
+  function drawPlayerAura(charKey, regionAccent) {
+    const t = performance.now() * 0.001;
+    const sliding = state.player.sliding > 0;
+    const isBird = charKey === 'emu' || charKey === 'kookaburra' || charKey === 'cockatoo';
+    const isKangaroo = charKey === 'kangaroo' || charKey === 'wallaby';
+    const isWombat = charKey === 'wombat';
+
+    // Character-specific aura size and pulsation
+    let baseSize = 34;
+    let pulseAmount = 0;
+    let pulseSpeed = 1;
+
+    if (isBird) {
+      baseSize = 28;
+      pulseAmount = Math.sin(t * 3.2) * 8;  // Rapid flutter pulse
+      pulseSpeed = 1.2;
+    } else if (isKangaroo) {
+      baseSize = 40;
+      pulseAmount = Math.sin(t * 1.8) * 12;  // Powerful rhythmic pulse
+      pulseSpeed = 0.8;
+    } else if (isWombat) {
+      baseSize = 32;
+      pulseAmount = Math.sin(t * 1.2) * 5;   // Slow steady pulse
+      pulseSpeed = 0.6;
+    } else if (charKey === 'platypus' || charKey === 'possum') {
+      baseSize = 30;
+      pulseAmount = Math.sin(t * 2.4) * 6;   // Medium undulating pulse
+      pulseSpeed = 1;
+    } else {
+      pulseAmount = Math.sin(t * pulseSpeed) * 4;
+    }
+
+    const innerSize = sliding ? 26 : (baseSize - 8 + pulseAmount);
+    const midSize = sliding ? 34 : (baseSize + 10 + pulseAmount * 0.5);
+    const outerSize = sliding ? 38 : (baseSize + 15 + pulseAmount * 0.3);
+
+    // Inner colour band - character accent
+    ctx.fillStyle = hexToRgba(regionAccent, 0.32 + Math.sin(t * pulseSpeed) * 0.08);
     ctx.beginPath();
-    ctx.arc(0, 0, state.player.sliding > 0 ? 26 : 34, 0, Math.PI * 2);
+    ctx.arc(0, 0, innerSize, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = 'rgba(255, 255, 255, .18)';
+    // Mid glow
+    ctx.fillStyle = 'rgba(255, 255, 255, ' + (0.18 + Math.sin(t * pulseSpeed * 0.7) * 0.06) + ')';
     ctx.beginPath();
-    ctx.arc(0, 0, state.player.sliding > 0 ? 34 : 44, 0, Math.PI * 2);
+    ctx.arc(0, 0, midSize, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.strokeStyle = 'rgba(255, 245, 220, .45)';
+    // Outer rim glow
+    const rimAlpha = isBird ? 0.55 : (isWombat ? 0.35 : 0.45);
+    ctx.strokeStyle = 'rgba(255, 245, 220, ' + (rimAlpha + Math.sin(t * 1.5) * 0.15) + ')';
+    ctx.lineWidth = isBird ? 2.5 : (isKangaroo ? 3 : 2);
+    ctx.beginPath();
+    ctx.arc(0, 0, outerSize, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Character-specific aura effect sparkles/shimmer
+    if (isBird) {
+      // Fast twinkling for birds
+      for (let i = 0; i < 3; i++) {
+        const angle = (i / 3) * Math.PI * 2 + t * 2;
+        const sparkle = Math.sin(t * 3.5 + i) * 0.5 + 0.5;
+        const sx = Math.cos(angle) * (baseSize + 20) * sparkle;
+        const sy = Math.sin(angle) * (baseSize + 20) * sparkle;
+        ctx.fillStyle = `rgba(255, 240, 180, ${sparkle * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 3 + sparkle * 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (isKangaroo) {
+      // Power aura for kangaroo
+      ctx.strokeStyle = `rgba(255, 200, 100, ${0.2 + Math.sin(t * 1.8) * 0.15})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, midSize * 1.2, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  // ─── Vector character sprite system ─────────────────────────────────────────
+
+  const CHAR_COLORS = {
+    emu:        { body: '#7a6548', neck: '#8a7558', beak: '#c89040', eye: '#1a0e06', legs: '#6b5438' },
+    kookaburra: { body: '#7a5c18', wings: '#3a2808', beak: '#d09828', eye: '#1a0e06', chest: '#f0e0a0' },
+    cockatoo:   { body: '#f0ece0', wings: '#d8c880', crest: '#ffd000', beak: '#c09048', eye: '#2a1808' },
+    kangaroo:   { body: '#c08050', belly: '#e0b880', ear: '#d09060', eye: '#2a1808' },
+    wallaby:    { body: '#a07040', belly: '#c89870', ear: '#b08060', eye: '#2a1808' },
+    wombat:     { body: '#5a4030', belly: '#7a6050', eye: '#2a1808', nose: '#321a10' },
+    koala:      { body: '#888080', belly: '#d0c0b8', ear: '#a09090', nose: '#382030', eye: '#281820' },
+    possum:     { body: '#706858', tail: '#605848', belly: '#c0b8a0', eye: '#281820' },
+    echidna:    { body: '#483020', spine: '#a08048', nose: '#3a2018', eye: '#180c08' },
+    platypus:   { body: '#608060', bill: '#c09048', tail: '#406048', eye: '#181008' },
+    dingo:      { body: '#c08840', belly: '#e0c070', muzzle: '#d0a058', eye: '#281808' },
+    bilby:      { body: '#706860', ear: '#e8c0b8', belly: '#c0b0a0', eye: '#281820', nose: '#322020' },
+    tasdevil:   { body: '#201818', chest: '#f0e8e0', jaw: '#302020', eye: '#e02010' },
+    quokka:     { body: '#b08840', belly: '#d0b068', ear: '#c09860', eye: '#281808' },
+    numbat:     { body: '#c08848', stripe: '#381e08', belly: '#e0c080', tail: '#a06828', eye: '#180e08' }
+  };
+
+  function drawEyeSet(ex, ey, r, expression, eyeColor) {
+    // Whites / base
+    ctx.fillStyle = expression === 'hurt' ? '#ff4040' : '#f8f4e8';
+    ctx.beginPath();
+    ctx.ellipse(ex, ey, r, r * (expression === 'slide' ? 0.3 : 0.9), 0, 0, Math.PI * 2);
+    ctx.fill();
+    if (expression !== 'slide') {
+      // Pupil
+      ctx.fillStyle = eyeColor || '#1a0e06';
+      const pupilX = ex + (expression === 'hurt' ? 0 : r * 0.2);
+      const pupilY = ey + (expression === 'jump' ? -r * 0.2 : r * 0.1);
+      ctx.beginPath();
+      ctx.ellipse(pupilX, pupilY, r * 0.52, r * 0.52, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Shine dot
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.beginPath();
+      ctx.arc(ex - r * 0.15, ey - r * 0.2, r * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+      if (expression === 'happy') {
+        ctx.strokeStyle = '#ffd060';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(ex, ey, r * 1.4, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+  }
+
+  function drawSmileOrFrown(mx, my, w2, expression) {
+    ctx.strokeStyle = expression === 'hurt' ? '#c03020' : (expression === 'happy' ? '#8a5028' : '#5a3818');
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(0, 0, state.player.sliding > 0 ? 38 : 49, 0, Math.PI * 2);
+    if (expression === 'hurt') {
+      ctx.moveTo(mx - w2, my + 3);
+      ctx.quadraticCurveTo(mx, my + 8, mx + w2, my + 3);
+    } else if (expression === 'happy') {
+      ctx.moveTo(mx - w2, my);
+      ctx.quadraticCurveTo(mx, my - 7, mx + w2, my);
+    } else {
+      ctx.moveTo(mx - w2 * 0.6, my);
+      ctx.lineTo(mx + w2 * 0.6, my);
+    }
     ctx.stroke();
   }
 
-  function drawPlayerAvatarGlyph(avatar, isBird, gait) {
-    ctx.rotate(gait * (isBird ? 0.05 : 0.025));
-    ctx.font = state.player.sliding > 0 ? '62px serif' : '86px serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(255, 245, 220, .95)';
-    ctx.shadowBlur = 34;
+  function drawEmuSprite(gait, expression, sliding) {
+    const c = CHAR_COLORS.emu;
+    const legSwing = gait * (sliding ? 0 : 12);
+    const bodySquish = sliding ? 1.4 : 1;
+    const bodyY = sliding ? 14 : 0;
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath();
+    ctx.ellipse(0, 36 + bodyY, 18, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Legs
+    ctx.strokeStyle = c.legs;
+    ctx.lineWidth = 5;
+    if (!sliding) {
+      ctx.beginPath();
+      ctx.moveTo(-4, 18); ctx.lineTo(-4 + legSwing * 0.6, 36); ctx.lineTo(-4 + legSwing, 46);
+      ctx.moveTo(4, 18);  ctx.lineTo(4 - legSwing * 0.6, 36);  ctx.lineTo(4 - legSwing, 46);
+      ctx.stroke();
+      // Feet
+      ctx.strokeStyle = c.beak;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-4 + legSwing, 46); ctx.lineTo(-4 + legSwing - 6, 50); ctx.moveTo(-4 + legSwing, 46); ctx.lineTo(-4 + legSwing + 4, 50);
+      ctx.moveTo(4 - legSwing, 46);  ctx.lineTo(4 - legSwing - 4, 50); ctx.moveTo(4 - legSwing, 46);  ctx.lineTo(4 - legSwing + 6, 50);
+      ctx.stroke();
+    }
+
+    // Body
+    ctx.fillStyle = c.body;
+    ctx.beginPath();
+    ctx.ellipse(0, 10 + bodyY, 16 * bodySquish, 22 / bodySquish, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Fluffy texture strokes on body
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 5; i++) {
+      const bx = -10 + i * 4;
+      ctx.beginPath();
+      ctx.moveTo(bx + bodyY * 0.1, -5 + bodyY);
+      ctx.quadraticCurveTo(bx + 5, 5 + bodyY, bx + 2, 18 + bodyY);
+      ctx.stroke();
+    }
+
+    // Small wings
+    ctx.fillStyle = 'rgba(100,80,50,0.5)';
+    ctx.beginPath();
+    ctx.ellipse(-16, 4 + bodyY + gait * 2, 8, 4, -0.4, 0, Math.PI * 2);
+    ctx.ellipse(16, 4 + bodyY - gait * 2, 8, 4, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (!sliding) {
+      // Neck
+      ctx.fillStyle = c.neck;
+      ctx.beginPath();
+      ctx.moveTo(-5, -10 + bodyY); ctx.quadraticCurveTo(-6, -22, -3, -32);
+      ctx.quadraticCurveTo(3, -22, 5, -10 + bodyY); ctx.closePath();
+      ctx.fill();
+
+      // Head
+      ctx.fillStyle = c.neck;
+      ctx.beginPath();
+      ctx.ellipse(-1, -36, 9, 8, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Beak
+      ctx.fillStyle = c.beak;
+      ctx.beginPath();
+      ctx.moveTo(-8, -36); ctx.lineTo(-16, -34); ctx.lineTo(-8, -32); ctx.closePath();
+      ctx.fill();
+
+      // Eyes
+      drawEyeSet(3, -38, 4, expression, c.eye);
+    }
+  }
+
+  function drawFlyingBirdSprite(charKey, gait, expression, sliding) {
+    const c = CHAR_COLORS[charKey];
+    const wingFlap = Math.sin(gait * 3) * (sliding ? 5 : 18);
+    const isKookaburra = charKey === 'kookaburra';
+    const isCockatoo = charKey === 'cockatoo';
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.beginPath();
+    ctx.ellipse(0, 28, 20, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Tail
+    ctx.fillStyle = isKookaburra ? '#5a4010' : c.wings;
+    ctx.beginPath();
+    ctx.moveTo(0, 10); ctx.lineTo(20, 18 + wingFlap * 0.3); ctx.lineTo(14, 8); ctx.closePath();
+    ctx.fill();
+
+    // Left wing
+    ctx.fillStyle = c.wings || c.body;
+    ctx.beginPath();
+    ctx.moveTo(-4, 0);
+    ctx.bezierCurveTo(-20, -wingFlap, -36, -wingFlap * 1.2, -32, 8);
+    ctx.bezierCurveTo(-18, 14, -8, 8, -4, 0);
+    ctx.fill();
+    // Wing highlight stripe
+    ctx.strokeStyle = 'rgba(255,255,220,0.2)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-8, 2); ctx.bezierCurveTo(-20, -wingFlap + 4, -30, -wingFlap * 1.1 + 4, -28, 10);
+    ctx.stroke();
+
+    // Right wing
+    ctx.fillStyle = c.wings || c.body;
+    ctx.beginPath();
+    ctx.moveTo(4, 0);
+    ctx.bezierCurveTo(20, -wingFlap, 36, -wingFlap * 1.2, 32, 8);
+    ctx.bezierCurveTo(18, 14, 8, 8, 4, 0);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(8, 2); ctx.bezierCurveTo(20, -wingFlap + 4, 30, -wingFlap * 1.1 + 4, 28, 10);
+    ctx.stroke();
+
+    // Body
+    ctx.fillStyle = c.body;
+    ctx.beginPath();
+    ctx.ellipse(0, 2, 10, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Chest patch
+    ctx.fillStyle = c.chest || 'rgba(255,255,220,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(0, 6, 6, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Cockatoo crest
+    if (isCockatoo) {
+      ctx.strokeStyle = c.crest;
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 4; i++) {
+        const cx = -4 + i * 2.5;
+        const cy = -12 + gait * (2 + i);
+        ctx.beginPath();
+        ctx.moveTo(cx, -10); ctx.quadraticCurveTo(cx + (i - 1.5) * 3, cy - 10, cx + (i - 1.5) * 2, cy - 18);
+        ctx.stroke();
+      }
+    }
+
+    // Head
+    ctx.fillStyle = c.body;
+    ctx.beginPath();
+    ctx.ellipse(0, -12, 9, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Beak
+    ctx.fillStyle = c.beak;
+    ctx.beginPath();
+    if (isKookaburra) {
+      ctx.moveTo(-8, -13); ctx.lineTo(-20, -10); ctx.lineTo(-20, -14); ctx.lineTo(-8, -17);
+    } else {
+      ctx.moveTo(-7, -13); ctx.lineTo(-14, -11); ctx.lineTo(-14, -14); ctx.lineTo(-7, -16);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // Eyes
+    drawEyeSet(4, -14, 4.5, expression, c.eye);
+
+    // Feet when not flying high
+    if (!sliding) {
+      ctx.strokeStyle = c.beak;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-5, 16); ctx.lineTo(-5, 26); ctx.moveTo(5, 16); ctx.lineTo(5, 26);
+      ctx.moveTo(-5, 26); ctx.lineTo(-9, 30); ctx.moveTo(-5, 26); ctx.lineTo(-1, 30);
+      ctx.moveTo(5, 26);  ctx.lineTo(1, 30);  ctx.moveTo(5, 26);  ctx.lineTo(9, 30);
+      ctx.stroke();
+    }
+  }
+
+  function drawKangarooSprite(charKey, gait, expression, sliding) {
+    const c = CHAR_COLORS[charKey];
+    const isWallaby = charKey === 'wallaby';
+    const legSwing = gait * (sliding ? 0 : (isWallaby ? 10 : 14));
+    const bodyY = sliding ? 12 : 0;
+    const lean = sliding ? 0.5 : gait * 0.08;
+
+    if (isWallaby) {
+      // ── WALLABY: compact, rounded, short legs, stubby tail, wide small ears ──
+
+      // Shadow – smaller footprint
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.beginPath();
+      ctx.ellipse(0, 30 + bodyY, 13, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Short stubby tail (nearly horizontal, low)
+      ctx.fillStyle = c.body;
+      ctx.beginPath();
+      ctx.moveTo(6, 14 + bodyY);
+      ctx.quadraticCurveTo(20, 20 + bodyY, 22, 28 + bodyY);
+      ctx.quadraticCurveTo(14, 26 + bodyY, 4, 18 + bodyY);
+      ctx.closePath();
+      ctx.fill();
+
+      // Short thick back legs
+      ctx.strokeStyle = c.body;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(-3, 12 + bodyY); ctx.lineTo(-3 + legSwing * 0.5, 22 + bodyY); ctx.lineTo(-3 + legSwing, 30 + bodyY);
+      ctx.moveTo(3, 12 + bodyY);  ctx.lineTo(3 - legSwing * 0.5, 22 + bodyY);  ctx.lineTo(3 - legSwing, 30 + bodyY);
+      ctx.stroke();
+
+      // Body – rounder and lower than kangaroo
+      ctx.save();
+      ctx.rotate(lean);
+      ctx.fillStyle = c.body;
+      ctx.beginPath();
+      ctx.ellipse(0, 4 + bodyY, 14, 16, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Belly – lighter, more oval
+      ctx.fillStyle = c.belly;
+      ctx.beginPath();
+      ctx.ellipse(0, 8 + bodyY, 9, 11, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Short arms (wallabies hold arms closer in)
+      ctx.strokeStyle = c.body;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-10, -2 + bodyY); ctx.quadraticCurveTo(-14, 4 + bodyY, -11, 10 + bodyY);
+      ctx.moveTo(10, -2 + bodyY);  ctx.quadraticCurveTo(14, 4 + bodyY, 11, 10 + bodyY);
+      ctx.stroke();
+      ctx.restore();
+
+      if (!sliding) {
+        ctx.save();
+        ctx.rotate(lean * 0.4);
+
+        // Head – noticeably rounder and wider than kangaroo
+        ctx.fillStyle = c.body;
+        ctx.beginPath();
+        ctx.ellipse(0, -13, 11, 11, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Short wide snout (unlike kangaroo's longer elongated one)
+        ctx.fillStyle = c.belly;
+        ctx.beginPath();
+        ctx.ellipse(-4, -9, 7, 4, 0.1, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Wide rounded ears set farther apart and shorter than kangaroo
+        ctx.fillStyle = c.body;
+        ctx.beginPath();
+        ctx.ellipse(-10, -21, 5, 7, -0.35, 0, Math.PI * 2);
+        ctx.ellipse(6, -21, 4.5, 6, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = c.ear;
+        ctx.beginPath();
+        ctx.ellipse(-10, -21, 3, 4.5, -0.35, 0, Math.PI * 2);
+        ctx.ellipse(6, -21, 2.8, 4, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Dark nose
+        ctx.fillStyle = '#2a1008';
+        ctx.beginPath();
+        ctx.ellipse(-8, -8, 2.5, 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyes – set wider apart on the rounder head
+        drawEyeSet(-4, -15, 3.5, expression, c.eye);
+        drawEyeSet(5, -15, 3.5, expression, c.eye);
+        ctx.restore();
+      }
+
+    } else {
+      // ── KANGAROO: tall, muscular, long angular face, big upright ears ──
+
+      // Shadow – larger footprint
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.beginPath();
+      ctx.ellipse(0, 44 + bodyY, 16, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Long powerful tail (thick at base, tapers)
+      ctx.fillStyle = c.body;
+      ctx.beginPath();
+      ctx.moveTo(8, 22 + bodyY);
+      ctx.quadraticCurveTo(32, 30 + bodyY - legSwing * 0.3, 36, 46 + bodyY);
+      ctx.quadraticCurveTo(24, 44 + bodyY, 6, 28 + bodyY);
+      ctx.closePath();
+      ctx.fill();
+      // Tail shading
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      ctx.beginPath();
+      ctx.moveTo(8, 22 + bodyY);
+      ctx.quadraticCurveTo(26, 34 + bodyY, 34, 46 + bodyY);
+      ctx.quadraticCurveTo(28, 45 + bodyY, 6, 28 + bodyY);
+      ctx.closePath();
+      ctx.fill();
+
+      // Long powerful back legs
+      ctx.strokeStyle = c.body;
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.moveTo(-3, 18 + bodyY); ctx.lineTo(-3 + legSwing * 0.4, 34 + bodyY); ctx.lineTo(-3 + legSwing, 46 + bodyY);
+      ctx.moveTo(4, 18 + bodyY);  ctx.lineTo(4 - legSwing * 0.4, 34 + bodyY);  ctx.lineTo(4 - legSwing, 46 + bodyY);
+      ctx.stroke();
+      // Ankle joint
+      ctx.fillStyle = c.ear;
+      ctx.beginPath();
+      ctx.arc(-3 + legSwing * 0.4, 34 + bodyY, 3.5, 0, Math.PI * 2);
+      ctx.arc(4 - legSwing * 0.4, 34 + bodyY, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Body – tall oval, slight forward lean
+      ctx.save();
+      ctx.rotate(lean);
+      ctx.fillStyle = c.body;
+      ctx.beginPath();
+      ctx.ellipse(0, 6 + bodyY, 12, 22, 0.15, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Chest muscle definition
+      ctx.fillStyle = 'rgba(0,0,0,0.08)';
+      ctx.beginPath();
+      ctx.ellipse(-5, 0 + bodyY, 5, 10, 0.2, 0, Math.PI * 2);
+      ctx.ellipse(5, 0 + bodyY, 5, 10, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Belly pouch
+      ctx.fillStyle = c.belly;
+      ctx.beginPath();
+      ctx.ellipse(2, 14 + bodyY, 8, 12, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Long arms (held up, more alert)
+      ctx.strokeStyle = c.body;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(-8, -6 + bodyY); ctx.quadraticCurveTo(-20, 2 + bodyY, -16, 10 + bodyY);
+      ctx.moveTo(8, -6 + bodyY);  ctx.quadraticCurveTo(20, 2 + bodyY, 16, 10 + bodyY);
+      ctx.stroke();
+      ctx.restore();
+
+      if (!sliding) {
+        ctx.save();
+        ctx.rotate(lean * 0.5);
+
+        // Head – longer, narrower, more angular than wallaby
+        ctx.fillStyle = c.body;
+        ctx.beginPath();
+        ctx.ellipse(-1, -18, 8, 12, -0.12, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Distinctive long narrow snout
+        ctx.fillStyle = c.ear;
+        ctx.beginPath();
+        ctx.moveTo(-3, -12);
+        ctx.quadraticCurveTo(-10, -10, -16, -8);
+        ctx.quadraticCurveTo(-10, -14, -3, -14);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-3, -13); ctx.lineTo(-14, -11);
+        ctx.stroke();
+
+        // Tall pointed ears (distinctly upright, different from wallaby's)
+        ctx.fillStyle = c.body;
+        ctx.beginPath();
+        ctx.ellipse(-7, -28, 3.5, 10, -0.15, 0, Math.PI * 2);
+        ctx.ellipse(2, -28, 3, 9, 0.18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = c.ear;
+        ctx.beginPath();
+        ctx.ellipse(-7, -28, 2, 7, -0.15, 0, Math.PI * 2);
+        ctx.ellipse(2, -28, 1.8, 6, 0.18, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Dark nose
+        ctx.fillStyle = '#2a1008';
+        ctx.beginPath();
+        ctx.ellipse(-14, -8, 2, 1.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyes – set on the longer angular head
+        drawEyeSet(1, -20, 4, expression, c.eye);
+        ctx.restore();
+      }
+    }
+  }
+
+  function drawCompactMarsupialSprite(charKey, gait, expression, sliding) {
+    const c = CHAR_COLORS[charKey];
+    const waddle = gait * (sliding ? 0 : 8);
+    const bodyY = sliding ? 10 : 0;
+    const isKoala = charKey === 'koala';
+    const isEchidna = charKey === 'echidna';
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(0, 32 + bodyY, 18, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Legs
+    ctx.strokeStyle = c.body;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(-8, 18 + bodyY); ctx.lineTo(-8 + waddle, 32 + bodyY);
+    ctx.moveTo(8, 18 + bodyY);  ctx.lineTo(8 - waddle, 32 + bodyY);
+    ctx.stroke();
+
+    // Body
+    ctx.fillStyle = c.body;
+    ctx.beginPath();
+    ctx.ellipse(0, 8 + bodyY, 18, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Echidna spines
+    if (isEchidna) {
+      ctx.strokeStyle = c.spine;
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 10; i++) {
+        const angle = -0.8 + i * 0.18;
+        const bx = Math.cos(angle) * 18;
+        const by = Math.sin(angle) * 18 + 8 + bodyY;
+        ctx.beginPath();
+        ctx.moveTo(bx * 0.7, by + 8 * (1 - 0.7));
+        ctx.lineTo(bx + Math.cos(angle) * 10, by + Math.sin(angle) * 10);
+        ctx.stroke();
+      }
+    }
+
+    // Belly
+    ctx.fillStyle = c.belly;
+    ctx.beginPath();
+    ctx.ellipse(0, 12 + bodyY, 11, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Arms
+    ctx.strokeStyle = c.body;
     ctx.lineWidth = 4;
-    ctx.strokeStyle = 'rgba(20, 12, 8, .72)';
-    ctx.strokeText(avatar, 0, 0);
-    ctx.fillStyle = '#fff8e6';
-    ctx.fillText(avatar, 0, 0);
-    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.moveTo(-16, 2 + bodyY); ctx.lineTo(-22, 12 + bodyY + waddle * 0.5);
+    ctx.moveTo(16, 2 + bodyY);  ctx.lineTo(22, 12 + bodyY - waddle * 0.5);
+    ctx.stroke();
+
+    if (!sliding) {
+      // Head
+      ctx.fillStyle = c.body;
+      ctx.beginPath();
+      ctx.ellipse(0, -14, isKoala ? 14 : 10, isKoala ? 12 : 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Koala big ears
+      if (isKoala) {
+        ctx.fillStyle = c.ear;
+        ctx.beginPath();
+        ctx.ellipse(-14, -22, 9, 9, 0, 0, Math.PI * 2);
+        ctx.ellipse(14, -22, 9, 9, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(200,160,150,0.6)';
+        ctx.beginPath();
+        ctx.ellipse(-14, -22, 5, 5, 0, 0, Math.PI * 2);
+        ctx.ellipse(14, -22, 5, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Echidna long snout
+      if (isEchidna) {
+        ctx.fillStyle = c.nose;
+        ctx.beginPath();
+        ctx.moveTo(-10, -12); ctx.quadraticCurveTo(-22, -14, -26, -10); ctx.lineTo(-10, -8);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Nose
+      if (!isEchidna) {
+        ctx.fillStyle = c.nose;
+        ctx.beginPath();
+        ctx.ellipse(0, -10, isKoala ? 5 : 3, isKoala ? 4 : 2.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Eyes
+      drawEyeSet(isEchidna ? 2 : -5, -17, 4, expression, c.eye);
+      if (!isEchidna) drawEyeSet(5, -17, 4, expression, c.eye);
+    }
+  }
+
+  function drawDingoSprite(gait, expression, sliding) {
+    const c = CHAR_COLORS.dingo;
+    const legSwing = gait * (sliding ? 0 : 13);
+    const bodyY = sliding ? 12 : 0;
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath();
+    ctx.ellipse(0, 36 + bodyY, 18, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Tail
+    ctx.strokeStyle = c.body;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(12, 4 + bodyY);
+    ctx.quadraticCurveTo(28, -8 + bodyY - legSwing * 0.5, 24, -18 + bodyY);
+    ctx.stroke();
+
+    // Back legs
+    ctx.strokeStyle = c.body;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(-6, 14 + bodyY); ctx.lineTo(-6 + legSwing, 28 + bodyY); ctx.lineTo(-6 + legSwing * 1.2, 38 + bodyY);
+    ctx.moveTo(6, 14 + bodyY);  ctx.lineTo(6 - legSwing, 28 + bodyY);  ctx.lineTo(6 - legSwing * 1.2, 38 + bodyY);
+    ctx.stroke();
+
+    // Body
+    ctx.fillStyle = c.body;
+    ctx.beginPath();
+    ctx.ellipse(0, 6 + bodyY, 13, 18, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = c.belly;
+    ctx.beginPath();
+    ctx.ellipse(0, 10 + bodyY, 8, 12, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Front legs
+    ctx.strokeStyle = c.body;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(-8, -6 + bodyY); ctx.lineTo(-8 - legSwing * 0.6, 10 + bodyY); ctx.lineTo(-8 - legSwing * 0.8, 22 + bodyY);
+    ctx.moveTo(8, -6 + bodyY);  ctx.lineTo(8 + legSwing * 0.6, 10 + bodyY);  ctx.lineTo(8 + legSwing * 0.8, 22 + bodyY);
+    ctx.stroke();
+
+    if (!sliding) {
+      // Neck
+      ctx.fillStyle = c.body;
+      ctx.beginPath();
+      ctx.moveTo(-6, -10 + bodyY); ctx.lineTo(-6, -22); ctx.lineTo(6, -22); ctx.lineTo(6, -10 + bodyY); ctx.closePath();
+      ctx.fill();
+
+      // Head
+      ctx.fillStyle = c.body;
+      ctx.beginPath();
+      ctx.ellipse(0, -28, 11, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Ears
+      ctx.fillStyle = c.body;
+      ctx.beginPath();
+      ctx.moveTo(-8, -34); ctx.lineTo(-12, -44); ctx.lineTo(-4, -36);
+      ctx.moveTo(8, -34);  ctx.lineTo(12, -44);  ctx.lineTo(4, -36);
+      ctx.fill();
+
+      // Muzzle
+      ctx.fillStyle = c.muzzle;
+      ctx.beginPath();
+      ctx.ellipse(-6, -26, 8, 6, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#1a0c08';
+      ctx.beginPath();
+      ctx.ellipse(-10, -24, 2, 1.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      drawEyeSet(4, -30, 4, expression, c.eye);
+    }
+  }
+
+  function drawGenericRunnerSprite(charKey, gait, expression, sliding) {
+    // Fallback for platypus, possum, bilby, quokka, numbat, tasdevil
+    const c = CHAR_COLORS[charKey] || CHAR_COLORS.wombat;
+    const waddle = gait * (sliding ? 0 : 10);
+    const bodyY = sliding ? 10 : 0;
+    const isTasDevil = charKey === 'tasdevil';
+    const isPlatypus = charKey === 'platypus';
+    const isBilby = charKey === 'bilby';
+    const isQuokka = charKey === 'quokka';
+    const isNumbat = charKey === 'numbat';
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath();
+    ctx.ellipse(0, 32 + bodyY, 15, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Tail
+    if (charKey === 'possum' || isNumbat || charKey === 'platypus') {
+      ctx.strokeStyle = c.tail || c.body;
+      ctx.lineWidth = isNumbat ? 5 : 3;
+      ctx.beginPath();
+      ctx.moveTo(10, 10 + bodyY);
+      ctx.quadraticCurveTo(24, 16 + bodyY - waddle * 0.4, 28 + waddle * 0.3, 26 + bodyY);
+      ctx.stroke();
+    }
+
+    // Legs
+    ctx.strokeStyle = c.body;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-7, 14 + bodyY); ctx.lineTo(-7 + waddle, 26 + bodyY);
+    ctx.moveTo(7, 14 + bodyY);  ctx.lineTo(7 - waddle, 26 + bodyY);
+    ctx.stroke();
+
+    // Body
+    ctx.fillStyle = c.body;
+    ctx.beginPath();
+    ctx.ellipse(0, 4 + bodyY, 13, 16, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Numbat stripes
+    if (isNumbat) {
+      ctx.strokeStyle = c.stripe;
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 5; i++) {
+        const sy = -4 + i * 5 + bodyY;
+        ctx.beginPath();
+        ctx.moveTo(-12, sy); ctx.lineTo(12, sy + 2);
+        ctx.stroke();
+      }
+    }
+
+    // Belly
+    ctx.fillStyle = c.belly;
+    ctx.beginPath();
+    ctx.ellipse(0, 8 + bodyY, 8, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Platypus bill
+    if (isPlatypus) {
+      ctx.fillStyle = c.bill;
+      ctx.beginPath();
+      ctx.ellipse(-18, -14, 12, 5, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (!sliding) {
+      // Head
+      ctx.fillStyle = c.body;
+      ctx.beginPath();
+      ctx.ellipse(0, -14, isTasDevil ? 13 : 10, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Tas devil white chest
+      if (isTasDevil) {
+        ctx.fillStyle = c.chest;
+        ctx.beginPath();
+        ctx.ellipse(0, -8, 8, 12, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Bilby big ears
+      if (isBilby) {
+        ctx.fillStyle = c.body;
+        ctx.beginPath();
+        ctx.ellipse(-8, -26, 4, 14, -0.3, 0, Math.PI * 2);
+        ctx.ellipse(6, -26, 3.5, 12, 0.25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = c.ear;
+        ctx.beginPath();
+        ctx.ellipse(-8, -26, 2, 10, -0.3, 0, Math.PI * 2);
+        ctx.ellipse(6, -26, 2, 8, 0.25, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Quokka rounded ears + smile
+      if (isQuokka) {
+        ctx.fillStyle = c.ear;
+        ctx.beginPath();
+        ctx.ellipse(-10, -22, 6, 6, 0, 0, Math.PI * 2);
+        ctx.ellipse(10, -22, 6, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Nose
+      ctx.fillStyle = c.nose || '#2a1808';
+      ctx.beginPath();
+      ctx.ellipse(isPlatypus ? -16 : 0, -10, isPlatypus ? 2 : 3, 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Eyes
+      drawEyeSet(-4, -16, 4, expression, c.eye);
+      drawEyeSet(4, -16, 4, expression, c.eye);
+
+      // Quokka smile
+      if (isQuokka && expression !== 'hurt') {
+        ctx.strokeStyle = '#5a3018';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-5, -10);
+        ctx.quadraticCurveTo(0, -6, 5, -10);
+        ctx.stroke();
+      }
+    }
+  }
+
+  function drawCharacterSprite(charKey, gait, expression, sliding, jumping) {
+    const c = CHAR_COLORS[charKey] || CHAR_COLORS.emu;
+    const hurtFlash = expression === 'hurt';
+    const happyGlow = expression === 'happy';
+
+    ctx.save();
+
+    // Expression glow
+    if (hurtFlash) {
+      ctx.shadowColor = 'rgba(255,60,40,0.95)';
+      ctx.shadowBlur = 22;
+    } else if (happyGlow) {
+      ctx.shadowColor = 'rgba(255,220,60,0.9)';
+      ctx.shadowBlur = 20;
+    } else {
+      ctx.shadowColor = 'rgba(255,245,210,0.7)';
+      ctx.shadowBlur = 16;
+    }
+
+    // Hurt flash tint overlay (applied via globalAlpha flicker)
+    if (hurtFlash && Math.floor(performance.now() / 80) % 2 === 0) {
+      ctx.globalAlpha = 0.65;
+    }
+
+    const s = sliding > 0;
+    const j = jumping > 0;
+
+    if (charKey === 'emu') {
+      drawEmuSprite(gait, expression, s);
+    } else if (charKey === 'cockatoo' || charKey === 'kookaburra') {
+      drawFlyingBirdSprite(charKey, gait, expression, s);
+    } else if (charKey === 'kangaroo' || charKey === 'wallaby') {
+      drawKangarooSprite(charKey, gait, expression, s);
+    } else if (charKey === 'wombat' || charKey === 'koala' || charKey === 'echidna') {
+      drawCompactMarsupialSprite(charKey, gait, expression, s);
+    } else if (charKey === 'dingo') {
+      drawDingoSprite(gait, expression, s);
+    } else {
+      // possum, bilby, quokka, platypus, numbat, tasdevil
+      drawGenericRunnerSprite(charKey, gait, expression, s);
+    }
+
+    ctx.restore();
+  }
+
+  // ─── Character-specific gait/animation functions ───────────────────────────
+  function getCharacterGait(t, charKey) {
+    // Each character gets its own unique running animation signature
+    const s = Math.sin(t);
+    const c = Math.cos(t);
+    const s2 = Math.sin(t * 2);
+
+    if (charKey === 'emu') {
+      // Fast, bouncy, bird-like - high frequency fluttering bounce
+      return s * (0.8 + Math.sin(t * 3) * 0.4);
+    }
+    if (charKey === 'kookaburra' || charKey === 'cockatoo') {
+      // Flying birds - rapid wing beats with slight height undulation
+      return Math.sin(t * 2.8) * 0.9 + Math.sin(t * 0.6) * 0.3;
+    }
+    if (charKey === 'kangaroo') {
+      // Powerful hops with long pauses (characteristic kangaroo bound)
+      return Math.pow(Math.sin(t * 1.2) * 0.5 + 0.5, 1.5) * 1.1 - 0.4;
+    }
+    if (charKey === 'wallaby') {
+      // Compact waddle, faster and more even than kangaroo
+      return Math.sin(t * 1.8) * 0.7 + Math.sin(t * 3.6) * 0.15;
+    }
+    if (charKey === 'wombat') {
+      // Heavy, chunky waddle - low frequency, powerful
+      return Math.sin(t * 0.9) * 0.5 + Math.sin(t * 1.8) * 0.25;
+    }
+    if (charKey === 'koala') {
+      // Slow, steady climb-like motion
+      return Math.sin(t * 0.8) * 0.35 + Math.sin(t * 1.6) * 0.15;
+    }
+    if (charKey === 'possum') {
+      // Gliding, smooth undulation with slight shimmy
+      return Math.sin(t * 1.5) * 0.65 + Math.sin(t * 3.2) * 0.2;
+    }
+    if (charKey === 'echidna') {
+      // Shuffle/waddle - stiff, deliberate
+      return (Math.sin(t * 1.1) * 0.5 + Math.sin(t * 2.2) * 0.2) * 0.7;
+    }
+    if (charKey === 'platypus') {
+      // Swimming-like side-to-side undulation
+      return Math.sin(t * 1.4) * 0.7 + Math.sin(t * 2.8) * 0.25;
+    }
+    if (charKey === 'dingo') {
+      // Canine trot - balanced, ground-covering
+      return Math.sin(t * 1.6) * 0.6 + Math.sin(t * 3.2) * 0.18;
+    }
+    if (charKey === 'bilby') {
+      // Fast scurry with head bob
+      return Math.sin(t * 2.4) * 0.7 + Math.sin(t * 4.8) * 0.25;
+    }
+    if (charKey === 'tasdevil') {
+      // Aggressive, jittery dash (slight chaos)
+      return (Math.sin(t * 2) * 0.6 + Math.sin(t * 4.3) * 0.3 + Math.random() * 0.1);
+    }
+    if (charKey === 'quokka') {
+      // Cute bouncy hop - compact and steady
+      return Math.sin(t * 1.5) * 0.65 + Math.sin(t * 3) * 0.2;
+    }
+    if (charKey === 'numbat') {
+      // Quick focused trot
+      return Math.sin(t * 1.9) * 0.6 + Math.sin(t * 3.8) * 0.22;
+    }
+
+    // Fallback
+    return s;
+  }
+
+  function getCharacterVerticalBob(t, charKey) {
+    // How much the character bobs up/down based on gait
+    if (charKey === 'emu') return Math.abs(Math.sin(t * 1.4)) * 2.5;
+    if (charKey === 'kangaroo') return Math.pow(Math.sin(t * 1.2) + 1, 1.4) * 1.8 - 1.5;
+    if (charKey === 'kookaburra' || charKey === 'cockatoo') return Math.sin(t * 2.8) * 2.2;
+    if (charKey === 'wallaby') return Math.abs(Math.sin(t * 1.8)) * 1.8;
+    if (charKey === 'bilby') return Math.abs(Math.sin(t * 2.4)) * 2;
+    return Math.abs(Math.sin(t)) * 1.5;
   }
 
   function drawPlayer() {
@@ -3950,20 +5536,22 @@
     const yBase = h * .72;
     const jumpOffset = state.player.jump > 0 ? Math.sin((.9 - state.player.jump) * Math.PI) * 55 : 0;
     const y = yBase - jumpOffset + (state.player.sliding > 0 ? 20 : 0);
-    const avatar = (characters[selectedCharacter] || characters.emu).emoji;
     const regionAccent = regions[state.regionIndex].accent;
     const terrain = regions[state.regionIndex].terrain;
     const t = performance.now() * 0.01;
-    const isBird = selectedCharacter === 'emu' || selectedCharacter === 'kookaburra';
+    const isBird = selectedCharacter === 'emu' || selectedCharacter === 'kookaburra' || selectedCharacter === 'cockatoo';
     const isWombat = selectedCharacter === 'wombat';
-    const gait = Math.sin(t * (isBird ? 0.8 : 1.4));
+    
+    // Character-specific gait
+    const gait = getCharacterGait(t, selectedCharacter);
+    const bobAmount = getCharacterVerticalBob(t, selectedCharacter);
+    const expression = getExpression();
 
     ctx.save();
-    ctx.translate(x, y + gait * (isBird ? 2 : 3));
+    ctx.translate(x, y + bobAmount * (state.player.sliding > 0 ? 0.3 : 1));
 
-    drawPlayerMotionEffects(isBird, isWombat, terrain, gait);
-    drawPlayerAura(regionAccent);
-    drawPlayerAvatarGlyph(avatar, isBird, gait);
+    drawPlayerMotionEffects(selectedCharacter, terrain, gait);
+    drawCharacterSprite(selectedCharacter, gait, expression, state.player.sliding, state.player.jump);
     ctx.restore();
   }
 
@@ -4599,6 +6187,7 @@
     state.lastTime = time;
     update(dt);
     updateThreeTerrain(dt);
+    updateAurora(dt);
     requestAnimationFrame(tick);
   }
 
