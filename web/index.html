@@ -22,9 +22,16 @@
       --glass: rgba(26, 15, 8, 0.72);
       --glass-strong: rgba(26, 15, 8, 0.82);
     }
-    html, body { margin: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 18%, #3d2010 0%, #1a0f08 42%, #100a04 100%); overflow: hidden; font-family: 'Nunito', 'Segoe UI', sans-serif; }
+    html, body { margin: 0; width: 100%; height: 100%; min-height: 100dvh; background: radial-gradient(circle at 50% 18%, #3d2010 0%, #1a0f08 42%, #100a04 100%); overflow: hidden; font-family: 'Nunito', 'Segoe UI', sans-serif; }
     body { touch-action: none; }
-    .app { position: fixed; inset: 0; color: var(--paper); }
+    .app {
+      position: fixed;
+      inset: 0;
+      color: var(--paper);
+      min-height: 100dvh;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      box-sizing: border-box;
+    }
     .app::before {
       content: "";
       position: absolute;
@@ -156,7 +163,8 @@
     .dock {
       position: absolute;
       right: 12px;
-      top: 176px;
+      top: auto;
+      bottom: max(12px, env(safe-area-inset-bottom));
       z-index: 8;
       display: flex;
       flex-direction: column;
@@ -192,7 +200,7 @@
       display: none;
       position: absolute;
       right: 12px;
-      bottom: 112px;
+      bottom: max(12px, env(safe-area-inset-bottom));
       z-index: 9;
       width: 58px;
       height: 58px;
@@ -618,16 +626,20 @@
       background: rgba(10, 6, 3, 0.55);
       backdrop-filter: blur(4px);
       padding: 24px;
+      overflow: hidden;
     }
     .modal.open { display: flex; }
     .modal-card {
       width: min(540px, 100%);
+      max-height: calc(100dvh - 48px);
+      box-sizing: border-box;
       background: linear-gradient(180deg, rgba(241, 224, 188, 0.95), rgba(226, 203, 156, 0.95));
       color: #4a2e1b;
       border: 2px solid rgba(160, 112, 56, 0.5);
       border-radius: 10px;
       box-shadow: 0 18px 42px rgba(0, 0, 0, 0.35);
       padding: 16px;
+      overflow-y: auto;
     }
     .help-scroll-card {
       position: relative;
@@ -852,24 +864,37 @@
       inset: 0;
       z-index: 9;
       display: none;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
       background:
         radial-gradient(circle at 50% 20%, rgba(255, 209, 102, 0.16), transparent 28%),
         linear-gradient(180deg, rgba(15, 9, 5, 0.92), rgba(24, 13, 8, 0.95));
       backdrop-filter: blur(3px);
       padding: 20px;
+      overflow: hidden;
     }
     .character-panel.open {
       display: flex;
     }
     .character-card {
       width: min(840px, 100%);
+      max-height: calc(100dvh - 40px);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
       border-radius: 12px;
-      padding: 18px;
+      padding: 18px 18px 0;
       background: rgba(32, 19, 12, 0.9);
       border: 1px solid rgba(212, 163, 115, 0.4);
       box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+      overflow-x: hidden;
+    }
+    .character-scroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      padding-right: 4px;
     }
     .character-title {
       --terrain-top: #d4a373;
@@ -888,8 +913,10 @@
         color-mix(in srgb, var(--terrain-top) 48%, #1a0f08 52%),
         color-mix(in srgb, var(--terrain-bottom) 56%, #130a05 44%));
       box-shadow: inset 0 0 0 1px rgba(255, 239, 204, 0.12), 0 8px 20px rgba(0, 0, 0, 0.28);
-      width: fit-content;
-      min-width: min(620px, 100%);
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .character-row {
       display: flex;
@@ -897,6 +924,7 @@
       justify-content: center;
       gap: 8px;
       margin-top: 10px;
+      align-content: flex-start;
     }
     .character-btn {
       position: relative;
@@ -971,9 +999,13 @@
       display: none;
     }
     .character-power {
+      display: flow-root;
+      height: auto;
       margin-top: 12px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
       color: #ffd166;
-      min-height: 170px;
+      min-height: 0;
     }
     .spec-card {
       border: 1px solid rgba(212, 163, 115, 0.38);
@@ -1051,16 +1083,29 @@
       letter-spacing: .01em;
     }
     #characterWikiLink {
+      display: inline-block;
+      margin-top: 10px;
+      line-height: 1.35;
       color: #ffe3a8;
       text-decoration: underline;
       text-decoration-thickness: 1px;
       text-underline-offset: 2px;
     }
+    .character-wiki-link {
+      font-weight: 700;
+    }
     .character-actions {
-      margin-top: 14px;
+      margin-top: 12px;
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
+    }
+    .character-footer {
+      flex: 0 0 auto;
+      margin-top: 0;
+      padding-top: 8px;
+      border-top: 1px solid rgba(212, 163, 115, 0.28);
+      background: rgba(32, 19, 12, 0.92);
     }
     @media (max-width: 720px) {
       .hud { left: 12px; right: 12px; justify-content: flex-start; }
@@ -1097,12 +1142,12 @@
       .dock {
         right: 12px;
         top: auto;
-        bottom: 112px;
+        bottom: max(12px, env(safe-area-inset-bottom));
         gap: 8px;
       }
       .mobile-menu-btn {
         right: 12px;
-        bottom: 112px;
+        bottom: max(12px, env(safe-area-inset-bottom));
       }
       .dock-icon-btn {
         width: 54px;
@@ -1123,6 +1168,16 @@
         min-width: 0;
         width: 100%;
         font-size: 14px;
+      }
+      .character-btn {
+        width: 140px;
+        min-height: 88px;
+      }
+      .character-power {
+        min-height: 0;
+      }
+      .character-card {
+        padding: 14px 14px 0;
       }
       .spec-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1149,11 +1204,11 @@
       }
       .dock {
         right: 8px;
-        bottom: 104px;
+        bottom: max(8px, env(safe-area-inset-bottom));
       }
       .mobile-menu-btn {
         right: 8px;
-        bottom: 104px;
+        bottom: max(8px, env(safe-area-inset-bottom));
       }
       .mission {
         left: 8px;
@@ -1196,8 +1251,9 @@
 
       <div id="characterPanel" class="character-panel" aria-hidden="true">
         <div class="character-card">
-          <h3 class="character-title">Choose Your Dasher</h3>
-          <div class="character-row">
+          <div class="character-scroll">
+            <h3 class="character-title">Choose Your Dasher</h3>
+            <div class="character-row">
             <button class="character-btn active" data-character="emu" data-emoji="🦅" data-unlock="0">
               <span class="emoji">🦅</span>
               Elder Emu
@@ -1258,12 +1314,14 @@
               <span class="emoji">🦝</span>
               Logic Numbat
             </button>
+            </div>
+            <div id="characterPower" class="character-power">Elder Emu power: Dust Sprint | Fast lane weave, moderate hop drain. | Energy cost scale at this level: x1.25 (drops each level)</div>
           </div>
-          <div id="characterPower" class="character-power">Elder Emu power: Dust Sprint | Fast lane weave, moderate hop drain. | Energy cost scale at this level: x1.25 (drops each level)</div>
-          <a id="characterWikiLink" class="small" href="https://en.wikipedia.org/wiki/Emu" target="_blank" rel="noopener noreferrer" style="display:inline-block; margin-top:6px; color:#ffe3a8; font-weight:700;">Learn about this animal</a>
-          <div class="character-actions">
-            <button id="characterBackBtn" class="landing-secondary">Back</button>
-            <button id="characterStartBtn">Start Run</button>
+          <div class="character-footer">
+            <div class="character-actions">
+              <button id="characterBackBtn" class="landing-secondary">Back</button>
+              <button id="characterStartBtn">Start Run</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1472,7 +1530,6 @@
 
     <div class="dock">
       <button id="startBtn" class="dock-icon-btn" aria-label="Play or pause run" title="Play / Pause"><span class="icon-play"></span></button>
-      <button id="buyFoodBtn" class="dock-icon-btn" aria-label="Open food cart" title="Food Cart"><span class="cart-shape"></span></button>
     </div>
     <button id="reviveBtn" class="gameover-revive-btn" aria-label="Use revive option" title="Revive">Use 1 Revive ❤️</button>
     <button id="mobileMenuBtn" class="mobile-menu-btn" aria-label="Pause and open menu" title="Pause and open menu"><span id="mobileMenuIcon" class="mobile-menu-icon">⏸</span></button>

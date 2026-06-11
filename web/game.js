@@ -57,7 +57,6 @@
   const characterPanel = document.getElementById('characterPanel');
   const characterTitleEl = document.querySelector('.character-title');
   const characterPower = document.getElementById('characterPower');
-  const characterWikiLink = document.getElementById('characterWikiLink');
   const characterBackBtn = document.getElementById('characterBackBtn');
   const characterStartBtn = document.getElementById('characterStartBtn');
   const characterButtons = Array.from(document.querySelectorAll('.character-btn'));
@@ -1174,10 +1173,9 @@
       return;
     }
 
-    const quickMenuVisible = state.running && !state.ended;
     const hideDockDuringRun = state.running && !state.paused && !state.ended;
     dockEl.classList.toggle('mobile-hidden', hideDockDuringRun);
-    updateMobileMenuButton(quickMenuVisible, hideDockDuringRun);
+    updateMobileMenuButton(hideDockDuringRun, hideDockDuringRun);
   }
 
   function updateMobileMenuButton(visible, runningActive) {
@@ -1707,12 +1705,10 @@
           <div class="spec-item"><span>Level Scale</span><strong>x${energyScale.toFixed(2)}</strong></div>
           <div class="spec-item"><span>Special Unlock</span><strong>${puzzleUnlockLevel ? `Collect 3 chests in one run at Level ${puzzleUnlockLevel}` : 'Standard'}</strong></div>
         </div>
+        <a id="characterWikiLink" class="small character-wiki-link" href="${current.wikiUrl || 'https://en.wikipedia.org/wiki/Australian_fauna'}" target="_blank" rel="noopener noreferrer">Learn more about ${current.name}</a>
       </div>`;
-    if (characterWikiLink) {
-      characterWikiLink.href = current.wikiUrl || 'https://en.wikipedia.org/wiki/Australian_fauna';
-      characterWikiLink.textContent = `Learn more about ${current.name}`;
-      characterWikiLink.style.display = '';
-    }
+    characterPower.style.height = 'auto';
+    characterPower.style.height = `${characterPower.scrollHeight}px`;
   }
 
   function resumeSavedRun(run) {
@@ -4255,14 +4251,26 @@
     modal.setAttribute('aria-hidden', 'true');
   }
 
-  function getTouchAction(dx, dy, touchY) {
+  function getTapAction(touchX, touchY) {
+    const width = Math.max(1, canvas.clientWidth || globalThis.innerWidth || 1);
+    const xRatio = touchX / width;
+    if (xRatio <= 0.35) {
+      return 'left';
+    }
+    if (xRatio >= 0.65) {
+      return 'right';
+    }
+    return touchY < canvas.clientHeight * 0.52 ? 'jump' : 'slide';
+  }
+
+  function getTouchAction(dx, dy, touchX, touchY) {
     const absDx = Math.abs(dx);
     const absDy = Math.abs(dy);
-    const swipeThreshold = 20;
-    const tapThreshold = 14;
+    const swipeThreshold = 16;
+    const tapThreshold = 18;
 
     if (absDx < tapThreshold && absDy < tapThreshold) {
-      return touchY < canvas.clientHeight * 0.58 ? 'jump' : 'slide';
+      return getTapAction(touchX, touchY);
     }
     if (absDx > absDy) {
       if (dx < -swipeThreshold) return 'left';
@@ -4286,7 +4294,7 @@
       const t = e.changedTouches[0];
       const dx = t.clientX - state.swipeStart.x;
       const dy = t.clientY - state.swipeStart.y;
-      const action = getTouchAction(dx, dy, t.clientY);
+      const action = getTouchAction(dx, dy, t.clientX, t.clientY);
       if (action === 'left') shiftLane(-1);
       if (action === 'right') shiftLane(1);
       if (action === 'jump') jump();
