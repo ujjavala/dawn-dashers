@@ -589,23 +589,26 @@
         inset 0 1px 0 rgba(255, 220, 228, 0.35);
     }
     @keyframes revivePulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.08); }
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.14); }
     }
     .gameover-revive-btn {
       position: absolute;
-      left: 50%;
-      top: calc(50% + 108px);
-      transform: translateX(-50%);
+      left: 0;
+      top: 0;
+      transform: none;
       z-index: 22;
       min-width: 220px;
-      min-height: 50px;
-      padding: 0 16px;
+      min-height: 56px;
+      padding: 0 22px;
       border-radius: 12px;
       display: none;
+      align-items: center;
+      justify-content: center;
       letter-spacing: .06em;
       text-transform: uppercase;
       font-weight: 800;
+      line-height: 1.2;
     }
     @keyframes puzzlePulse {
       0%, 100% { transform: translateY(0); }
@@ -1104,6 +1107,7 @@
       flex: 0 0 auto;
       margin-top: 0;
       padding-top: 8px;
+      padding-bottom: 12px;
       border-top: 1px solid rgba(212, 163, 115, 0.28);
       background: rgba(32, 19, 12, 0.92);
     }
@@ -1144,6 +1148,9 @@
         top: auto;
         bottom: max(12px, env(safe-area-inset-bottom));
         gap: 8px;
+      }
+      .character-footer {
+        padding-bottom: calc(12px + env(safe-area-inset-bottom));
       }
       .mobile-menu-btn {
         right: 12px;
@@ -1462,9 +1469,9 @@
           <div class="panel-list help-scroll-list">
             <div class="panel-item"><span>Adventure Objective</span><strong>You are a dawn runner in the Southern Hemisphere. Cross Outback, Bushland, Servo, Coastline, and Tasmania to collect all 7 shards and make the sun rise again.</strong></div>
             <div class="panel-item"><span>Puzzle Type 1: Treasure Chest</span><strong>Find a chest in the run, solve its treasure puzzle, and earn food supplies only.</strong></div>
-            <div class="panel-item"><span>Puzzle Type 2: Heart Revival</span><strong>If hearts hit 0, your first wipe in that level opens a heart revival challenge. Solve all level core puzzles to restore all 3 hearts.</strong></div>
+            <div class="panel-item"><span>Puzzle Type 2: Heart Revival</span><strong>If hearts hit 0, one heart revival challenge opens once per run. Solve 1 puzzle to restore all 3 hearts.</strong></div>
             <div class="panel-item"><span>Puzzle Type 3: Next-Level Unlock</span><strong>After clearing a level, solve the unlock puzzle to proceed to the next terrain.</strong></div>
-            <div class="panel-item"><span>Heart Rules</span><strong>You always have 3 hearts. Each new level resets to 3. Hearts do not carry to next level. Revival can happen only once per level; if hearts hit 0 again in that level, game over.</strong></div>
+            <div class="panel-item"><span>Heart Rules</span><strong>You always have 3 hearts. Each new level resets to 3. Hearts do not carry to next level. Revival can happen only once per run; if hearts hit 0 again after revive, game over.</strong></div>
             <div class="panel-item"><span>Falling Objects</span><strong>Collect shards and positive score tokens. Avoid bombs and negative score tokens.</strong></div>
             <div class="panel-item"><span>Scoring</span><strong>Score comes from score tokens and level clear bonus.</strong></div>
             <div class="panel-item"><span>Energy and Food</span><strong>Move, jump, and slide consume energy. Buy food with score and it auto-uses when energy is low.</strong></div>
@@ -1551,6 +1558,6 @@
   <script src="/puzzles/level-5.js"></script>
   <script src="/puzzle-data.js"></script>
   <script src="/game-settings.js"></script>
-  <script src="/game.js"></script>
+  <script src="/game.js?v=20260611"></script>
 </body>
 </html>

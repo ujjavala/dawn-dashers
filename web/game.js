@@ -1109,7 +1109,7 @@
   const walkthroughSteps = [
     {
       title: 'These Are Your Lives',
-      text: 'Hearts on the left are your lives. Each level starts with 3 hearts. If they drop to 0, one revive challenge can restore all 3 once per level.',
+      text: 'Hearts on the left are your lives. Each level starts with 3 hearts. If they drop to 0, one revive challenge can restore all 3 once per run by solving 1 puzzle.',
       visuals: []
     },
     {
@@ -1348,7 +1348,7 @@
     swipeStart: null,
     apiOnline: false,
     pendingReviveOffer: null,
-    heartReviveUsedByLevel: {},
+    heartReviveUsed: false,
     chestCollectsByLevelRun: {},
     puzzleBankUnlocks: (() => {
       try {
@@ -1668,8 +1668,12 @@
     state.paused = false;
     if (!keepProgress) {
       state.score = 0;
-      state.heartReviveUsedByLevel = {};
+      state.heartReviveUsed = false;
       state.chestCollectsByLevelRun = {};
+      puzzleState.seenTreasureIds = [];
+      puzzleState.lastTreasureId = null;
+      puzzleState.solvedByLevel = {};
+      puzzleState.usedCorePuzzleIds = [];
     }
     state.pendingReviveOffer = null;
     state.health = state.maxLives;
@@ -2775,27 +2779,20 @@
 
   function getHeartPuzzlePoolIdsForLevel(level) {
     const ids = getPuzzlePoolIdsForLevel(level);
-    if (ids.length > 1) {
-      return ids.slice(1);
+    if (!ids.length) {
+      return [];
     }
-    return ids;
-  }
-
-  function getHeartReviveProgress(level) {
-    const poolIds = getHeartPuzzlePoolIdsForLevel(level);
-    const solvedIds = getSolvedPuzzleIdsForLevel(level);
-    const solvedCount = poolIds.filter((id) => solvedIds.includes(id)).length;
-    return { poolIds, solvedCount, totalCount: poolIds.length, solvedAll: solvedCount >= poolIds.length };
+    const revivePuzzleId = ids.length > 1 ? ids[1] : ids[0];
+    return [revivePuzzleId];
   }
 
   function pickNextHeartRevivePuzzleId(level) {
     const poolIds = getHeartPuzzlePoolIdsForLevel(level);
-    const solvedIds = getSolvedPuzzleIdsForLevel(level);
-    const unsolved = poolIds.filter((id) => !solvedIds.includes(id) && !puzzleState.usedCorePuzzleIds.includes(id));
-    if (!unsolved.length) {
+    const unseen = poolIds.filter((id) => !puzzleState.usedCorePuzzleIds.includes(id));
+    if (!unseen.length) {
       return null;
     }
-    const puzzleId = unsolved[Math.floor(Math.random() * unsolved.length)];
+    const puzzleId = unseen[Math.floor(Math.random() * unseen.length)];
     puzzleState.activeCorePuzzleId = puzzleId;
     if (!puzzleState.usedCorePuzzleIds.includes(puzzleId)) {
       puzzleState.usedCorePuzzleIds.push(puzzleId);
@@ -2821,25 +2818,13 @@
 
   function beginHeartReviveChallenge(level) {
     const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
-    if (state.heartReviveUsedByLevel[safeLevel]) {
+    if (state.heartReviveUsed) {
       return false;
     }
 
     state.pendingReviveOffer = null;
     state.running = true;
     state.ended = false;
-
-    const progress = getHeartReviveProgress(safeLevel);
-    if (progress.solvedAll) {
-      state.heartReviveUsedByLevel[safeLevel] = true;
-      state.health = state.maxLives;
-      state.paused = false;
-      state.hungerPaused = false;
-      pushMessage(`Heart revival triggered. ${state.maxLives} hearts restored.`);
-      syncHud();
-      syncPlaybackButton();
-      return true;
-    }
 
     puzzleState.pendingHeartRevive = { level: safeLevel };
     puzzleState.pendingTreasure = null;
@@ -2857,8 +2842,7 @@
     }
     hydratePuzzlePanel();
     if (puzzleStatus) {
-      const left = Math.max(0, progress.totalCount - progress.solvedCount);
-      puzzleStatus.textContent = `Hearts depleted. Solve all level puzzles to revive. ${left} left.`;
+      puzzleStatus.textContent = 'Hearts depleted. Solve 1 puzzle to revive.';
     }
     state.message = 'Hearts at zero. Solve the heart revival challenge to continue.';
     syncHud();
@@ -3121,7 +3105,6 @@
     const level = getPuzzleDifficultyLevel();
     const levelPoolIds = getPuzzlePoolIdsForLevel(level);
     const seenInLevelCount = levelPoolIds.filter((id) => puzzleState.usedCorePuzzleIds.includes(id)).length;
-    const reviveProgress = isHeartRevive ? getHeartReviveProgress(puzzleState.pendingHeartRevive.level) : null;
     puzzleState.hintIndex = 0;
     puzzleState.hintsUsedThisPuzzle = 0;
     puzzleState.hintRewardGrantedThisPuzzle = false;
@@ -3129,7 +3112,7 @@
       puzzleTitle.textContent = isTreasureCase
         ? `Treasure Case: ${puzzle.title}`
         : isHeartRevive
-          ? `Heart Revival: ${puzzle.title} (${reviveProgress.solvedCount + 1}/${reviveProgress.totalCount})`
+          ? `Heart Revival: ${puzzle.title}`
         : `${puzzle.title} (${Math.max(1, seenInLevelCount)}/${levelPoolIds.length})`;
     }
     if (puzzleInstruction) puzzleInstruction.textContent = puzzle.instruction;
@@ -3152,7 +3135,7 @@
       puzzleStatus.textContent = isTreasureCase
         ? `Treasure case loaded. ${hintLimit === 1 ? 'Hint available.' : `${formatHintCountLabel(hintLimit)} available.`}`
         : isHeartRevive
-          ? `Revive challenge: solve all level puzzles to restore 3 hearts. ${Math.max(0, reviveProgress.totalCount - reviveProgress.solvedCount)} left.`
+          ? 'Revive challenge: solve this puzzle to restore 3 hearts.'
         : `Level ${level + 1} puzzle loaded. ${hintLimit === 1 ? 'Hint available.' : `${formatHintCountLabel(hintLimit)} available.`}`;
     }
   }
@@ -3202,30 +3185,16 @@
     }
 
     const level = puzzleState.pendingHeartRevive.level;
-    const progress = getHeartReviveProgress(level);
-    if (progress.solvedAll) {
-      puzzleState.pendingHeartRevive = null;
-      state.heartReviveUsedByLevel[level] = true;
-      state.health = state.maxLives;
-      state.paused = false;
-      state.hungerPaused = false;
-      state.objective = `Heart revival completed in ${regions[state.regionIndex].name}. Continue the run.`;
-      pushMessage(`Heart revival complete. ${state.maxLives} hearts restored.`);
-      closeModal(puzzleModal);
-      syncHud();
-      syncPlaybackButton();
-      return true;
-    }
-
-    puzzleState.activeCorePuzzleId = null;
-    if (puzzleStatus) {
-      puzzleStatus.textContent = `Great! ${progress.totalCount - progress.solvedCount} puzzles left to restore hearts.`;
-    }
-    setTimeout(() => {
-      if (puzzleModal?.classList.contains('open')) {
-        hydratePuzzlePanel();
-      }
-    }, 700);
+    puzzleState.pendingHeartRevive = null;
+    state.heartReviveUsed = true;
+    state.health = state.maxLives;
+    state.paused = false;
+    state.hungerPaused = false;
+    state.objective = `Heart revival completed in ${regions[level].name}. Continue the run.`;
+    pushMessage(`Heart revival complete. ${state.maxLives} hearts restored.`);
+    closeModal(puzzleModal);
+    syncHud();
+    syncPlaybackButton();
     return true;
   }
 
@@ -3315,7 +3284,7 @@
       } else if (puzzleState.pendingAdvance) {
         puzzleStatus.textContent = `Correct answer. ${puzzle.rightExplain} Tap Submit to unlock the next level.`;
       } else if (puzzleState.pendingHeartRevive) {
-        puzzleStatus.textContent = `Correct answer. ${puzzle.rightExplain} Tap Submit to continue the heart revival challenge.`;
+        puzzleStatus.textContent = `Correct answer. ${puzzle.rightExplain} Tap Submit to restore hearts.`;
       } else {
         puzzleStatus.textContent = `Correct answer. ${puzzle.rightExplain} Tap Submit to continue.`;
       }
@@ -3340,7 +3309,7 @@
     }
     if (puzzleState.pendingHeartRevive) {
       if (puzzleStatus) {
-        puzzleStatus.textContent = 'Cannot skip this one. Solve all level puzzles to restore hearts.';
+        puzzleStatus.textContent = 'Cannot skip this one. Solve this puzzle to restore hearts.';
       }
       pushMessage('Heart revival puzzle cannot be skipped.');
       return;
@@ -3517,19 +3486,19 @@
     pushMessage(`Bomb hit! -${penalty}`);
     if (state.health <= 0) {
       const level = getPuzzleDifficultyLevel();
-      if (!state.heartReviveUsedByLevel[level]) {
+      if (state.heartReviveUsed) {
+        endGame(false);
+      } else {
         state.health = 0;
         state.running = false;
         state.ended = true;
         state.paused = false;
         state.hungerPaused = false;
         state.pendingReviveOffer = { level };
-        state.objective = 'Game over, but one revive is still available.';
+        state.objective = 'Game over, but one revive is still available this run.';
         state.message = 'Game over. You have 1 revive option left. Tap Revive.';
         syncHud();
         syncPlaybackButton();
-      } else {
-        endGame(false);
       }
     }
   }
@@ -3782,6 +3751,48 @@
       }
       ctx.restore();
     }
+  }
+
+  function drawWrappedCenteredText(text, x, y, maxWidth, lineHeight) {
+    const words = String(text || '').split(/\s+/).filter(Boolean);
+    if (!words.length) {
+      return 0;
+    }
+    const lines = [];
+    let line = words[0];
+    for (let i = 1; i < words.length; i += 1) {
+      const candidate = `${line} ${words[i]}`;
+      if (ctx.measureText(candidate).width <= maxWidth) {
+        line = candidate;
+      } else {
+        lines.push(line);
+        line = words[i];
+      }
+    }
+    lines.push(line);
+    lines.forEach((entry, index) => {
+      ctx.fillText(entry, x, y + index * lineHeight);
+    });
+    return lines.length;
+  }
+
+  function countWrappedTextLines(text, maxWidth) {
+    const words = String(text || '').split(/\s+/).filter(Boolean);
+    if (!words.length) {
+      return 0;
+    }
+    let lines = 1;
+    let line = words[0];
+    for (let i = 1; i < words.length; i += 1) {
+      const candidate = `${line} ${words[i]}`;
+      if (ctx.measureText(candidate).width <= maxWidth) {
+        line = candidate;
+      } else {
+        lines += 1;
+        line = words[i];
+      }
+    }
+    return lines;
   }
 
   function drawOutbackScene(w, h) {
@@ -6119,11 +6130,14 @@
       ctx.fillRect(0, 0, w, h);
       ctx.fillStyle = palette.paper;
       ctx.textAlign = 'center';
-      ctx.font = 'bold 26px sans-serif';
-      ctx.fillText('Dawn Dashers', w / 2, h / 2 - 30);
-      ctx.font = '18px sans-serif';
-      ctx.fillText('Traverse Australia, collect shards, and outrun the dark', w / 2, h / 2 + 2);
-      ctx.fillText('Swipe or use arrow keys. Follow the expedition route.', w / 2, h / 2 + 28);
+      const introNarrow = w < 430;
+      const introMaxWidth = Math.max(220, Math.min(560, w - 44));
+      ctx.font = introNarrow ? 'bold 24px sans-serif' : 'bold 26px sans-serif';
+      ctx.fillText('Dawn Dashers', w / 2, h / 2 - 32);
+      ctx.font = introNarrow ? '16px sans-serif' : '18px sans-serif';
+      const introLineHeight = introNarrow ? 24 : 26;
+      const l1 = drawWrappedCenteredText('Traverse Australia, collect shards, and outrun the dark', w / 2, h / 2 + 2, introMaxWidth, introLineHeight);
+      drawWrappedCenteredText('Swipe or use arrow keys. Follow the expedition route.', w / 2, h / 2 + 2 + l1 * introLineHeight, introMaxWidth, introLineHeight);
     }
 
     if (state.ended) {
@@ -6132,15 +6146,19 @@
         ctx.fillStyle = 'rgba(44, 25, 13, .2)';
         ctx.fillRect(0, 0, w, h);
 
+        const victoryNarrow = w < 430;
+        const victoryMaxWidth = Math.max(220, Math.min(560, w - 40));
         ctx.fillStyle = '#3f240f';
         ctx.textAlign = 'center';
-        ctx.font = '700 40px Cinzel Decorative';
+        ctx.font = victoryNarrow ? '700 34px Cinzel Decorative' : '700 40px Cinzel Decorative';
         ctx.fillText('Sunrise Restored', w / 2, h * 0.69);
-        ctx.font = '700 24px Cinzel Decorative';
+        ctx.font = victoryNarrow ? '700 22px Cinzel Decorative' : '700 24px Cinzel Decorative';
         ctx.fillText('Chosen One', w / 2, h * 0.75);
-        ctx.font = '700 17px Nunito';
-        ctx.fillText(`Final Score ${state.score}  •  Shards ${state.fragments}/7`, w / 2, h * 0.82);
-        ctx.fillText('Press Restart to play again.', w / 2, h * 0.865);
+        ctx.font = victoryNarrow ? '700 16px Nunito' : '700 17px Nunito';
+        const victoryLineHeight = victoryNarrow ? 22 : 24;
+        const scoreLine = `Final Score ${state.score}  •  Shards ${state.fragments}/7`;
+        const scoreLines = drawWrappedCenteredText(scoreLine, w / 2, h * 0.82, victoryMaxWidth, victoryLineHeight);
+        drawWrappedCenteredText('Press Restart to play again.', w / 2, h * 0.82 + scoreLines * victoryLineHeight, victoryMaxWidth, victoryLineHeight);
         return;
       }
 
@@ -6151,7 +6169,23 @@
       ctx.strokeStyle = 'rgba(255, 209, 102, .3)';
       ctx.lineWidth = 2;
       const panelW = Math.min(560, w * 0.82);
-      const panelH = 200;
+      const isNarrowPanel = panelW < 420;
+      const basePanelH = state.pendingReviveOffer
+        ? (isNarrowPanel ? 252 : 216)
+        : (isNarrowPanel ? 224 : 200);
+      const panelTextWidth = Math.max(180, panelW - 40);
+      const bodyGap = isNarrowPanel ? 24 : 28;
+      const infoGap = isNarrowPanel ? 20 : 22;
+      const infoToButtonGap = isNarrowPanel ? 14 : 16;
+      const buttonBottomGap = infoToButtonGap;
+      let panelH = basePanelH;
+      if (state.pendingReviveOffer) {
+        const introLines = countWrappedTextLines('You still have 1 revive option in this run.', panelTextWidth);
+        const promptLines = countWrappedTextLines('Tap Revive below to enter the heart revival challenge.', panelTextWidth);
+        const bodyHeight = (introLines + promptLines) * bodyGap;
+        const requiredH = 82 + bodyHeight + 8 + (2 * infoGap) + infoToButtonGap + 56 + buttonBottomGap;
+        panelH = Math.max(basePanelH, requiredH);
+      }
       const panelX = (w - panelW) / 2;
       const panelY = (h - panelH) / 2 - 12;
       ctx.beginPath();
@@ -6161,18 +6195,40 @@
 
       ctx.fillStyle = palette.paper;
       ctx.textAlign = 'center';
-      ctx.font = '700 34px Cinzel Decorative';
-      ctx.fillText(state.fragments >= 7 ? 'Expedition Complete!' : 'Game Over', w / 2, h / 2 - 58);
-      ctx.font = '18px sans-serif';
+      ctx.font = isNarrowPanel ? '700 30px Cinzel Decorative' : '700 34px Cinzel Decorative';
+      ctx.fillText(state.fragments >= 7 ? 'Expedition Complete!' : 'Game Over', w / 2, panelY + 44);
+      ctx.font = isNarrowPanel ? '16px sans-serif' : '18px sans-serif';
       if (state.pendingReviveOffer) {
-        ctx.fillText('You still have 1 revive option in this level.', w / 2, h / 2 - 26);
-        ctx.fillText('Tap Revive below to enter the heart revival challenge.', w / 2, h / 2 + 2);
+        const btnHeight = 56;
+        const btnWidth = Math.max(180, Math.min(320, panelW - 28));
+        const btnLeft = panelX + (panelW - btnWidth) / 2;
+        const bodyStartY = panelY + 82;
+        const introLinesDrawn = drawWrappedCenteredText('You still have 1 revive option in this run.', w / 2, bodyStartY, panelTextWidth, bodyGap);
+        const promptStartY = bodyStartY + introLinesDrawn * bodyGap;
+        const promptLinesDrawn = drawWrappedCenteredText('Tap Revive below to enter the heart revival challenge.', w / 2, promptStartY, panelTextWidth, bodyGap);
+        const btnTop = panelY + panelH - btnHeight - buttonBottomGap;
+        const infoBottomY = btnTop - infoToButtonGap;
+        const scoreY = infoBottomY - infoGap;
+        const minScoreY = promptStartY + promptLinesDrawn * bodyGap + 8 + infoGap;
+        const finalScoreY = Math.max(scoreY, minScoreY);
+        const finalInfoY = finalScoreY + infoGap;
+        ctx.fillText(`Score ${state.score} | Shards ${state.fragments}/7`, w / 2, finalScoreY);
+        ctx.fillText('Revive can be used only once in this run.', w / 2, finalInfoY);
+        if (reviveBtn) {
+          reviveBtn.style.width = `${btnWidth}px`;
+          reviveBtn.style.left = `${btnLeft}px`;
+          reviveBtn.style.top = `${btnTop}px`;
+          reviveBtn.style.height = `${btnHeight}px`;
+        }
       } else {
-        ctx.fillText(state.fragments >= 7 ? 'Sunrise restored. The expedition is complete.' : 'The night won this run. Try again.', w / 2, h / 2 - 26);
-        ctx.fillText(state.fragments >= 7 ? 'Expedition Complete!' : 'Run Ended', w / 2, h / 2 + 2);
+        const lineY = panelY + 82;
+        const first = state.fragments >= 7 ? 'Sunrise restored. The expedition is complete.' : 'The night won this run. Try again.';
+        const second = state.fragments >= 7 ? 'Expedition Complete!' : 'Run Ended';
+        const firstLines = drawWrappedCenteredText(first, w / 2, lineY, panelTextWidth, bodyGap);
+        drawWrappedCenteredText(second, w / 2, lineY + firstLines * bodyGap, panelTextWidth, bodyGap);
+        ctx.fillText(`Score ${state.score} | Shards ${state.fragments}/7`, w / 2, panelY + panelH - 44);
+        ctx.fillText('Press Restart to play again.', w / 2, panelY + panelH - 16);
       }
-      ctx.fillText(`Score ${state.score} | Shards ${state.fragments}/7`, w / 2, h / 2 + 30);
-      ctx.fillText(state.pendingReviveOffer ? 'Revive can be used only once in this level.' : 'Press Restart to play again.', w / 2, h / 2 + 58);
     }
   }
 
