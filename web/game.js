@@ -100,10 +100,15 @@
   const TERRAIN_3D_KEY = 'dawn_dashers_terrain_3d_v1';
   const PUZZLE_BANK_UNLOCKS_KEY = 'dawn_dashers_puzzle_bank_unlocks_v1';
   const HUNGER_MODAL_RESURFACE_DELAY_MS = 5000;
+  const gameSettings = globalThis.DawnDashersGameSettings || {};
+  const curvatureSettings = gameSettings.curvature || {};
+  const fallingObjectSettings = gameSettings.fallingObjects || {};
+  const visualSettings = gameSettings.visuals || {};
+  const pathGuideSettings = visualSettings.pathGuides || {};
   const difficultyMultipliers = {
-    easy: 0.75,
-    medium: 1,
-    hard: 1.35
+    easy: Number.isFinite(gameSettings?.difficultyMultipliers?.easy) ? gameSettings.difficultyMultipliers.easy : 0.75,
+    medium: Number.isFinite(gameSettings?.difficultyMultipliers?.medium) ? gameSettings.difficultyMultipliers.medium : 1,
+    hard: Number.isFinite(gameSettings?.difficultyMultipliers?.hard) ? gameSettings.difficultyMultipliers.hard : 1.35
   };
   let gameDifficulty = localStorage.getItem(DIFFICULTY_KEY) || 'medium';
   if (!difficultyMultipliers[gameDifficulty]) {
@@ -254,6 +259,22 @@
       sunIntensity: 1.16,
       ambientIntensity: 0.56
     };
+  }
+
+  function terrainTrackProfile(terrain) {
+    if (terrain === 'dunes') {
+      return { bendAmp: 0.058, bendFreq: 0.62, wiggleAmp: 0.012, wiggleFreq: 1.6, corridorWidth: 3.4, corridorDepth: 1.55, ridgeRamp: 0.13, waveAmp: 0.3, waveFreq: 0.2, curveAmp: 1.35, curveFreq: 0.18 };
+    }
+    if (terrain === 'forest') {
+      return { bendAmp: 0.048, bendFreq: 0.74, wiggleAmp: 0.016, wiggleFreq: 1.9, corridorWidth: 3.15, corridorDepth: 1.35, ridgeRamp: 0.1, waveAmp: 0.26, waveFreq: 0.24, curveAmp: 1.1, curveFreq: 0.22 };
+    }
+    if (terrain === 'beach') {
+      return { bendAmp: 0.064, bendFreq: 0.58, wiggleAmp: 0.022, wiggleFreq: 2.2, corridorWidth: 3.75, corridorDepth: 0.9, ridgeRamp: 0.07, waveAmp: 0.34, waveFreq: 0.26, curveAmp: 1.55, curveFreq: 0.16 };
+    }
+    if (terrain === 'industrial') {
+      return { bendAmp: 0.04, bendFreq: 0.88, wiggleAmp: 0.01, wiggleFreq: 2.7, corridorWidth: 2.95, corridorDepth: 1.15, ridgeRamp: 0.09, waveAmp: 0.2, waveFreq: 0.28, curveAmp: 0.78, curveFreq: 0.25 };
+    }
+    return { bendAmp: 0.045, bendFreq: 0.65, wiggleAmp: 0.014, wiggleFreq: 1.8, corridorWidth: 3.05, corridorDepth: 1.2, ridgeRamp: 0.11, waveAmp: 0.24, waveFreq: 0.21, curveAmp: 1.15, curveFreq: 0.2 };
   }
 
   // ─── Three.js scene props registry ──────────────────────────────────────────
@@ -702,8 +723,11 @@
       applyRegionThreeTheme(regions[state.regionIndex]);
     }
     const theme = terrainTheme(terrain);
+    const profile = terrainTrackProfile(terrain);
+    const levelFactors = getCurvatureLevelFactors();
     threeState.t += dt;
     const t = threeState.t;
+    const worldTrackShift = getTrackCenterDriftNorm(0.92) * 11.5;
 
     const pos = threeState.terrainGeo.attributes.position;
     for (let i = 0; i < pos.count; i++) {
@@ -714,7 +738,18 @@
       const nA = octaveNoise(bx * theme.freq + t * theme.speed, bz * theme.freq - 7.7);
       const nB = octaveNoise(bx * (theme.freq * 2.4) - 11.3, bz * (theme.freq * 2.1) + t * theme.speed * 0.7);
       const nHi = theme.freqHi ? octaveNoise(bx * theme.freqHi + 43.2, bz * theme.freqHi + 11.8) : 0;
-      const lift = (nA * 0.65 + nB * 0.25 + nHi * 0.1) * theme.amp + (theme.ampHi ? nHi * theme.ampHi * 0.4 : 0);
+      const curveOffset = Math.sin(t * 0.42 * levelFactors.freqScale + bz * profile.curveFreq) * profile.curveAmp * levelFactors.bendScale;
+      const relX = bx - curveOffset - worldTrackShift * 0.36;
+      const absRelX = Math.abs(relX);
+      const laneMask = Math.max(0, 1 - absRelX / profile.corridorWidth);
+      const laneCarve = Math.pow(laneMask, 1.9) * profile.corridorDepth;
+      const sideRise = Math.max(0, absRelX - profile.corridorWidth) * profile.ridgeRamp;
+      const runWave = Math.sin((bz + t * (2 + theme.speed * 12) * levelFactors.freqScale) * profile.waveFreq + relX * 0.18) * profile.waveAmp * levelFactors.wiggleScale;
+      const lift = (nA * 0.65 + nB * 0.25 + nHi * 0.1) * theme.amp
+        + (theme.ampHi ? nHi * theme.ampHi * 0.4 : 0)
+        - laneCarve
+        + sideRise
+        + runWave * (0.35 + laneMask * 0.65);
       pos.setXYZ(i, bx, by + lift, bz);
     }
     pos.needsUpdate = true;
@@ -750,8 +785,9 @@
     // Subtle camera sway
     const camSwayX = Math.sin(t * 0.22) * 0.18;
     const camSwayY = Math.cos(t * 0.17) * 0.08 + 11.8;
-    threeState.camera.position.set(camSwayX, camSwayY, 17.2);
-    threeState.camera.lookAt(0, 0, -7);
+    const trackCameraX = worldTrackShift * 0.68;
+    threeState.camera.position.set(trackCameraX + camSwayX, camSwayY, 17.2);
+    threeState.camera.lookAt(trackCameraX * 0.92, 0.12, -7.4);
 
     threeState.renderer.render(threeState.scene, threeState.camera);
   }
@@ -1187,6 +1223,83 @@
   const laneCenterIndex = Math.floor(lanes.length / 2);
   const laneSpread = 0.11;
 
+  const templeLanePatterns = [
+    [-2, -1, 0, 1, 2, 1, 0, -1],
+    [2, 1, 0, -1, -2, -1, 0, 1],
+    [0, 1, 0, -1, 0, 1, 2, 1],
+    [0, -1, 0, 1, 0, -1, -2, -1],
+    [-1, 0, 1, 0, -1, 0, 1, 2],
+    [1, 0, -1, 0, 1, 0, -1, -2]
+  ];
+
+  function clamp01(value) {
+    return Math.max(0, Math.min(1, value));
+  }
+
+  function getCurrentLevelIndex() {
+    return Math.max(state.progressLevel || 0, state.regionIndex || 0);
+  }
+
+  function getDifficultyCurveScales() {
+    const configured = curvatureSettings.difficultyScale || {};
+    const fallback = { bend: 1, wiggle: 1, freq: 1, fall: 1 };
+    const raw = configured[gameDifficulty] || configured.medium || fallback;
+    return {
+      bend: Number.isFinite(raw.bend) ? raw.bend : fallback.bend,
+      wiggle: Number.isFinite(raw.wiggle) ? raw.wiggle : fallback.wiggle,
+      freq: Number.isFinite(raw.freq) ? raw.freq : fallback.freq,
+      fall: Number.isFinite(raw.fall) ? raw.fall : fallback.fall
+    };
+  }
+
+  function getCurvatureLevelFactors() {
+    const levelIndex = getCurrentLevelIndex();
+    const maxLevelIndex = Number.isFinite(curvatureSettings.maxLevelIndex) ? curvatureSettings.maxLevelIndex : 4;
+    const clamped = Math.max(0, Math.min(maxLevelIndex, levelIndex));
+    const diff = getDifficultyCurveScales();
+    const bendBase = Number.isFinite(curvatureSettings.bendBase) ? curvatureSettings.bendBase : 0.72;
+    const bendPerLevel = Number.isFinite(curvatureSettings.bendPerLevel) ? curvatureSettings.bendPerLevel : 0.16;
+    const wiggleBase = Number.isFinite(curvatureSettings.wiggleBase) ? curvatureSettings.wiggleBase : 0.68;
+    const wigglePerLevel = Number.isFinite(curvatureSettings.wigglePerLevel) ? curvatureSettings.wigglePerLevel : 0.22;
+    const freqBase = Number.isFinite(curvatureSettings.freqBase) ? curvatureSettings.freqBase : 0.95;
+    const freqPerLevel = Number.isFinite(curvatureSettings.freqPerLevel) ? curvatureSettings.freqPerLevel : 0.05;
+    return {
+      bendScale: (bendBase + clamped * bendPerLevel) * diff.bend,
+      wiggleScale: (wiggleBase + clamped * wigglePerLevel) * diff.wiggle,
+      freqScale: (freqBase + clamped * freqPerLevel) * diff.freq
+    };
+  }
+
+  function getFallingObjectSpeedScale() {
+    const shardDeficit = Math.max(0, 7 - state.fragments);
+    const levelIndex = getCurrentLevelIndex();
+    const levelScalePerLevel = Number.isFinite(fallingObjectSettings.levelScalePerLevel) ? fallingObjectSettings.levelScalePerLevel : 0.17;
+    const shardDeficitPerShard = Number.isFinite(fallingObjectSettings.shardDeficitPerShard) ? fallingObjectSettings.shardDeficitPerShard : 0.05;
+    const pressurePerDifficultyPoint = Number.isFinite(fallingObjectSettings.pressurePerDifficultyPoint) ? fallingObjectSettings.pressurePerDifficultyPoint : 0.08;
+    const levelScale = 1 + levelIndex * levelScalePerLevel;
+    const deficitScale = 1 + shardDeficit * shardDeficitPerShard;
+    const pressureScale = 1 + Math.max(0, state.difficulty - 1) * pressurePerDifficultyPoint;
+    const diff = getDifficultyCurveScales();
+    return levelScale * deficitScale * pressureScale * diff.fall;
+  }
+
+  function getTrackCenterDriftNorm(depth01 = 1) {
+    const terrain = regions[state.regionIndex]?.terrain || 'dunes';
+    const profile = terrainTrackProfile(terrain);
+    const levelFactors = getCurvatureLevelFactors();
+    const t = performance.now() * 0.001;
+    const depth = clamp01(depth01);
+    const depthInfluence = 0.22 + Math.pow(depth, 1.28) * 0.88;
+    const phase = (t * profile.bendFreq + state.distance * 0.014) * levelFactors.freqScale;
+    const main = Math.sin(phase + depth * 2.8) * profile.bendAmp * levelFactors.bendScale;
+    const wiggle = Math.sin(phase * profile.wiggleFreq - depth * 5.3) * profile.wiggleAmp * levelFactors.wiggleScale;
+    return (main + wiggle) * depthInfluence;
+  }
+
+  function getTrackXNorm(baseNorm, depth01 = 1) {
+    return Math.max(0.04, Math.min(0.96, baseNorm + getTrackCenterDriftNorm(depth01)));
+  }
+
   function laneToXNorm(laneIndex) {
     const safeIndex = Math.max(0, Math.min(lanes.length - 1, laneIndex));
     return 0.5 + lanes[safeIndex] * laneSpread;
@@ -1226,6 +1339,9 @@
     },
     foodCartByCharacter: {},
     spawnTimer: 0,
+    spawnPattern: null,
+    spawnPatternStep: 0,
+    lastSpawnLane: laneCenterIndex,
     fragmentTimer: 9,
     continueFromLevelUnlock: false,
     lastTime: 0,
@@ -1430,41 +1546,41 @@
   function biomePalette(terrain) {
     if (terrain === 'dunes') {
       return {
-        low: [92, 56, 34],
-        mid: [146, 98, 62],
-        high: [206, 164, 114],
-        tint: [234, 196, 146]
+        low: [74, 52, 38],
+        mid: [118, 88, 62],
+        high: [158, 128, 94],
+        tint: [188, 162, 124]
       };
     }
     if (terrain === 'forest') {
       return {
-        low: [34, 51, 28],
-        mid: [62, 88, 48],
-        high: [110, 142, 82],
-        tint: [150, 182, 120]
+        low: [30, 44, 30],
+        mid: [54, 76, 52],
+        high: [88, 112, 78],
+        tint: [124, 146, 102]
       };
     }
     if (terrain === 'beach') {
       return {
-        low: [96, 86, 66],
-        mid: [150, 134, 102],
-        high: [210, 192, 146],
-        tint: [206, 224, 210]
+        low: [82, 78, 66],
+        mid: [122, 114, 94],
+        high: [160, 150, 122],
+        tint: [170, 182, 174]
       };
     }
     if (terrain === 'industrial') {
       return {
-        low: [14, 24, 38],
-        mid: [28, 48, 72],
-        high: [70, 104, 138],
-        tint: [88, 226, 246]
+        low: [18, 26, 38],
+        mid: [34, 48, 66],
+        high: [62, 82, 104],
+        tint: [88, 140, 166]
       };
     }
     return {
-      low: [44, 52, 74],
-      mid: [78, 92, 122],
-      high: [144, 164, 196],
-      tint: [212, 226, 240]
+      low: [46, 54, 68],
+      mid: [74, 86, 106],
+      high: [112, 126, 148],
+      tint: [154, 168, 184]
     };
   }
 
@@ -1491,21 +1607,33 @@
         const ridge = Math.abs(octaveNoise(nx * 2.4 + 11.2, ny * 2 + 7.6));
         const detail = octaveNoise(nx * 9.5 + 25.1, ny * 8.7 + 33.4);
         const macro = octaveNoise(nx * 1.2 + 3.7, ny * 1.35 + 4.3);
-        let heightMix = 0.5 + macro * 0.35 + ridge * 0.28 + detail * 0.15;
+        const strata = Math.sin((ny * 44 + macro * 6) * Math.PI) * 0.03;
+        const grain = valueNoise2(nx * 42 + 31.7, ny * 46 + 19.4) * 0.08;
+        let heightMix = 0.46 + macro * 0.3 + ridge * 0.24 + detail * 0.13 + strata + grain;
         heightMix = Math.max(0, Math.min(1, heightMix));
 
-        let color = mixRgb(pal.low, pal.mid, Math.min(1, heightMix * 1.25));
-        if (heightMix > 0.58) {
-          color = mixRgb(color, pal.high, (heightMix - 0.58) / 0.42);
+        let color = mixRgb(pal.low, pal.mid, Math.min(1, heightMix * 1.08));
+        if (heightMix > 0.62) {
+          color = mixRgb(color, pal.high, (heightMix - 0.62) / 0.38);
         }
+
+        // Distance haze and soft ambient occlusion to avoid posterized paint look.
+        const ao = 0.9 - Math.abs(detail) * 0.09;
+        const haze = 0.8 + ny * 0.18;
+        color = [
+          color[0] * ao * haze,
+          color[1] * ao * haze,
+          color[2] * ao * haze
+        ];
+
         if (terrain === 'industrial') {
           const trace = octaveNoise(nx * 28 + 90, ny * 5 + 120);
-          if (trace > 0.56) {
-            color = mixRgb(color, pal.tint, 0.4);
+          if (trace > 0.63) {
+            color = mixRgb(color, pal.tint, 0.22);
           }
         }
 
-        const lighting = 0.82 + ny * 0.2 + Math.max(0, detail) * 0.08;
+        const lighting = 0.72 + ny * 0.22 + Math.max(0, detail) * 0.05;
         const i = (y * texW + x) * 4;
         px[i] = clampColorChannel(color[0] * lighting);
         px[i + 1] = clampColorChannel(color[1] * lighting);
@@ -1522,14 +1650,14 @@
   function drawProceduralTerrainTexture(terrain, w, h, horizonY, t) {
     const groundH = h - horizonY;
     const tex = getTerrainTexture(terrain, w, groundH);
-    const shiftA = (t * 24) % tex.width;
-    const shiftB = (t * 11) % tex.width;
+    const shiftA = (t * 13) % tex.width;
+    const shiftB = (t * 6) % tex.width;
 
     ctx.save();
-    ctx.globalAlpha = terrain === 'industrial' ? 0.78 : 0.72;
+    ctx.globalAlpha = terrain === 'industrial' ? 0.72 : 0.66;
     ctx.drawImage(tex, -shiftA, horizonY, w + tex.width, groundH);
-    ctx.globalAlpha = terrain === 'industrial' ? 0.34 : 0.3;
-    ctx.drawImage(tex, -shiftB, horizonY - 8, w + tex.width, groundH + 12);
+    ctx.globalAlpha = terrain === 'industrial' ? 0.22 : 0.2;
+    ctx.drawImage(tex, -shiftB, horizonY - 5, w + tex.width, groundH + 8);
     ctx.restore();
   }
 
@@ -1563,6 +1691,9 @@
     state.distance = 0;
     state.regionIndex = characterRegionMap[selectedCharacter] ?? 0;
     state.spawnTimer = 0;
+    state.spawnPattern = null;
+    state.spawnPatternStep = 0;
+    state.lastSpawnLane = laneCenterIndex;
     state.fragmentTimer = 7;
     state.continueFromLevelUnlock = false;
     puzzleState.pendingAdvance = null;
@@ -2423,7 +2554,7 @@
 
   function spawnItem() {
     const roll = Math.random();
-    const lane = Math.floor(Math.random() * lanes.length);
+    const lane = getNextSpawnLane();
     const shardDeficit = Math.max(0, 7 - state.fragments);
     const fragChance = Math.max(.26, .38 - state.progressLevel * .014 - shardDeficit * .008);
     const treasureChestChance = Math.min(0.09, 0.04 + state.progressLevel * 0.01);
@@ -2468,6 +2599,36 @@
     // Bombs only: penalty values stay simple (-100 / -500).
     const bombPenalty = Math.random() < 0.75 ? 100 : 500;
     state.items.push({ type: 'obstacle', lane, z: 1, hit: 1, penalty: bombPenalty });
+
+    // Occasionally spawn a second hazard to force quick lane commitment.
+    if (Math.random() < Math.min(0.46, 0.2 + state.progressLevel * 0.06)) {
+      const [minLane, maxLane] = getMovementLaneBounds();
+      const side = Math.random() < 0.5 ? -1 : 1;
+      const lane2 = Math.max(minLane, Math.min(maxLane, lane + side));
+      if (lane2 !== lane) {
+        state.items.push({ type: 'obstacle', lane: lane2, z: 1.12, hit: 1, penalty: bombPenalty });
+      }
+    }
+  }
+
+  function getNextSpawnLane() {
+    const [minLane, maxLane] = getMovementLaneBounds();
+    if (!state.spawnPattern || state.spawnPatternStep >= state.spawnPattern.length) {
+      state.spawnPattern = templeLanePatterns[Math.floor(Math.random() * templeLanePatterns.length)];
+      state.spawnPatternStep = 0;
+    }
+    const profileOffset = Math.round(getTrackCenterDriftNorm(0.24) / laneSpread * 0.35);
+    const baseCenter = Math.max(minLane, Math.min(maxLane, laneCenterIndex + profileOffset));
+    const nextOffset = state.spawnPattern[state.spawnPatternStep] || 0;
+    state.spawnPatternStep += 1;
+
+    let lane = Math.max(minLane, Math.min(maxLane, baseCenter + nextOffset));
+    if (lane === state.lastSpawnLane && Math.random() < 0.58) {
+      lane += Math.random() < 0.5 ? -1 : 1;
+      lane = Math.max(minLane, Math.min(maxLane, lane));
+    }
+    state.lastSpawnLane = lane;
+    return lane;
   }
 
   function shiftLane(dir) {
@@ -3322,11 +3483,12 @@
   }
 
   function updateItems(dt) {
-    const shardDeficit = Math.max(0, 7 - state.fragments);
-    const speedScale = (1 + state.progressLevel * .16 + shardDeficit * .05) * difficultyMultipliers[gameDifficulty];
+    const speedScale = getFallingObjectSpeedScale();
+    const baseZSpeed = Number.isFinite(fallingObjectSettings.baseZSpeed) ? fallingObjectSettings.baseZSpeed : 0.9;
+    const difficultyZSpeed = Number.isFinite(fallingObjectSettings.difficultyZSpeed) ? fallingObjectSettings.difficultyZSpeed : 0.07;
     for (let i = state.items.length - 1; i >= 0; i--) {
       const item = state.items[i];
-      item.z -= dt * (.9 + state.difficulty * .07) * speedScale;
+      item.z -= dt * (baseZSpeed + state.difficulty * difficultyZSpeed) * speedScale;
       if (item.z < .1) {
         resolveItem(item);
         state.items.splice(i, 1);
@@ -3414,8 +3576,9 @@
     const isWombat = selectedCharacter === 'wombat';
     const role = characters[selectedCharacter]?.role || 'fast';
     const terrain = regions[state.regionIndex].terrain;
-    const playerXNorm = laneToXNorm(state.player.lane);
-    const itemXNorm = typeof item.xNorm === 'number' ? item.xNorm : laneToXNorm(item.lane);
+    const playerXNorm = getTrackXNorm(laneToXNorm(state.player.lane), 0.96);
+    const itemBaseXNorm = typeof item.xNorm === 'number' ? item.xNorm : laneToXNorm(item.lane);
+    const itemXNorm = getTrackXNorm(itemBaseXNorm, clamp01(1 - item.z));
     const hitboxX = role === 'slow' ? 0.085 : 0.1;
     const isTouching = Math.abs(itemXNorm - playerXNorm) <= hitboxX;
     const airborne = state.player.jump > .15;
@@ -3481,6 +3644,8 @@
     ctx.fillStyle = 'rgba(12, 8, 5, .16)';
     ctx.fillRect(0, 0, w, h);
 
+    drawCinematicGrade(w, h, region.terrain);
+
     drawRunnerTrack(w, h, region);
   }
 
@@ -3532,7 +3697,54 @@
 
     drawProceduralTerrainTexture(terrain, w, h, horizonY, t);
 
-    if (terrain === 'industrial') {
+    const showPathGuides = pathGuideSettings.enabled === true;
+    const laneTopY = h * 0.585;
+    const laneBottomY = h * 0.845;
+    if (showPathGuides) {
+      for (let laneIndex = 0; laneIndex < lanes.length; laneIndex += 1) {
+        const baseNorm = laneToXNorm(laneIndex);
+        const farNorm = getTrackXNorm(baseNorm, 0.08);
+        const nearNorm = getTrackXNorm(baseNorm, 0.96);
+        const controlNormA = getTrackXNorm(baseNorm, 0.36);
+        const controlNormB = getTrackXNorm(baseNorm, 0.72);
+        const laneAlphaCenter = Number.isFinite(pathGuideSettings.laneAlphaCenter) ? pathGuideSettings.laneAlphaCenter : 0.11;
+        const laneAlphaSide = Number.isFinite(pathGuideSettings.laneAlphaSide) ? pathGuideSettings.laneAlphaSide : 0.05;
+        const laneWidthCenter = Number.isFinite(pathGuideSettings.laneWidthCenter) ? pathGuideSettings.laneWidthCenter : 1.15;
+        const laneWidthSide = Number.isFinite(pathGuideSettings.laneWidthSide) ? pathGuideSettings.laneWidthSide : 0.7;
+        const alpha = laneIndex === laneCenterIndex ? laneAlphaCenter : laneAlphaSide;
+        ctx.strokeStyle = `rgba(222, 214, 198, ${alpha})`;
+        ctx.lineWidth = laneIndex === laneCenterIndex ? laneWidthCenter : laneWidthSide;
+        ctx.beginPath();
+        ctx.moveTo(w * farNorm, laneTopY);
+        ctx.bezierCurveTo(
+          w * controlNormA,
+          h * 0.67,
+          w * controlNormB,
+          h * 0.77,
+          w * nearNorm,
+          laneBottomY
+        );
+        ctx.stroke();
+      }
+
+      // Wheel/foot ruts.
+      const rutOffsets = [-0.12, 0.12];
+      rutOffsets.forEach((offset) => {
+        const far = getTrackXNorm(0.5 + offset, 0.12);
+        const near = getTrackXNorm(0.5 + offset, 0.98);
+        const rutAlpha = Number.isFinite(pathGuideSettings.rutAlpha) ? pathGuideSettings.rutAlpha : 0.17;
+        const rutWidth = Number.isFinite(pathGuideSettings.rutWidth) ? pathGuideSettings.rutWidth : 0.85;
+        ctx.strokeStyle = `rgba(24, 20, 16, ${rutAlpha})`;
+        ctx.lineWidth = rutWidth;
+        ctx.beginPath();
+        ctx.moveTo(w * far, laneTopY + 4);
+        ctx.bezierCurveTo(w * far, h * 0.69, w * near, h * 0.78, w * near, laneBottomY + 2);
+        ctx.stroke();
+      });
+    }
+
+    const showIndustrialSeams = visualSettings.industrialGroundSeams === true;
+    if (terrain === 'industrial' && showIndustrialSeams) {
       // Keep Servo panel seams over texture for a synthetic ground read.
       ctx.strokeStyle = 'rgba(112, 146, 190, .2)';
       ctx.lineWidth = 1.4;
@@ -3545,10 +3757,31 @@
       }
     }
 
-    ctx.fillStyle = region.accent;
-    ctx.font = '700 34px Cinzel Decorative';
+    ctx.fillStyle = hexToRgba(region.accent, 0.78);
+    ctx.font = '700 28px Nunito';
     ctx.textAlign = 'left';
     ctx.fillText(region.name.toUpperCase(), 16, h - 40);
+  }
+
+  function drawCinematicGrade(w, h, terrain) {
+    // Vignette and grain to unify scenes into a less cartoon, more filmic frame.
+    const vignette = ctx.createRadialGradient(w * 0.5, h * 0.56, Math.min(w, h) * 0.22, w * 0.5, h * 0.56, Math.max(w, h) * 0.8);
+    vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    vignette.addColorStop(1, terrain === 'industrial' ? 'rgba(4, 7, 10, 0.36)' : 'rgba(8, 7, 5, 0.28)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, w, h);
+
+    if (visualSettings.cinematicScanlines === true) {
+      const t = performance.now() * 0.001;
+      ctx.save();
+      ctx.globalAlpha = terrain === 'industrial' ? 0.09 : 0.07;
+      for (let i = 0; i < 38; i++) {
+        const y = (i * 23 + t * 42) % h;
+        ctx.fillStyle = i % 3 === 0 ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)';
+        ctx.fillRect(0, y, w, 1);
+      }
+      ctx.restore();
+    }
   }
 
   function drawOutbackScene(w, h) {
@@ -3683,6 +3916,32 @@
       ctx.moveTo(x - 2, y - radius * 0.8);
       ctx.lineTo(x + 2, y + radius * 0.8);
       ctx.stroke();
+    }
+
+    // Sparse highway silhouettes: a few distant cars and utes crossing the flats.
+    for (let i = 0; i < 3; i++) {
+      const dir = i % 2 === 0 ? 1 : -1;
+      const speed = 18 + i * 7;
+      const x = ((t * speed * dir + i * 260) % (w + 220)) - 110;
+      const y = h * (0.64 + i * 0.05);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(0.9 + i * 0.12, 0.9 + i * 0.12);
+      ctx.fillStyle = 'rgba(62, 44, 32, 0.52)';
+      ctx.beginPath();
+      ctx.moveTo(-18, 0);
+      ctx.lineTo(18, 0);
+      ctx.lineTo(12, 8);
+      ctx.lineTo(-14, 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillRect(-8, -5, 12, 5);
+      ctx.fillStyle = 'rgba(28, 22, 18, 0.56)';
+      ctx.beginPath();
+      ctx.arc(-10, 8, 3, 0, Math.PI * 2);
+      ctx.arc(10, 8, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
   }
 
@@ -3836,6 +4095,22 @@
       ctx.bezierCurveTo(x + sway * 0.3, h * 0.24, x + sway, h * 0.38, x + sway * 0.5, h * 0.56);
       ctx.stroke();
     }
+
+    // Snakes weaving through low shrub clusters.
+    for (let i = 0; i < 3; i++) {
+      const baseX = w * (0.2 + i * 0.27) + Math.sin(t * (0.6 + i * 0.15)) * 10;
+      const baseY = h * (0.79 + (i % 2) * 0.028);
+      ctx.strokeStyle = 'rgba(58, 74, 38, 0.62)';
+      ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      ctx.moveTo(baseX - 18, baseY + 4);
+      ctx.bezierCurveTo(baseX - 8, baseY - 6, baseX + 6, baseY + 8, baseX + 16, baseY - 2);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(74, 96, 50, 0.58)';
+      ctx.beginPath();
+      ctx.ellipse(baseX + 16, baseY - 2, 3.6, 2.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   function drawServoScene(w, h) {
@@ -3976,10 +4251,68 @@
       ctx.fill();
       ctx.restore();
     }
+
+    // Servo-specific forecourt: canopy, pumps, price board, and parked utility vehicle.
+    ctx.fillStyle = 'rgba(26, 42, 58, 0.74)';
+    ctx.fillRect(w * 0.64, h * 0.58, w * 0.24, 10);
+    ctx.fillRect(w * 0.66, h * 0.58, 8, h * 0.12);
+    ctx.fillRect(w * 0.84, h * 0.58, 8, h * 0.12);
+
+    ctx.fillStyle = 'rgba(45, 74, 98, 0.72)';
+    for (let i = 0; i < 2; i++) {
+      const px = w * (0.71 + i * 0.08);
+      const py = h * 0.67;
+      ctx.fillRect(px, py, 16, 28);
+      ctx.fillStyle = 'rgba(128, 234, 248, 0.44)';
+      ctx.fillRect(px + 3, py + 4, 10, 7);
+      ctx.fillStyle = 'rgba(45, 74, 98, 0.72)';
+      ctx.strokeStyle = 'rgba(126, 194, 220, 0.42)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(px + 15, py + 7);
+      ctx.quadraticCurveTo(px + 22, py + 9, px + 18, py + 20);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = 'rgba(36, 58, 78, 0.7)';
+    ctx.fillRect(w * 0.58, h * 0.62, 20, 52);
+    ctx.fillStyle = 'rgba(140, 240, 255, 0.42)';
+    ctx.fillRect(w * 0.582, h * 0.635, 16, 8);
+
+    const uteX = w * (0.38 + Math.sin(t * 0.4) * 0.03);
+    const uteY = h * 0.73;
+    ctx.fillStyle = 'rgba(30, 49, 66, 0.74)';
+    ctx.beginPath();
+    ctx.moveTo(uteX - 26, uteY);
+    ctx.lineTo(uteX + 28, uteY);
+    ctx.lineTo(uteX + 20, uteY + 11);
+    ctx.lineTo(uteX - 22, uteY + 11);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillRect(uteX - 6, uteY - 8, 18, 8);
+    ctx.fillStyle = 'rgba(14, 20, 26, 0.7)';
+    ctx.beginPath();
+    ctx.arc(uteX - 14, uteY + 11, 4.5, 0, Math.PI * 2);
+    ctx.arc(uteX + 16, uteY + 11, 4.5, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   function drawCoastlineScene(w, h) {
     const t = performance.now() * 0.001;
+
+    // Distant coastal cliffs and headland silhouettes.
+    ctx.fillStyle = 'rgba(58, 74, 88, 0.34)';
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.47);
+    ctx.lineTo(w * 0.18, h * 0.43);
+    ctx.lineTo(w * 0.34, h * 0.48);
+    ctx.lineTo(w * 0.52, h * 0.44);
+    ctx.lineTo(w * 0.72, h * 0.49);
+    ctx.lineTo(w, h * 0.46);
+    ctx.lineTo(w, h * 0.58);
+    ctx.lineTo(0, h * 0.58);
+    ctx.closePath();
+    ctx.fill();
 
     // Sea band
     const sea = ctx.createLinearGradient(0, h * .42, 0, h * .76);
@@ -4044,12 +4377,33 @@
       ctx.fill();
     }
 
-    // Lighthouse silhouette
-    ctx.fillStyle = 'rgba(243, 229, 192, .68)';
-    ctx.fillRect(w * .78, h * .24, 18, h * .22);
+    // Lighthouse tower with rotating beam and coastal haze.
+    ctx.fillStyle = 'rgba(223, 214, 188, 0.62)';
+    ctx.fillRect(w * 0.78, h * 0.24, 15, h * 0.24);
+    ctx.fillStyle = 'rgba(186, 178, 156, 0.58)';
+    ctx.fillRect(w * 0.777, h * 0.265, 21, 5);
     ctx.beginPath();
-    ctx.arc(w * .79, h * .24, 16, 0, Math.PI * 2);
+    ctx.arc(w * 0.787, h * 0.24, 13, 0, Math.PI * 2);
     ctx.fill();
+
+    const beamAngle = Math.sin(t * 0.85) * 0.48 - 0.16;
+    ctx.save();
+    ctx.translate(w * 0.787, h * 0.24);
+    ctx.rotate(beamAngle);
+    const coastBeam = ctx.createLinearGradient(0, 0, w * 0.36, 0);
+    coastBeam.addColorStop(0, 'rgba(246, 243, 216, 0.34)');
+    coastBeam.addColorStop(1, 'rgba(246, 243, 216, 0)');
+    ctx.fillStyle = coastBeam;
+    ctx.beginPath();
+    ctx.moveTo(0, -4);
+    ctx.lineTo(w * 0.3, -36);
+    ctx.lineTo(w * 0.34, -8);
+    ctx.lineTo(w * 0.34, 8);
+    ctx.lineTo(w * 0.3, 36);
+    ctx.lineTo(0, 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
 
     // Jetty posts and planks.
     ctx.fillStyle = 'rgba(88, 65, 48, .44)';
@@ -4126,6 +4480,12 @@
       ctx.quadraticCurveTo(x + 4, y - 5, x + 10, y);
       ctx.stroke();
     }
+
+    const seaMist = ctx.createLinearGradient(0, h * 0.46, 0, h * 0.7);
+    seaMist.addColorStop(0, 'rgba(206, 226, 236, 0.02)');
+    seaMist.addColorStop(1, 'rgba(206, 226, 236, 0.14)');
+    ctx.fillStyle = seaMist;
+    ctx.fillRect(0, h * 0.46, w, h * 0.24);
   }
 
   function drawTasmaniaScene(w, h) {
@@ -4248,6 +4608,27 @@
       ctx.fillStyle = fog;
       ctx.beginPath();
       ctx.ellipse(x, y, 44, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Penguin colony silhouettes along icy shore.
+    for (let i = 0; i < 6; i++) {
+      const px = w * (0.12 + i * 0.11) + Math.sin(t * 0.7 + i) * 4;
+      const py = h * (0.84 + (i % 2) * 0.016);
+      ctx.fillStyle = 'rgba(28, 36, 48, 0.76)';
+      ctx.beginPath();
+      ctx.ellipse(px, py, 8, 13, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(214, 224, 234, 0.58)';
+      ctx.beginPath();
+      ctx.ellipse(px, py + 2, 3.2, 6.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(214, 168, 92, 0.62)';
+      ctx.beginPath();
+      ctx.moveTo(px + 3, py - 1);
+      ctx.lineTo(px + 8, py + 1);
+      ctx.lineTo(px + 3, py + 3);
+      ctx.closePath();
       ctx.fill();
     }
   }
@@ -5532,7 +5913,7 @@
   function drawPlayer() {
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
-    const x = w * laneToXNorm(state.player.lane);
+    const x = w * getTrackXNorm(laneToXNorm(state.player.lane), 0.96);
     const yBase = h * .72;
     const jumpOffset = state.player.jump > 0 ? Math.sin((.9 - state.player.jump) * Math.PI) * 55 : 0;
     const y = yBase - jumpOffset + (state.player.sliding > 0 ? 20 : 0);
@@ -5560,9 +5941,9 @@
     const h = canvas.clientHeight;
     const terrain = regions[state.regionIndex].terrain;
     const isServoTech = terrain === 'industrial';
-    const x = typeof item.xNorm === 'number'
-      ? w * item.xNorm
-      : w * laneToXNorm(item.lane);
+    const depth = clamp01(1 - item.z);
+    const baseXNorm = typeof item.xNorm === 'number' ? item.xNorm : laneToXNorm(item.lane);
+    const x = w * getTrackXNorm(baseXNorm, depth);
     const y = h * .15 + (1 - item.z) * h * .65;
     ctx.save();
     ctx.translate(x, y);
@@ -5641,7 +6022,7 @@
   function drawEvent(ev) {
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
-    const x = w * laneToXNorm(ev.lane);
+    const x = w * getTrackXNorm(laneToXNorm(ev.lane), clamp01(1 - ev.z));
     const y = h * .15 + (1 - ev.z) * h * .65;
     ctx.save();
     ctx.translate(x, y);
