@@ -51,22 +51,16 @@
       z-index: 1;
     }
     .stage { position: absolute; inset: 0; }
-    #threeRoot {
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-      overflow: hidden;
-      pointer-events: none;
-    }
     canvas#game {
       position: absolute;
       inset: 0;
-      z-index: 1;
+      z-index: 0;
       width: 100%;
       height: 100%;
       display: block;
       background: transparent;
       touch-action: none;
+      image-rendering: auto;
     }
     .hud {
       position: absolute;
@@ -1228,7 +1222,6 @@
 <body>
   <div class="app">
     <div class="stage">
-      <div id="threeRoot" aria-hidden="true"></div>
       <canvas id="game"></canvas>
       <div id="landingOverlay" class="landing open" aria-hidden="false">
         <div class="landing-card">
@@ -1269,8 +1262,8 @@
               <span class="emoji">🦫</span>
               Digger Wombat
             </button>
-            <button class="character-btn" data-character="wallaby" data-emoji="🦘" data-unlock="0">
-              <span class="emoji">🦘</span>
+            <button class="character-btn" data-character="wallaby" data-emoji="🐾" data-unlock="0">
+              <span class="emoji">🐾</span>
               Spinifex Wallaby
             </button>
             <button class="character-btn" data-character="kangaroo" data-emoji="🦘" data-unlock="1">
@@ -1418,13 +1411,6 @@
               </select>
             </div>
             <div class="panel-item">
-              <span>3D Terrain Pass</span>
-              <select id="terrain3dSelect" class="modal-close" aria-label="3D Terrain Pass">
-                <option value="on" selected>On</option>
-                <option value="off">Off</option>
-              </select>
-            </div>
-            <div class="panel-item">
               <span>Music</span>
               <select id="musicToggleSelect" class="modal-close" aria-label="Music">
                 <option value="on" selected>On</option>
@@ -1541,8 +1527,6 @@
     <button id="reviveBtn" class="gameover-revive-btn" aria-label="Use revive option" title="Revive">Use 1 Revive ❤️</button>
     <button id="mobileMenuBtn" class="mobile-menu-btn" aria-label="Pause and open menu" title="Pause and open menu"><span id="mobileMenuIcon" class="mobile-menu-icon">⏸</span></button>
   </div>
-  <!-- Three.js r165 for 3D terrain backdrop -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r165/three.min.js"></script>
   <!-- Perlin noise for terrain displacement -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/noisejs/2.1.0/perlin.min.js"></script>
   <!-- simplex-noise for richer multi-octave terrain shapes -->
@@ -1558,6 +1542,8 @@
   <script src="/puzzles/level-5.js"></script>
   <script src="/puzzle-data.js"></script>
   <script src="/game-settings.js"></script>
-  <script src="/game.js?v=20260611"></script>
+  <script src="/asset-manifest.js?v=20260611g"></script>
+  <script src="/terrain-styles.js?v=20260611y"></script>
+  <script src="/game.js?v=20260611y"></script>
 </body>
 </html>

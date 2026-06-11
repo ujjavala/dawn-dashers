@@ -74,7 +74,7 @@ const DawnDashersGameData = (() => {
   const characters = {
     emu: { name: 'Elder Emu', emoji: '🦅', power: 'Dust Sprint', quirk: 'Fast lane weave, moderate hop drain.', unlockAt: 0, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Emu' },
     wombat: { name: 'Digger Wombat', emoji: '🦫', power: 'Burrow Dodge', quirk: 'Cheaper slides in dunes/forest.', unlockAt: 0, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Wombat' },
-    wallaby: { name: 'Spinifex Wallaby', emoji: '🦘', power: 'Spring Drift', quirk: 'Lower jump drain, slightly higher move drain.', unlockAt: 0, role: 'fast', puzzleUnlockLevel: 0, wikiUrl: 'https://en.wikipedia.org/wiki/Wallaby' },
+    wallaby: { name: 'Spinifex Wallaby', emoji: '🐾', power: 'Spring Drift', quirk: 'Lower jump drain, slightly higher move drain.', unlockAt: 0, role: 'fast', puzzleUnlockLevel: 0, wikiUrl: 'https://en.wikipedia.org/wiki/Wallaby' },
     kangaroo: { name: 'Red Kangaroo', emoji: '🦘', power: 'Sky Hop', quirk: 'Jumps are most energy-efficient.', unlockAt: 1, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Red_kangaroo' },
     koala: { name: 'River Koala', emoji: '🐨', power: 'Grip Glide', quirk: 'Balanced and steady movement.', unlockAt: 1, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Koala' },
     platypus: { name: 'Cipher Platypus', emoji: '🦆', power: 'River Sense', quirk: 'Food restores more and slide is efficient.', unlockAt: 1, role: 'slow', puzzleUnlockLevel: 1, wikiUrl: 'https://en.wikipedia.org/wiki/Platypus' },
