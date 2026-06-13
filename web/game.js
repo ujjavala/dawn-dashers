@@ -7269,6 +7269,7 @@
     const t = performance.now() * 0.001;
     const terrain = region.terrain;
     const regionName = normalizeBiomeName(region?.name);
+    const isBushland = regionName === 'bushland';
     const isServo = regionName === 'servo';
     const isTasmania = regionName === 'tasmania';
     if (isServo || isTasmania) {
@@ -7335,7 +7336,7 @@
     ctx.fillStyle = frontGrad;
     ctx.fillRect(0, frontY, w, h - frontY);
 
-    if (!(isServo && terrain === 'industrial')) {
+    if (!isBushland && !(isServo && terrain === 'industrial')) {
       drawProceduralTerrainTexture(terrain, w, h, horizonY, t);
     }
 
@@ -7424,7 +7425,7 @@
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, w, h);
 
-    if (visualSettings.cinematicScanlines === true && regionName !== 'tasmania') {
+    if (visualSettings.cinematicScanlines === true && regionName !== 'tasmania' && regionName !== 'bushland' && regionName !== 'blue mountains') {
       const t = performance.now() * 0.001;
       ctx.save();
       const baseAlpha = terrain === 'industrial' ? 0.09 : 0.07;
@@ -7441,6 +7442,10 @@
   function drawActAtmosphereOverlay(w, h, region, act) {
     const t = performance.now() * 0.001;
     const accent = region.accent || '#ffd166';
+    const regionName = normalizeBiomeName(region?.name);
+    if (regionName === 'bushland') {
+      return;
+    }
 
     if (act.index === 0) {
       const haze = ctx.createLinearGradient(0, h * 0.22, 0, h * 0.88);
@@ -7452,6 +7457,14 @@
     }
 
     if (act.index === 1) {
+      if (regionName === 'blue mountains') {
+        const haze = ctx.createLinearGradient(0, h * 0.3, 0, h * 0.88);
+        haze.addColorStop(0, 'rgba(255,255,255,0)');
+        haze.addColorStop(1, hexToRgba(accent, 0.05));
+        ctx.fillStyle = haze;
+        ctx.fillRect(0, 0, w, h);
+        return;
+      }
       ctx.save();
       ctx.globalAlpha = 0.1;
       ctx.strokeStyle = hexToRgba(accent, 0.46);
@@ -7724,19 +7737,18 @@
     ctx.fillStyle = haze;
     ctx.fillRect(0, h * 0.06, w, h * 0.66);
 
-    for (let i = 0; i < 7; i++) {
-      const beamX = w * (0.08 + i * 0.14) + Math.sin(t * 0.2 + i) * 22;
-      const beam = ctx.createLinearGradient(beamX, h * 0.1, beamX + 90, h * 0.8);
-      beam.addColorStop(0, 'rgba(232, 249, 204, .08)');
-      beam.addColorStop(0.45, 'rgba(232, 249, 204, .03)');
-      beam.addColorStop(1, 'rgba(232, 249, 204, 0)');
-      ctx.fillStyle = beam;
+    // Diffuse mist pockets (randomized) to avoid vertical column artifacts.
+    for (let i = 0; i < 10; i++) {
+      const pocketX = ((i * 137 + Math.sin(t * 0.14 + i * 1.7) * 180) % (w + 180)) - 90;
+      const pocketY = h * (0.2 + ((i * 53) % 100) / 270);
+      const radius = h * (0.11 + (i % 4) * 0.03);
+      const fog = ctx.createRadialGradient(pocketX, pocketY, 10, pocketX, pocketY, radius);
+      fog.addColorStop(0, 'rgba(232, 249, 204, 0.042)');
+      fog.addColorStop(0.55, 'rgba(232, 249, 204, 0.018)');
+      fog.addColorStop(1, 'rgba(232, 249, 204, 0)');
+      ctx.fillStyle = fog;
       ctx.beginPath();
-      ctx.moveTo(beamX - 10, h * 0.12);
-      ctx.lineTo(beamX + 20, h * 0.12);
-      ctx.lineTo(beamX + 110, h * 0.78);
-      ctx.lineTo(beamX + 54, h * 0.78);
-      ctx.closePath();
+      ctx.ellipse(pocketX, pocketY, radius * 0.55, radius * 0.42, Math.sin(i * 1.31) * 0.35, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -7749,8 +7761,11 @@
       const y = h * (0.43 + octaveNoise(nx * 3.4 + 8.2 + t * 0.03, 3.1) * 0.04);
       ctx.lineTo(x, y);
     }
-    ctx.lineTo(w, h * 0.62);
-    ctx.lineTo(0, h * 0.62);
+    for (let x = w; x >= 0; x -= 24) {
+      const nx = x / w;
+      const y = h * (0.605 + octaveNoise(nx * 3.1 + 19.6 + t * 0.02, 2.5) * 0.02);
+      ctx.lineTo(x, y);
+    }
     ctx.closePath();
     ctx.fill();
 
@@ -7909,16 +7924,14 @@
       ctx.restore();
     }
 
-    // Wind streaks, curved so they feel organic instead of panel-like.
-    ctx.strokeStyle = 'rgba(208, 232, 164, .12)';
-    ctx.lineWidth = 1.5;
-    for (let i = 0; i < 8; i++) {
-      const y = h * (0.16 + i * 0.08) + Math.sin(t * 0.8 + i) * 6;
-      const startX = -30 + i * 22;
+    // Airborne flecks instead of line streaks to avoid horizontal/diagonal banding.
+    for (let i = 0; i < 26; i++) {
+      const x = ((t * (9 + (i % 6)) + i * 43) % (w + 50)) - 25;
+      const y = h * (0.12 + (i / 26) * 0.5) + Math.sin(t * 0.75 + i * 0.9) * 5;
+      ctx.fillStyle = `rgba(208, 232, 164, ${0.05 + (i % 5) * 0.016})`;
       ctx.beginPath();
-      ctx.moveTo(startX, y);
-      ctx.bezierCurveTo(startX + 120, y - 14, startX + 230, y + 10, startX + 360, y - 6);
-      ctx.stroke();
+      ctx.ellipse(x, y, 1.2 + (i % 3) * 0.8, 0.55 + (i % 2) * 0.35, Math.sin(i * 0.7) * 0.5, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     for (let i = 0; i < 50; i++) {
@@ -7959,18 +7972,6 @@
       ctx.beginPath();
       ctx.ellipse(x + 6, y, 8, 4, 0, 0, Math.PI * 2);
       ctx.fill();
-    }
-
-    // Swaying hanging vines to make the forest feel alive.
-    ctx.strokeStyle = 'rgba(78, 110, 66, .34)';
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 8; i++) {
-      const x = w * (0.06 + i * 0.12);
-      const sway = Math.sin(t * 1.4 + i * 0.9) * 9;
-      ctx.beginPath();
-      ctx.moveTo(x, h * 0.12);
-      ctx.bezierCurveTo(x + sway * 0.3, h * 0.24, x + sway, h * 0.38, x + sway * 0.5, h * 0.56);
-      ctx.stroke();
     }
 
     // Snakes weaving through low shrub clusters.
@@ -8654,10 +8655,10 @@
   function drawBlueMountainsScene(w, h, act) {
     const t = performance.now() * 0.001;
 
-    const sky = ctx.createLinearGradient(0, 0, 0, h * 0.7);
-    sky.addColorStop(0, 'rgba(74, 106, 146, 0.95)');
-    sky.addColorStop(0.45, 'rgba(108, 140, 178, 0.9)');
-    sky.addColorStop(1, 'rgba(74, 104, 136, 0.48)');
+    const sky = ctx.createLinearGradient(0, 0, 0, h * 0.72);
+    sky.addColorStop(0, 'rgba(96, 132, 176, 0.96)');
+    sky.addColorStop(0.42, 'rgba(118, 152, 188, 0.92)');
+    sky.addColorStop(1, 'rgba(86, 116, 150, 0.54)');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h * 0.72);
 
@@ -8667,6 +8668,80 @@
     sunwash.addColorStop(1, 'rgba(233, 241, 255, 0)');
     ctx.fillStyle = sunwash;
     ctx.fillRect(0, 0, w, h * 0.62);
+
+    // Soft cloud atmosphere: broad haze veils and diffuse masses, avoiding distinct blob edges.
+    const upperHaze = ctx.createLinearGradient(0, h * 0.12, 0, h * 0.52);
+    upperHaze.addColorStop(0, 'rgba(228, 238, 250, 0.08)');
+    upperHaze.addColorStop(0.5, 'rgba(220, 232, 246, 0.05)');
+    upperHaze.addColorStop(1, 'rgba(220, 232, 246, 0)');
+    ctx.fillStyle = upperHaze;
+    ctx.fillRect(0, h * 0.1, w, h * 0.44);
+
+    // Nimbus field: irregular cloud banks (no radial/elliptical bodies).
+    const drawNimbusBank = (cx, cy, width, height, alpha, seed) => {
+      const seg = 16;
+      ctx.save();
+      ctx.filter = 'blur(12px)';
+      ctx.beginPath();
+      for (let i = 0; i <= seg; i++) {
+        const nx = i / seg;
+        const x = cx - width * 0.5 + nx * width;
+        const ridge = octaveNoise(nx * 4.2 + seed, seed * 0.8 + t * 0.03);
+        const bulge = Math.sin(nx * Math.PI) * 0.18;
+        const y = cy - height * (0.42 + bulge + ridge * 0.14);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      for (let i = seg; i >= 0; i--) {
+        const nx = i / seg;
+        const x = cx - width * 0.5 + nx * width;
+        const base = octaveNoise(nx * 3.6 + seed * 1.7, seed * 0.5 + t * 0.026);
+        const y = cy + height * (0.26 + base * 0.12);
+        ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(cx, cy - height * 0.7, cx, cy + height * 0.5);
+      grad.addColorStop(0, `rgba(238, 246, 255, ${alpha})`);
+      grad.addColorStop(0.55, `rgba(232, 242, 254, ${alpha * 0.7})`);
+      grad.addColorStop(1, 'rgba(232, 242, 254, 0)');
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.restore();
+    };
+
+    const nimbusBands = [
+      { y: 0.25, alpha: 0.1, width: 300, height: 68, count: 3, drift: 3.2, seed: 11.2 },
+      { y: 0.32, alpha: 0.085, width: 360, height: 78, count: 3, drift: 4.1, seed: 19.7 },
+      { y: 0.39, alpha: 0.07, width: 420, height: 86, count: 2, drift: 2.4, seed: 27.1 }
+    ];
+    nimbusBands.forEach((band, bandIndex) => {
+      for (let i = 0; i < band.count; i++) {
+        const anchor = (i + 0.5) / band.count;
+        const cx = (anchor * w + Math.sin(t * 0.04 + i * 1.2 + bandIndex) * 74 + t * band.drift + i * 38) % (w + 340) - 170;
+        const cy = h * (band.y + Math.sin(i * 0.8 + band.seed) * 0.012);
+        const widthJitter = band.width * (0.88 + ((i + bandIndex) % 3) * 0.09);
+        const heightJitter = band.height * (0.9 + ((i + bandIndex * 2) % 3) * 0.08);
+        drawNimbusBank(cx, cy, widthJitter, heightJitter, band.alpha, band.seed + i * 0.8);
+      }
+    });
+
+    // Gentle low cloud shelf above ridges.
+    const valleyMist = ctx.createLinearGradient(0, h * 0.46, 0, h * 0.7);
+    valleyMist.addColorStop(0, 'rgba(220, 232, 246, 0)');
+    valleyMist.addColorStop(0.6, 'rgba(214, 226, 240, 0.08)');
+    valleyMist.addColorStop(1, 'rgba(214, 226, 240, 0.02)');
+    ctx.fillStyle = valleyMist;
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.5);
+    for (let x = 0; x <= w; x += 28) {
+      const nx = x / w;
+      const y = h * (0.505 + octaveNoise(nx * 2.7 + 10.6, 3.9) * 0.02);
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w, h * 0.7);
+    ctx.lineTo(0, h * 0.7);
+    ctx.closePath();
+    ctx.fill();
 
     // Brown foothills in front, so the range doesn't read as only blue slabs.
     ctx.fillStyle = 'rgba(136, 108, 84, 0.6)';
@@ -8884,44 +8959,21 @@
     ctx.arc(movingCarX + 7, movingCarY + 3, 2.1, 0, Math.PI * 2);
     ctx.fill();
 
-    // Freeform fog ribbons (non-ellipse) drifting through the valley.
-    for (let i = 0; i < 8; i += 1) {
-      const y = h * (0.42 + i * 0.05) + Math.cos(t * 0.18 + i * 0.7) * 3.4;
-      const drift = Math.sin(t * (0.09 + i * 0.01) + i) * 12;
-      const fog = ctx.createLinearGradient(0, y - 8, 0, y + 8);
-      fog.addColorStop(0, 'rgba(214, 228, 242, 0)');
-      fog.addColorStop(0.5, `rgba(214, 228, 242, ${0.08 + (i % 3) * 0.02})`);
+    // Diffuse mist pockets to avoid repeating horizontal ribbons.
+    for (let i = 0; i < 14; i += 1) {
+      const fogX = ((i * 163 + Math.sin(t * 0.13 + i * 0.9) * 190) % (w + 220)) - 110;
+      const fogY = h * (0.36 + ((i * 37) % 100) / 300) + Math.cos(t * 0.2 + i * 0.6) * 4;
+      const fogW = 80 + (i % 4) * 22;
+      const fogH = 18 + (i % 3) * 7;
+      const fog = ctx.createRadialGradient(fogX, fogY, 8, fogX, fogY, fogW);
+      fog.addColorStop(0, `rgba(214, 228, 242, ${0.08 + (i % 3) * 0.02})`);
+      fog.addColorStop(0.6, 'rgba(214, 228, 242, 0.04)');
       fog.addColorStop(1, 'rgba(214, 228, 242, 0)');
       ctx.fillStyle = fog;
-
       ctx.beginPath();
-      ctx.moveTo(-60 + drift, y - 4);
-      ctx.bezierCurveTo(w * 0.2 + drift, y - 13, w * 0.42 + drift, y + 9, w * 0.64 + drift, y - 2);
-      ctx.bezierCurveTo(w * 0.82 + drift, y - 10, w + 90 + drift, y + 8, w + 90 + drift, y + 4);
-      ctx.lineTo(w + 90 + drift, y + 12);
-      ctx.bezierCurveTo(w * 0.78 + drift, y + 18, w * 0.42 + drift, y + 16, -60 + drift, y + 12);
-      ctx.closePath();
+      ctx.ellipse(fogX, fogY, fogW, fogH, Math.sin(i * 0.8) * 0.22, 0, Math.PI * 2);
       ctx.fill();
     }
-
-    // Cable-car route and moving carriage.
-    const cableY = h * 0.37;
-    ctx.strokeStyle = 'rgba(188, 206, 228, 0.42)';
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    ctx.moveTo(0, cableY - 10);
-    ctx.lineTo(w, cableY + 14);
-    ctx.stroke();
-
-    const carX = ((t * (38 + act.index * 6)) % (w + 90)) - 45;
-    const carY = cableY - 8 + (carX / w) * 24;
-    ctx.fillStyle = 'rgba(226, 182, 82, 0.76)';
-    ctx.fillRect(carX - 10, carY, 20, 12);
-    ctx.strokeStyle = 'rgba(60, 46, 34, 0.6)';
-    ctx.beginPath();
-    ctx.moveTo(carX, carY);
-    ctx.lineTo(carX, carY - 8);
-    ctx.stroke();
   }
 
   function drawNullarborScene(w, h, act) {
