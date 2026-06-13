@@ -21,7 +21,7 @@ const DawnDashersGameData = (() => {
     },
     {
       congrats: 'AYY!! Bushland: SMASHED! 🌿✨',
-      teaser: 'Next: Servo — part ancient emu trading post, part glitchy AI hub. The circuits are dusty. The emus are absolutely suspicious.'
+      teaser: 'Next: Servo — a classic Aussie petrol stop with bright bowsers, hot snacks, and convenience-store buzz under stormy skies.'
     },
     {
       congrats: 'Unreal!! Servo: CONQUERED! ⚡🎉',

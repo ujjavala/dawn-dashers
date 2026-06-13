@@ -1335,7 +1335,7 @@
     threeState.regionAnimated.push({ type: 'mat', material: shimmerMat });
   }
 
-  // ─── SERVO / INDUSTRIAL SCENE ─────────────────────────────────────────────────
+  // ─── SERVO / ROADHOUSE SCENE ──────────────────────────────────────────────────
   function buildProceduralServoScene(root) {
     const THREE = globalThis.THREE;
     root.add(buildSkyGradientSphere(0x0c1a2e, 0x1e3050));
@@ -4185,7 +4185,7 @@
     },
     {
       congrats: 'AYY!! Bushland: SMASHED! 🌿✨',
-      teaser: "Next: Servo — part ancient emu trading post, part glitchy AI hub. The circuits are dusty. The emus are absolutely suspicious."
+      teaser: 'Next: Servo — a classic Aussie petrol stop with bright bowsers, hot snacks, and convenience-store buzz under stormy skies.'
     },
     {
       congrats: 'Unreal!! Servo: CONQUERED! ⚡🎉',
@@ -4251,8 +4251,8 @@
       terrain: 'industrial',
       acts: [
         { title: 'Act I', tagline: 'Rest Stop Flow' },
-        { title: 'Act II', tagline: 'Signal Chaos' },
-        { title: 'Act III', tagline: 'Network Convergence' }
+        { title: 'Act II', tagline: 'Forecourt Rush' },
+        { title: 'Act III', tagline: 'Night Shift Run' }
       ]
     },
     {
@@ -4970,9 +4970,9 @@
     const shiftB = (t * 6) % tex.width;
 
     ctx.save();
-    ctx.globalAlpha = terrain === 'industrial' ? 0.34 : 0.24;
+    ctx.globalAlpha = terrain === 'industrial' ? 0.16 : 0.24;
     ctx.drawImage(tex, -shiftA, horizonY, w + tex.width, groundH);
-    ctx.globalAlpha = terrain === 'industrial' ? 0.12 : 0.08;
+    ctx.globalAlpha = terrain === 'industrial' ? 0.05 : 0.08;
     ctx.drawImage(tex, -shiftB, horizonY - 5, w + tex.width, groundH + 8);
     ctx.restore();
   }
@@ -7197,8 +7197,12 @@
 
     drawBiomeSignatureOverlay(w, h, region);
 
-    // Keep mood but avoid over-darkening bright sky terrains like Tasmania.
-    const sceneDarkenBase = region.terrain === 'mountains' ? 0.07 : 0.16;
+    // Keep mood but avoid over-darkening bright sky terrains and detailed foreground scenes.
+    const sceneDarkenBase = region.terrain === 'mountains'
+      ? 0.07
+      : region.terrain === 'industrial'
+      ? 0.09
+      : 0.16;
     const sceneDarken = Math.max(0, Math.min(0.34, sceneDarkenBase + act.sceneDarkenOffset));
     ctx.fillStyle = `rgba(12, 8, 5, ${sceneDarken})`;
     ctx.fillRect(0, 0, w, h);
@@ -7265,6 +7269,11 @@
     const t = performance.now() * 0.001;
     const terrain = region.terrain;
     const regionName = normalizeBiomeName(region?.name);
+    const isServo = regionName === 'servo';
+    if (isServo) {
+      // Servo scene has its own detailed forecourt composition; skip global track overlays.
+      return;
+    }
     const isNullarbor = regionName === 'nullarbor';
     const horizonY = h * 0.58;
     const frontY = h * 0.8;
@@ -7283,8 +7292,13 @@
       midGrad.addColorStop(0, 'rgba(162, 148, 118, .26)');
       midGrad.addColorStop(1, 'rgba(126, 108, 82, .34)');
     } else if (terrain === 'industrial') {
-      midGrad.addColorStop(0, 'rgba(36, 61, 91, .38)');
-      midGrad.addColorStop(1, 'rgba(15, 28, 44, .62)');
+      if (isServo) {
+        midGrad.addColorStop(0, 'rgba(52, 78, 108, .06)');
+        midGrad.addColorStop(1, 'rgba(24, 42, 62, .14)');
+      } else {
+        midGrad.addColorStop(0, 'rgba(52, 78, 108, .18)');
+        midGrad.addColorStop(1, 'rgba(24, 42, 62, .32)');
+      }
     } else {
       midGrad.addColorStop(0, 'rgba(98, 112, 132, .3)');
       midGrad.addColorStop(1, 'rgba(62, 72, 92, .6)');
@@ -7306,8 +7320,13 @@
       frontGrad.addColorStop(0, 'rgba(138, 118, 90, .2)');
       frontGrad.addColorStop(1, 'rgba(88, 70, 48, .3)');
     } else if (terrain === 'industrial') {
-      frontGrad.addColorStop(0, 'rgba(20, 38, 62, .82)');
-      frontGrad.addColorStop(1, 'rgba(10, 21, 35, .94)');
+      if (isServo) {
+        frontGrad.addColorStop(0, 'rgba(26, 44, 66, .12)');
+        frontGrad.addColorStop(1, 'rgba(14, 28, 42, .22)');
+      } else {
+        frontGrad.addColorStop(0, 'rgba(26, 44, 66, .42)');
+        frontGrad.addColorStop(1, 'rgba(14, 28, 42, .56)');
+      }
     } else {
       frontGrad.addColorStop(0, 'rgba(78, 88, 108, .8)');
       frontGrad.addColorStop(1, 'rgba(44, 54, 76, .9)');
@@ -7315,7 +7334,9 @@
     ctx.fillStyle = frontGrad;
     ctx.fillRect(0, frontY, w, h - frontY);
 
-    drawProceduralTerrainTexture(terrain, w, h, horizonY, t);
+    if (!(isServo && terrain === 'industrial')) {
+      drawProceduralTerrainTexture(terrain, w, h, horizonY, t);
+    }
 
     // Path guide/rut overlays are globally disabled for a cleaner scene.
     const showPathGuides = false;
@@ -7372,7 +7393,7 @@
     }
 
     const showIndustrialSeams = visualSettings.industrialGroundSeams === true;
-    if (terrain === 'industrial' && showIndustrialSeams) {
+    if (terrain === 'industrial' && regionName !== 'servo' && showIndustrialSeams) {
       // Keep Servo panel seams over texture for a synthetic ground read.
       ctx.strokeStyle = 'rgba(112, 146, 190, .2)';
       ctx.lineWidth = 1.4;
@@ -7533,48 +7554,48 @@
     ctx.closePath();
     ctx.fill();
 
-    // Heat shimmer strips (screen-space mirage effect).
-    for (let i = 0; i < 12; i++) {
-      const yy = h * (0.34 + i * 0.037);
-      const wobble = Math.sin(t * 2.6 + i * 0.7) * 6;
-      ctx.strokeStyle = `rgba(255, 226, 181, ${0.05 + (i % 3) * 0.03})`;
-      ctx.lineWidth = 1.2;
+    // Mirage haze as particulate glints to avoid long horizontal stroke artifacts.
+    for (let i = 0; i < 170; i++) {
+      const speed = 11 + (i % 7) * 3;
+      const x = ((t * speed + i * 41) % (w + 120)) - 60;
+      const y = h * (0.3 + (i / 170) * 0.5) + Math.sin(t * 1.35 + i * 0.42) * 8;
+      const r = 0.7 + (i % 3) * 0.55;
+      const alpha = 0.04 + (i % 5) * 0.02;
+      ctx.fillStyle = `rgba(255, 224, 176, ${alpha})`;
       ctx.beginPath();
-      ctx.moveTo(0, yy + wobble);
-      ctx.bezierCurveTo(w * 0.25, yy - 8 + wobble, w * 0.65, yy + 10 + wobble, w, yy + wobble);
-      ctx.stroke();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
     }
 
-    // Rolling dune ridges in multiple moving layers.
+    // Dune detail as clustered granular flecks rather than contour strokes.
     for (let band = 0; band < 5; band++) {
-      const baseY = h * (0.52 + band * 0.065);
-      ctx.strokeStyle = `rgba(242, 201, 144, ${0.18 - band * 0.02})`;
-      ctx.lineWidth = 2.2 - band * 0.2;
-      ctx.beginPath();
-      ctx.moveTo(0, baseY);
-      for (let x = 0; x <= w; x += 28) {
-        const nx = x / w;
-        const n = octaveNoise(nx * (2.6 + band * 0.5) + 12.4 + t * (0.12 + band * 0.03), band * 3.1);
-        const y = baseY + n * (12 - band * 1.5) + Math.sin(nx * 8 + t * (0.2 + band * 0.04)) * 3;
-        ctx.lineTo(x, y);
+      const baseY = h * (0.54 + band * 0.055);
+      for (let i = 0; i < 90; i++) {
+        const nx = (i + band * 19) / 90;
+        const n = octaveNoise(nx * (2.8 + band * 0.4) + 14.1 + t * (0.1 + band * 0.02), band * 2.7);
+        const x = nx * w + Math.sin(t * 0.9 + i) * 3;
+        const y = baseY + n * (10 - band * 1.2) + Math.cos(nx * 9 + t * 0.26 + band) * 2.4;
+        const r = 0.8 + (i % 2) * 0.55;
+        ctx.fillStyle = `rgba(238, 196, 138, ${0.08 - band * 0.01})`;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
       }
-      ctx.stroke();
     }
 
-    // Gusting dust sheets crossing screen.
-    for (let i = 0; i < 54; i++) {
+    // Scattered dust particles drifting cross-wind.
+    for (let i = 0; i < 86; i++) {
       const lane = i % 9;
-      const speed = 52 + lane * 10;
-      const x = ((t * speed + i * 48) % (w + 240)) - 120;
-      const y = h * (0.28 + (i / 54) * 0.56) + Math.sin(t * 1.6 + i * 0.3) * 9;
-      const len = 18 + (i % 6) * 5;
-      const alpha = 0.06 + (i % 5) * 0.02;
-      ctx.strokeStyle = `rgba(245, 214, 168, ${alpha})`;
-      ctx.lineWidth = 1 + (i % 3) * 0.35;
+      const speed = 36 + lane * 7;
+      const x = ((t * speed + i * 58) % (w + 180)) - 90;
+      const y = h * (0.28 + (i / 86) * 0.56) + Math.sin(t * 1.4 + i * 0.28) * 7;
+      const rx = 1.3 + (i % 4) * 0.7;
+      const ry = 0.9 + (i % 3) * 0.45;
+      const alpha = 0.07 + (i % 5) * 0.025;
+      ctx.fillStyle = `rgba(245, 214, 168, ${alpha})`;
       ctx.beginPath();
-      ctx.moveTo(x - len, y - 1.2);
-      ctx.lineTo(x + len, y + 1.2);
-      ctx.stroke();
+      ctx.ellipse(x, y, rx, ry, Math.sin(i * 0.6 + t) * 0.7, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     // Foreground scrub silhouettes for depth.
@@ -7971,230 +7992,229 @@
   function drawServoScene(w, h) {
     const t = performance.now() * 0.001;
 
-    // Atmospheric glow behind the station.
-    const halo = ctx.createRadialGradient(w * 0.5, h * 0.3, 10, w * 0.5, h * 0.3, w * 0.42);
-    halo.addColorStop(0, 'rgba(91, 231, 255, .22)');
-    halo.addColorStop(0.45, 'rgba(116, 123, 255, .12)');
-    halo.addColorStop(1, 'rgba(15, 25, 40, 0)');
+    // Twilight sky and warm shop glow.
+    const sky = ctx.createLinearGradient(0, 0, 0, h * 0.6);
+    sky.addColorStop(0, 'rgba(22, 34, 52, 0.98)');
+    sky.addColorStop(0.55, 'rgba(34, 52, 76, 0.94)');
+    sky.addColorStop(1, 'rgba(24, 40, 60, 0.6)');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, h * 0.62);
+
+    const halo = ctx.createRadialGradient(w * 0.52, h * 0.35, 18, w * 0.52, h * 0.35, w * 0.45);
+    halo.addColorStop(0, 'rgba(255, 218, 152, 0.22)');
+    halo.addColorStop(0.5, 'rgba(255, 184, 112, 0.12)');
+    halo.addColorStop(1, 'rgba(18, 28, 44, 0)');
     ctx.fillStyle = halo;
-    ctx.fillRect(0, 0, w, h * 0.72);
+    ctx.fillRect(0, 0, w, h * 0.68);
 
-    // Station silhouette blocks.
-    ctx.fillStyle = 'rgba(20, 32, 48, .72)';
-    const blocks = [
-      { x: 0.06, y: 0.26, bw: 0.16, bh: 0.24 },
-      { x: 0.24, y: 0.2, bw: 0.14, bh: 0.3 },
-      { x: 0.41, y: 0.24, bw: 0.18, bh: 0.26 },
-      { x: 0.62, y: 0.18, bw: 0.13, bh: 0.32 },
-      { x: 0.77, y: 0.23, bw: 0.17, bh: 0.27 }
-    ];
-    blocks.forEach((b) => {
-      ctx.fillRect(w * b.x, h * b.y, w * b.bw, h * b.bh);
-    });
+    // Forecourt concrete and road edge.
+    const forecourt = ctx.createLinearGradient(0, h * 0.58, 0, h);
+    forecourt.addColorStop(0, 'rgba(112, 118, 124, 0.38)');
+    forecourt.addColorStop(0.55, 'rgba(88, 94, 102, 0.52)');
+    forecourt.addColorStop(1, 'rgba(56, 64, 74, 0.72)');
+    ctx.fillStyle = forecourt;
+    ctx.fillRect(0, h * 0.58, w, h * 0.42);
+    ctx.fillStyle = 'rgba(30, 34, 40, 0.74)';
+    ctx.fillRect(0, h * 0.78, w, h * 0.22);
 
-    // Neon windows and data strips.
-    for (let i = 0; i < 70; i++) {
-      const col = i % 14;
-      const row = Math.floor(i / 14);
-      const x = w * (0.08 + col * 0.06) + Math.sin(t * 0.7 + i) * 2;
-      const y = h * (0.24 + row * 0.055);
-      const on = ((i + Math.floor(t * 2)) % 3) !== 0;
-      ctx.fillStyle = on ? 'rgba(91, 231, 255, .5)' : 'rgba(61, 78, 102, .35)';
-      ctx.fillRect(x, y, 10, 3);
-    }
+    // Main convenience store building.
+    const storeX = w * 0.22;
+    const storeY = h * 0.62;
+    const storeW = w * 0.56;
+    const storeH = h * 0.24;
+    ctx.fillStyle = 'rgba(68, 74, 82, 0.82)';
+    ctx.fillRect(storeX, storeY - storeH, storeW, storeH);
 
-    // Hologrid sweep lines.
-    ctx.strokeStyle = 'rgba(111, 173, 255, .24)';
-    ctx.lineWidth = 1.2;
-    for (let i = 0; i < 10; i++) {
-      const y = h * (0.2 + i * 0.04) + Math.sin(t * 1.3 + i) * 2;
-      ctx.beginPath();
-      ctx.moveTo(w * 0.04, y);
-      ctx.lineTo(w * 0.96, y);
-      ctx.stroke();
-    }
-
-    // Falling storm rain.
-    for (let i = 0; i < 72; i++) {
-      const x = (i * 31 + t * (64 + (i % 4) * 10)) % (w + 80) - 40;
-      const y = (i * 17 + t * 210) % (h * 0.66 + 60) - 30;
-      const len = 12 + (i % 5) * 4;
-      ctx.strokeStyle = `rgba(180, 225, 255, ${0.18 + (i % 5) * 0.07})`;
-      ctx.lineWidth = 1 + (i % 2) * 0.25;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x - 4, y + len);
-      ctx.stroke();
-    }
-
-    // Occasional lightning flash.
-    const stormPulse = Math.max(0, Math.sin(t * 3.9) - 0.83);
-    if (stormPulse > 0) {
-      ctx.fillStyle = `rgba(236, 248, 255, ${stormPulse * 0.14})`;
-      ctx.fillRect(0, 0, w, h * 0.62);
-      ctx.strokeStyle = `rgba(240, 250, 255, ${stormPulse * 0.72})`;
-      ctx.lineWidth = 2.2;
-      ctx.beginPath();
-      ctx.moveTo(w * 0.24, h * 0.1);
-      ctx.lineTo(w * 0.2, h * 0.22);
-      ctx.lineTo(w * 0.29, h * 0.24);
-      ctx.lineTo(w * 0.25, h * 0.38);
-      ctx.stroke();
-    }
-
-    // Occasional horizontal glitch bars to sell a digital atmosphere.
-    const glitchPulse = Math.max(0, Math.sin(t * 6.2) - 0.72);
-    if (glitchPulse > 0) {
-      const bands = 3 + Math.floor(glitchPulse * 6);
-      for (let i = 0; i < bands; i++) {
-        const y = h * (0.18 + ((i * 0.13 + t * 0.27) % 0.38));
-        const bandW = w * (0.25 + ((i * 0.17 + t * 0.5) % 0.45));
-        const x = w * (0.08 + ((i * 0.11 + t * 0.37) % 0.75));
-        const alpha = 0.08 + glitchPulse * 0.24;
-        ctx.fillStyle = `rgba(146, 248, 255, ${alpha})`;
-        ctx.fillRect(x - bandW * 0.5, y, bandW, 3 + (i % 2));
-      }
-    }
-
-    // Animated title glow.
-    const glow = 0.28 + (Math.sin(t * 3) + 1) * 0.12;
-    ctx.fillStyle = `rgba(130, 242, 255, ${glow})`;
-    ctx.font = '700 24px ui-monospace, SFMono-Regular, Menlo, monospace';
+    // Bright fascia and signage.
+    ctx.fillStyle = 'rgba(236, 78, 54, 0.92)';
+    ctx.fillRect(storeX, storeY - storeH - 20, storeW, 22);
+    ctx.fillStyle = 'rgba(252, 206, 88, 0.95)';
+    ctx.fillRect(storeX, storeY - storeH - 8, storeW, 5);
+    ctx.fillStyle = 'rgba(40, 28, 24, 0.88)';
+    ctx.font = '700 20px Nunito';
     ctx.textAlign = 'center';
-    ctx.fillText('SERVO NET HUB', w * 0.5, h * 0.38);
+    ctx.fillText('HIGHWAY SERVO & STORE', storeX + storeW * 0.5, storeY - storeH - 5);
 
-    // Transmission mast silhouettes and hanging cable runs.
-    ctx.strokeStyle = 'rgba(97, 142, 176, .36)';
-    ctx.lineWidth = 2;
-    const mastXs = [w * 0.14, w * 0.52, w * 0.88];
-    mastXs.forEach((x, index) => {
-      const mastTop = h * (0.16 + (index % 2) * 0.04);
-      const mastBase = h * 0.54;
-      ctx.beginPath();
-      ctx.moveTo(x, mastBase);
-      ctx.lineTo(x, mastTop);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(x - 12, mastTop + 18);
-      ctx.lineTo(x + 12, mastTop + 18);
-      ctx.moveTo(x - 8, mastTop + 36);
-      ctx.lineTo(x + 8, mastTop + 36);
-      ctx.stroke();
-    });
-    ctx.beginPath();
-    ctx.moveTo(mastXs[0], h * 0.24);
-    ctx.bezierCurveTo(w * 0.28, h * 0.28, w * 0.44, h * 0.2, mastXs[1], h * 0.28);
-    ctx.bezierCurveTo(w * 0.66, h * 0.34, w * 0.76, h * 0.24, mastXs[2], h * 0.26);
-    ctx.stroke();
-
-    // Foreground pipes and service barrels.
-    ctx.fillStyle = 'rgba(31, 46, 64, .62)';
-    ctx.fillRect(w * 0.1, h * 0.73, w * 0.22, 10);
-    ctx.fillRect(w * 0.58, h * 0.76, w * 0.26, 10);
-    for (let i = 0; i < 4; i++) {
-      const x = w * (0.22 + i * 0.15);
-      const y = h * (0.7 + (i % 2) * 0.04);
-      ctx.fillRect(x, y, 12, 28);
-      ctx.beginPath();
-      ctx.ellipse(x + 6, y, 6, 3, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Rotating beacon sweeps over the station.
-    for (let i = 0; i < 2; i++) {
-      const baseX = w * (0.28 + i * 0.34);
-      const baseY = h * 0.24;
-      const sweep = Math.sin(t * 1.8 + i) * 0.7;
-      ctx.save();
-      ctx.translate(baseX, baseY);
-      ctx.rotate(sweep);
-      const beam = ctx.createLinearGradient(0, 0, 0, h * 0.4);
-      beam.addColorStop(0, 'rgba(111, 238, 255, .24)');
-      beam.addColorStop(1, 'rgba(111, 238, 255, 0)');
-      ctx.fillStyle = beam;
-      ctx.beginPath();
-      ctx.moveTo(-8, 0);
-      ctx.lineTo(8, 0);
-      ctx.lineTo(48, h * 0.34);
-      ctx.lineTo(-48, h * 0.34);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-    }
-
-    // Servo-specific forecourt: canopy, pumps, price board, and parked utility vehicle.
-    ctx.fillStyle = 'rgba(26, 42, 58, 0.74)';
-    ctx.fillRect(w * 0.64, h * 0.58, w * 0.24, 10);
-    ctx.fillRect(w * 0.66, h * 0.58, 8, h * 0.12);
-    ctx.fillRect(w * 0.84, h * 0.58, 8, h * 0.12);
-
-    ctx.fillStyle = 'rgba(45, 74, 98, 0.72)';
-    for (let i = 0; i < 2; i++) {
-      const px = w * (0.71 + i * 0.08);
-      const py = h * 0.67;
-      ctx.fillRect(px, py, 16, 28);
-      ctx.fillStyle = 'rgba(128, 234, 248, 0.44)';
-      ctx.fillRect(px + 3, py + 4, 10, 7);
-      ctx.fillStyle = 'rgba(45, 74, 98, 0.72)';
-      ctx.strokeStyle = 'rgba(126, 194, 220, 0.42)';
+    // Glass storefront with interior shelves / fridges.
+    const glassY = storeY - storeH + 22;
+    const glassH = storeH - 30;
+    ctx.fillStyle = 'rgba(168, 212, 236, 0.3)';
+    ctx.fillRect(storeX + 18, glassY, storeW - 36, glassH);
+    for (let i = 0; i < 7; i++) {
+      const gx = storeX + 30 + i * ((storeW - 70) / 6);
+      ctx.strokeStyle = 'rgba(212, 232, 246, 0.36)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(px + 15, py + 7);
-      ctx.quadraticCurveTo(px + 22, py + 9, px + 18, py + 20);
+      ctx.moveTo(gx, glassY + 3);
+      ctx.lineTo(gx, glassY + glassH - 3);
       ctx.stroke();
     }
+    for (let i = 0; i < 16; i++) {
+      const sx = storeX + 26 + (i % 8) * ((storeW - 56) / 8);
+      const sy = glassY + 8 + Math.floor(i / 8) * 14;
+      ctx.fillStyle = i % 3 === 0 ? 'rgba(255, 190, 98, 0.44)' : 'rgba(196, 232, 246, 0.34)';
+      ctx.fillRect(sx, sy, 12, 4);
+    }
 
-    ctx.fillStyle = 'rgba(36, 58, 78, 0.7)';
-    ctx.fillRect(w * 0.58, h * 0.62, 20, 52);
-    ctx.fillStyle = 'rgba(140, 240, 255, 0.42)';
-    ctx.fillRect(w * 0.582, h * 0.635, 16, 8);
+    // Forecourt canopy over pumps.
+    const canX = w * 0.16;
+    const canY = h * 0.56;
+    const canW = w * 0.68;
+    ctx.fillStyle = 'rgba(224, 70, 50, 0.9)';
+    ctx.fillRect(canX, canY, canW, 12);
+    ctx.fillStyle = 'rgba(250, 206, 92, 0.94)';
+    ctx.fillRect(canX, canY + 9, canW, 3);
+    ctx.fillStyle = 'rgba(72, 76, 84, 0.76)';
+    ctx.fillRect(canX + 14, canY + 11, 10, h * 0.14);
+    ctx.fillRect(canX + canW - 24, canY + 11, 10, h * 0.14);
 
-    // Moving people in raincoats around the forecourt.
-    for (let i = 0; i < 4; i++) {
-      const walk = t * (0.45 + i * 0.06) + i * 1.8;
-      const personX = (w * (0.64 + i * 0.07) + walk * 42) % (w + 90) - 45;
-      const personY = h * (0.72 + (i % 2) * 0.02) + Math.sin(walk * 1.6) * 2;
-      const umbrellaX = personX + Math.sin(walk * 1.2) * 4;
-      const umbrellaY = personY - 18;
-      ctx.save();
-      ctx.translate(personX, personY);
-      ctx.fillStyle = 'rgba(28, 38, 46, 0.74)';
-      ctx.beginPath();
-      ctx.ellipse(0, -10, 4.5, 5.5, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillRect(-2.5, -5, 5, 14);
-      ctx.strokeStyle = 'rgba(28, 38, 46, 0.82)';
+    // Pump islands and labels (high-contrast so petrol/diesel bays are obvious in rain).
+    const pumpXs = [w * 0.32, w * 0.48, w * 0.64];
+    const fuelLabels = ['PETROL U91', 'PETROL P95', 'DIESEL'];
+    const fuelCols = ['rgba(244, 204, 96, 0.95)', 'rgba(236, 156, 88, 0.95)', 'rgba(128, 220, 138, 0.95)'];
+    pumpXs.forEach((px, i) => {
+      const py = h * 0.645;
+
+      // Island plinth.
+      ctx.fillStyle = 'rgba(146, 150, 156, 0.56)';
+      ctx.fillRect(px - 30, py + 50, 60, 8);
+
+      // Pump body.
+      ctx.fillStyle = 'rgba(56, 64, 74, 0.94)';
+      ctx.fillRect(px - 21, py, 42, 52);
+
+      // Bright category strip and label.
+      ctx.fillStyle = fuelCols[i];
+      ctx.fillRect(px - 18, py + 4, 36, 13);
+      ctx.fillStyle = 'rgba(20, 18, 18, 0.92)';
+      ctx.font = '700 8px Nunito';
+      ctx.textAlign = 'center';
+      ctx.fillText(i < 2 ? `P${i === 0 ? '91' : '95'}` : 'DSL', px, py + 13);
+
+      // Pump screen and hose.
+      ctx.fillStyle = 'rgba(214, 236, 248, 0.9)';
+      ctx.fillRect(px - 10, py + 22, 20, 11);
+      ctx.strokeStyle = i < 2 ? 'rgba(96, 80, 42, 0.9)' : 'rgba(42, 84, 50, 0.9)';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(-2, 4);
-      ctx.lineTo(-6, 14);
-      ctx.moveTo(2, 4);
-      ctx.lineTo(6, 14);
+      ctx.moveTo(px + 19, py + 14);
+      ctx.quadraticCurveTo(px + 31, py + 18, px + 24, py + 40);
       ctx.stroke();
-      ctx.restore();
-      ctx.fillStyle = 'rgba(220, 232, 240, 0.36)';
+    });
+
+    // Overhead fuel-type signs.
+    ctx.fillStyle = 'rgba(44, 40, 34, 0.86)';
+    ctx.fillRect(w * 0.24, h * 0.61, 190, 16);
+    ctx.fillRect(w * 0.56, h * 0.61, 128, 16);
+    ctx.fillStyle = 'rgba(255, 232, 182, 0.95)';
+    ctx.font = '700 10px Nunito';
+    ctx.textAlign = 'center';
+    ctx.fillText('PETROL BAYS', w * 0.24 + 95, h * 0.622);
+    ctx.fillText('DIESEL BAY', w * 0.56 + 64, h * 0.622);
+
+    // EV fast charger bay.
+    const evX = w * 0.81;
+    const evY = h * 0.67;
+    ctx.fillStyle = 'rgba(64, 86, 104, 0.86)';
+    ctx.fillRect(evX, evY, 24, 42);
+    ctx.fillStyle = 'rgba(124, 242, 188, 0.66)';
+    ctx.fillRect(evX + 4, evY + 5, 16, 10);
+    ctx.fillStyle = 'rgba(14, 24, 20, 0.84)';
+    ctx.font = '700 9px Nunito';
+    ctx.fillText('EV', evX + 12, evY + 13);
+    ctx.strokeStyle = 'rgba(30, 44, 34, 0.74)';
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(evX + 22, evY + 16);
+    ctx.quadraticCurveTo(evX + 34, evY + 22, evX + 26, evY + 36);
+    ctx.stroke();
+
+    // Price board and offers board.
+    const boardX = w * 0.08;
+    const boardY = h * 0.54;
+    ctx.fillStyle = 'rgba(72, 82, 94, 0.9)';
+    ctx.fillRect(boardX, boardY, 44, 88);
+    ctx.fillStyle = 'rgba(236, 250, 255, 0.9)';
+    ctx.font = '700 8px Nunito';
+    ctx.textAlign = 'left';
+    ctx.fillText('U91  186.9', boardX + 6, boardY + 16);
+    ctx.fillText('P95  201.9', boardX + 6, boardY + 30);
+    ctx.fillText('DSL  194.9', boardX + 6, boardY + 44);
+    ctx.fillText('EV   FAST', boardX + 6, boardY + 58);
+
+    // Convenience cues: hot food, coffee, groceries, auto essentials, flowers.
+    ctx.fillStyle = 'rgba(44, 36, 30, 0.76)';
+    ctx.fillRect(storeX + 10, storeY - storeH + 4, 120, 14);
+    ctx.fillStyle = 'rgba(255, 224, 164, 0.92)';
+    ctx.font = '700 9px Nunito';
+    ctx.textAlign = 'left';
+    ctx.fillText('HOT PIES | ROLLS | CHIPS', storeX + 14, storeY - storeH + 13);
+    ctx.fillText('BARISTA COFFEE', storeX + 146, storeY - storeH + 13);
+    ctx.fillText('MILK BREAD EGGS', storeX + 270, storeY - storeH + 13);
+
+    ctx.fillStyle = 'rgba(106, 126, 92, 0.66)';
+    ctx.fillRect(storeX + storeW - 62, storeY - 24, 18, 14);
+    ctx.fillRect(storeX + storeW - 40, storeY - 24, 18, 14);
+    ctx.fillStyle = 'rgba(240, 96, 110, 0.74)';
+    ctx.beginPath();
+    ctx.arc(storeX + storeW - 53, storeY - 24, 3, 0, Math.PI * 2);
+    ctx.arc(storeX + storeW - 31, storeY - 24, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Parking bay markers kept sparse to avoid horizontal banding.
+    ctx.strokeStyle = 'rgba(236, 224, 172, 0.4)';
+    ctx.lineWidth = 1.4;
+    for (let i = 0; i < 7; i++) {
+      const x = w * (0.22 + i * 0.09);
       ctx.beginPath();
-      ctx.arc(umbrellaX, umbrellaY, 9, Math.PI, Math.PI * 2);
-      ctx.fill();
-      ctx.fillRect(umbrellaX - 1, umbrellaY, 2, 12);
+      ctx.moveTo(x, h * 0.76);
+      ctx.lineTo(x - 8, h * 0.84);
+      ctx.stroke();
     }
 
-    const uteX = w * (0.38 + Math.sin(t * 0.4) * 0.03);
-    const uteY = h * 0.73;
-    ctx.fillStyle = 'rgba(30, 49, 66, 0.74)';
+    // Parked cars and one moving car in front.
+    const parked = [w * 0.3, w * 0.45, w * 0.6];
+    parked.forEach((cx, i) => {
+      const cy = h * (0.8 + (i % 2) * 0.015);
+      ctx.fillStyle = i === 1 ? 'rgba(84, 142, 188, 0.84)' : 'rgba(182, 96, 76, 0.84)';
+      ctx.beginPath();
+      ctx.moveTo(cx - 22, cy);
+      ctx.lineTo(cx + 24, cy);
+      ctx.lineTo(cx + 17, cy + 10);
+      ctx.lineTo(cx - 18, cy + 10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(220, 236, 246, 0.62)';
+      ctx.fillRect(cx - 6, cy - 6, 14, 5);
+      ctx.fillStyle = 'rgba(18, 20, 24, 0.78)';
+      ctx.beginPath();
+      ctx.arc(cx - 12, cy + 10, 2.8, 0, Math.PI * 2);
+      ctx.arc(cx + 13, cy + 10, 2.8, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    const movingX = ((t * 44) % (w + 120)) - 60;
+    const movingY = h * 0.86;
+    ctx.fillStyle = 'rgba(246, 198, 88, 0.84)';
+    ctx.fillRect(movingX - 18, movingY - 6, 36, 11);
+    ctx.fillStyle = 'rgba(18, 20, 24, 0.8)';
     ctx.beginPath();
-    ctx.moveTo(uteX - 26, uteY);
-    ctx.lineTo(uteX + 28, uteY);
-    ctx.lineTo(uteX + 20, uteY + 11);
-    ctx.lineTo(uteX - 22, uteY + 11);
-    ctx.closePath();
+    ctx.arc(movingX - 10, movingY + 5, 2.6, 0, Math.PI * 2);
+    ctx.arc(movingX + 10, movingY + 5, 2.6, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillRect(uteX - 6, uteY - 8, 18, 8);
-    ctx.fillStyle = 'rgba(14, 20, 26, 0.7)';
-    ctx.beginPath();
-    ctx.arc(uteX - 14, uteY + 11, 4.5, 0, Math.PI * 2);
-    ctx.arc(uteX + 16, uteY + 11, 4.5, 0, Math.PI * 2);
-    ctx.fill();
+
+    // Light rain to keep atmosphere dynamic.
+    for (let i = 0; i < 78; i++) {
+      const rx = (i * 29 + t * (68 + (i % 4) * 9)) % (w + 90) - 45;
+      const ry = (i * 19 + t * 230) % (h * 0.64 + 60) - 30;
+      const len = 10 + (i % 5) * 3;
+      ctx.strokeStyle = `rgba(188, 224, 248, ${0.16 + (i % 4) * 0.07})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(rx, ry);
+      ctx.lineTo(rx - 4, ry + len);
+      ctx.stroke();
+    }
   }
 
   function drawCoastlineScene(w, h) {
@@ -8230,16 +8250,17 @@
       ctx.fill();
     });
 
-    ctx.strokeStyle = 'rgba(178, 206, 220, 0.4)';
-    ctx.lineWidth = 2.4;
-    ctx.beginPath();
-    for (let x = 0; x <= w; x += 22) {
-      const nx = x / w;
-      const crest = h * (0.467 + Math.sin(nx * Math.PI * 4.5 + 0.5) * 0.016 + Math.sin(nx * Math.PI * 9 + 1.3) * 0.008);
-      if (x === 0) ctx.moveTo(x, crest);
-      else ctx.lineTo(x, crest);
+    // Bright sea crest as scattered glints instead of a continuous line.
+    for (let i = 0; i < 80; i++) {
+      const nx = i / 79;
+      const x = nx * w;
+      const y = h * (0.467 + Math.sin(nx * Math.PI * 4.5 + 0.5) * 0.016 + Math.sin(nx * Math.PI * 9 + 1.3) * 0.008);
+      const r = 1.1 + (i % 3) * 0.55;
+      ctx.fillStyle = `rgba(198, 222, 234, ${0.2 + (i % 4) * 0.08})`;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
     }
-    ctx.stroke();
 
     // Sea band
     const sea = ctx.createLinearGradient(0, h * .42, 0, h * .7);
@@ -8299,16 +8320,19 @@
       ctx.fill();
     }
 
-    // Surf lines
-    ctx.strokeStyle = 'rgba(232, 249, 255, .52)';
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 5; i++) {
-      const y = h * (.48 + i * .05) + Math.sin(t * 1.6 + i) * 4;
+    // Surf foam as broken flecks so it reads less like horizontal strokes.
+    for (let i = 0; i < 120; i++) {
+      const band = i % 5;
+      const phase = (i * 19.3) % w;
+      const drift = (t * (10 + band * 2)) % (w + 60);
+      const x = (phase + drift) % (w + 40) - 20;
+      const y = h * (0.48 + band * 0.05) + Math.sin(t * 1.6 + i * 0.35) * 4;
+      const rx = 2.2 + (i % 3) * 0.9;
+      const ry = 0.8 + (i % 2) * 0.35;
+      ctx.fillStyle = `rgba(232, 249, 255, ${0.18 + (i % 4) * 0.08})`;
       ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.quadraticCurveTo(w * .25, y - 10, w * .5, y);
-      ctx.quadraticCurveTo(w * .75, y + 10, w, y);
-      ctx.stroke();
+      ctx.ellipse(x, y, rx, ry, Math.sin(i * 0.8) * 0.3, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     // Rainfall across full scene.
@@ -8630,14 +8654,21 @@
     const t = performance.now() * 0.001;
 
     const sky = ctx.createLinearGradient(0, 0, 0, h * 0.7);
-    sky.addColorStop(0, 'rgba(52, 78, 118, 0.94)');
-    sky.addColorStop(0.45, 'rgba(86, 114, 156, 0.88)');
-    sky.addColorStop(1, 'rgba(56, 78, 112, 0.4)');
+    sky.addColorStop(0, 'rgba(74, 106, 146, 0.95)');
+    sky.addColorStop(0.45, 'rgba(108, 140, 178, 0.9)');
+    sky.addColorStop(1, 'rgba(74, 104, 136, 0.48)');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h * 0.72);
 
+    const sunwash = ctx.createRadialGradient(w * 0.64, h * 0.16, 12, w * 0.64, h * 0.16, h * 0.34);
+    sunwash.addColorStop(0, 'rgba(255, 246, 214, 0.22)');
+    sunwash.addColorStop(0.5, 'rgba(233, 241, 255, 0.14)');
+    sunwash.addColorStop(1, 'rgba(233, 241, 255, 0)');
+    ctx.fillStyle = sunwash;
+    ctx.fillRect(0, 0, w, h * 0.62);
+
     // Brown foothills in front, so the range doesn't read as only blue slabs.
-    ctx.fillStyle = 'rgba(126, 98, 74, 0.54)';
+    ctx.fillStyle = 'rgba(136, 108, 84, 0.6)';
     ctx.beginPath();
     ctx.moveTo(0, h);
     for (let x = 0; x <= w; x += 16) {
@@ -8651,9 +8682,9 @@
 
     // Tasmania-style mountain massing: layered silhouettes, not horizontal string lines.
     const mountainLayers = [
-      { baseY: 0.74, amp: 0.11, detail: 0.028, alpha: 0.58, color: [88, 112, 146], seedX: 10.4, seedY: 6.8 },
-      { baseY: 0.69, amp: 0.14, detail: 0.036, alpha: 0.72, color: [104, 128, 162], seedX: 22.9, seedY: 12.6 },
-      { baseY: 0.64, amp: 0.17, detail: 0.045, alpha: 0.86, color: [126, 150, 182], seedX: 35.1, seedY: 18.4 }
+      { baseY: 0.74, amp: 0.11, detail: 0.028, alpha: 0.62, color: [104, 132, 164], seedX: 10.4, seedY: 6.8 },
+      { baseY: 0.69, amp: 0.14, detail: 0.036, alpha: 0.76, color: [122, 148, 180], seedX: 22.9, seedY: 12.6 },
+      { baseY: 0.64, amp: 0.17, detail: 0.045, alpha: 0.88, color: [144, 170, 198], seedX: 35.1, seedY: 18.4 }
     ];
 
     mountainLayers.forEach((layer, index) => {
@@ -8673,20 +8704,184 @@
       ctx.closePath();
       ctx.fill();
 
-      // White cap highlights on upper ridges.
-      ctx.strokeStyle = index < 2 ? 'rgba(234, 244, 252, 0.5)' : 'rgba(244, 250, 255, 0.68)';
-      ctx.lineWidth = index < 2 ? 1.8 : 2.3;
-      ctx.beginPath();
-      for (let x = 0; x <= w; x += 14) {
-        const nx = x / w;
+      // Slight snow cap speckles on higher ridges (patchy, not horizontal bands).
+      const snowCount = index < 2 ? 42 : 58;
+      for (let i = 0; i < snowCount; i++) {
+        const nx = i / (snowCount - 1);
         const ridge = Math.abs(octaveNoise(nx * 2.7 + layer.seedX, layer.seedY));
         const micro = octaveNoise(nx * 9.2 + layer.seedX * 1.8, layer.seedY * 0.7);
-        const y = h * (layer.baseY - ridge * layer.amp + micro * layer.detail) - (index < 2 ? 8 : 11);
-        if (x === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+        const y = h * (layer.baseY - ridge * layer.amp + micro * layer.detail) - (index < 2 ? 8 : 10);
+        const x = nx * w + Math.sin(t * 0.24 + i) * 1.4;
+        const rx = 1.2 + (i % 3) * 0.55;
+        const ry = 0.9 + (i % 2) * 0.4;
+        ctx.fillStyle = index < 2 ? 'rgba(238, 246, 252, 0.42)' : 'rgba(244, 250, 255, 0.58)';
+        ctx.beginPath();
+        ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
       }
+    });
+
+    // Light mountain snowfall for subtle movement.
+    for (let i = 0; i < 95; i++) {
+      const seed = i * 23.1;
+      const x = (seed * 29 + t * (8 + (i % 4) * 2.2)) % (w + 40) - 20;
+      const y = (seed * 17 + t * (20 + (i % 3) * 4.6)) % (h * 0.78 + 40) - 20;
+      const r = 0.7 + (i % 3) * 0.45;
+      ctx.fillStyle = `rgba(236, 246, 255, ${0.12 + (i % 4) * 0.06})`;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Mid-ground stony pathways to make the central running area read as traversable mountain track.
+    const pathCenterY = h * 0.76;
+    const pathGrad = ctx.createLinearGradient(0, pathCenterY - 22, 0, h * 0.9);
+    pathGrad.addColorStop(0, 'rgba(184, 170, 146, 0.2)');
+    pathGrad.addColorStop(1, 'rgba(124, 108, 90, 0.34)');
+    ctx.fillStyle = pathGrad;
+    ctx.beginPath();
+    ctx.moveTo(w * 0.18, pathCenterY + 12);
+    ctx.bezierCurveTo(w * 0.3, pathCenterY - 18, w * 0.42, pathCenterY - 8, w * 0.5, pathCenterY + 4);
+    ctx.bezierCurveTo(w * 0.58, pathCenterY + 16, w * 0.68, pathCenterY + 10, w * 0.82, pathCenterY - 4);
+    ctx.lineTo(w * 0.82, pathCenterY + 26);
+    ctx.bezierCurveTo(w * 0.68, pathCenterY + 38, w * 0.57, pathCenterY + 42, w * 0.5, pathCenterY + 32);
+    ctx.bezierCurveTo(w * 0.43, pathCenterY + 24, w * 0.3, pathCenterY + 34, w * 0.18, pathCenterY + 42);
+    ctx.closePath();
+    ctx.fill();
+
+    for (let i = 0; i < 95; i++) {
+      const px = w * (0.2 + ((i * 17) % 60) / 100) + Math.sin(i * 0.6 + t * 0.4) * 3;
+      const py = pathCenterY + ((i * 29) % 34) - 4;
+      const rw = 2.2 + (i % 4) * 1.1;
+      const rh = 1.2 + (i % 3) * 0.6;
+      ctx.fillStyle = `rgba(${118 + (i % 3) * 10}, ${106 + (i % 3) * 9}, ${92 + (i % 2) * 8}, ${0.18 + (i % 4) * 0.06})`;
+      ctx.beginPath();
+      ctx.ellipse(px, py, rw, rh, (i % 5) * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Viewpoint lookout tower with tiny people silhouettes.
+    const towerX = w * 0.22;
+    const towerBaseY = h * 0.69;
+    const towerTopY = h * 0.56;
+    ctx.strokeStyle = 'rgba(72, 60, 52, 0.62)';
+    ctx.lineWidth = 2.3;
+    ctx.beginPath();
+    ctx.moveTo(towerX - 9, towerBaseY);
+    ctx.lineTo(towerX - 3, towerTopY);
+    ctx.moveTo(towerX + 9, towerBaseY);
+    ctx.lineTo(towerX + 3, towerTopY);
+    ctx.moveTo(towerX - 4, towerBaseY);
+    ctx.lineTo(towerX + 4, towerBaseY);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(92, 78, 64, 0.72)';
+    ctx.fillRect(towerX - 18, towerTopY - 8, 36, 10);
+    ctx.strokeStyle = 'rgba(210, 222, 238, 0.45)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(towerX - 18, towerTopY - 8);
+    ctx.lineTo(towerX + 18, towerTopY - 8);
+    ctx.stroke();
+
+    const watchers = [-10, -2, 7];
+    watchers.forEach((dx, i) => {
+      const px = towerX + dx;
+      const py = towerTopY - 9;
+      ctx.fillStyle = 'rgba(28, 30, 36, 0.72)';
+      ctx.beginPath();
+      ctx.arc(px, py - 5, 1.7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(px - 1.2, py - 3.6, 2.4, 4.8);
+      ctx.strokeStyle = i === 1 ? 'rgba(250, 226, 168, 0.62)' : 'rgba(172, 188, 214, 0.42)';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(px, py - 2);
+      ctx.lineTo(px + (i === 1 ? 6 : 4), py - 3.6);
       ctx.stroke();
     });
+
+    // Tourist strip: large hotels/restaurants near the lookout to sell the destination vibe.
+    const stripY = h * 0.63;
+    const hotels = [
+      { x: w * 0.6, y: stripY, bw: 118, bh: 62, tone: 'rgba(112, 104, 98, 0.72)', roof: 'rgba(86, 78, 74, 0.74)', sign: 'HOTEL' },
+      { x: w * 0.74, y: stripY + 6, bw: 132, bh: 56, tone: 'rgba(124, 114, 106, 0.74)', roof: 'rgba(92, 82, 76, 0.76)', sign: 'RESTAURANT' }
+    ];
+
+    hotels.forEach((b, idx) => {
+      // Building shell.
+      ctx.fillStyle = b.tone;
+      ctx.fillRect(b.x, b.y - b.bh, b.bw, b.bh);
+
+      // Roof and terrace lip.
+      ctx.fillStyle = b.roof;
+      ctx.fillRect(b.x - 5, b.y - b.bh - 8, b.bw + 10, 10);
+      ctx.fillStyle = 'rgba(78, 68, 62, 0.58)';
+      ctx.fillRect(b.x, b.y - b.bh + 2, b.bw, 4);
+
+      // Window rows.
+      const cols = idx === 0 ? 5 : 6;
+      const rows = 2;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const wx = b.x + 12 + c * ((b.bw - 24) / (cols - 1));
+          const wy = b.y - b.bh + 12 + r * 18;
+          ctx.fillStyle = 'rgba(216, 230, 244, 0.44)';
+          ctx.fillRect(wx - 5, wy - 4, 10, 8);
+        }
+      }
+
+      // Entrance block.
+      const doorX = b.x + b.bw * 0.46;
+      ctx.fillStyle = 'rgba(54, 52, 56, 0.62)';
+      ctx.fillRect(doorX, b.y - 18, 14, 18);
+
+      // Signboard.
+      ctx.fillStyle = 'rgba(52, 44, 40, 0.78)';
+      ctx.fillRect(b.x + b.bw * 0.24, b.y - b.bh - 18, b.bw * 0.52, 10);
+      ctx.fillStyle = 'rgba(252, 224, 154, 0.85)';
+      ctx.font = '700 8px Nunito';
+      ctx.textAlign = 'center';
+      ctx.fillText(b.sign, b.x + b.bw * 0.5, b.y - b.bh - 10);
+    });
+
+    // Forecourt and parked/rolling cars to emphasize tourism traffic.
+    ctx.fillStyle = 'rgba(104, 98, 92, 0.34)';
+    ctx.fillRect(w * 0.56, stripY + 5, w * 0.36, 16);
+
+    for (let i = 0; i < 4; i++) {
+      const carX = w * 0.58 + i * 54 + Math.sin(t * 0.7 + i) * 2;
+      const carY = stripY + 11 + (i % 2) * 2;
+      ctx.fillStyle = i % 2 === 0 ? 'rgba(170, 82, 66, 0.78)' : 'rgba(76, 126, 168, 0.78)';
+      ctx.beginPath();
+      ctx.moveTo(carX - 14, carY);
+      ctx.lineTo(carX + 14, carY);
+      ctx.lineTo(carX + 10, carY + 8);
+      ctx.lineTo(carX - 12, carY + 8);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(218, 230, 242, 0.58)';
+      ctx.fillRect(carX - 6, carY - 4, 12, 4);
+
+      ctx.fillStyle = 'rgba(22, 24, 30, 0.76)';
+      ctx.beginPath();
+      ctx.arc(carX - 8, carY + 8, 2.2, 0, Math.PI * 2);
+      ctx.arc(carX + 8, carY + 8, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const movingCarX = ((t * 26) % (w * 0.44)) + w * 0.5;
+    const movingCarY = stripY + 22;
+    ctx.fillStyle = 'rgba(228, 188, 84, 0.8)';
+    ctx.fillRect(movingCarX - 11, movingCarY - 6, 22, 9);
+    ctx.fillStyle = 'rgba(228, 236, 244, 0.64)';
+    ctx.fillRect(movingCarX - 4, movingCarY - 9, 8, 3);
+    ctx.fillStyle = 'rgba(20, 20, 24, 0.78)';
+    ctx.beginPath();
+    ctx.arc(movingCarX - 7, movingCarY + 3, 2.1, 0, Math.PI * 2);
+    ctx.arc(movingCarX + 7, movingCarY + 3, 2.1, 0, Math.PI * 2);
+    ctx.fill();
 
     // Freeform fog ribbons (non-ellipse) drifting through the valley.
     for (let i = 0; i < 8; i += 1) {
