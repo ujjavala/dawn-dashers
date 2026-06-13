@@ -7,45 +7,78 @@ Browser-first runner + puzzle adventure inspired by the June Solstice.
 ## Current Stack
 
 - Runtime: JavaScript in [web/game.js](web/game.js)
-- Rendering: Three.js + Canvas/HUD layers
-- Puzzle content: [web/puzzles](web/puzzles)
-- Puzzle orchestration and seen persistence: [web/puzzle-data.js](web/puzzle-data.js)
+- Rendering: Three.js world + Canvas/HUD overlays
+- Terrain and biome styling: [web/terrain-styles.js](web/terrain-styles.js)
+- Character config: [web/character-config.js](web/character-config.js)
 - Puzzle tracking/filter helpers: [web/puzzle-tracker.js](web/puzzle-tracker.js), [web/puzzle-filter.js](web/puzzle-filter.js)
-- Local dev hosting: Docker + Nginx via [docker-compose.yml](docker-compose.yml)
+- Local hosting: Docker + Nginx via [docker-compose.yml](docker-compose.yml)
 
-## Removed Legacy Components
+## Puzzle System (Current)
 
-- Unity project folders (`Assets`, `Packages`, `ProjectSettings`)
-- Backend API service (runtime no longer calls API endpoints)
+Puzzle content is now grouped by difficulty in three files:
 
-## Puzzle Model
+- [web/puzzles/questions-easy.js](web/puzzles/questions-easy.js)
+- [web/puzzles/questions-medium.js](web/puzzles/questions-medium.js)
+- [web/puzzles/questions-hard.js](web/puzzles/questions-hard.js)
 
-Each level file provides three role-specific pools:
+Each question includes:
 
-- `heartPuzzles`: 8 (IDs like `L1_HP01`)
-- `levelPuzzles`: 8 (IDs like `L1_LP01`)
-- `treasurePuzzles`: 7 (IDs like `L1_TP01`)
+- `id`: globally unique numeric ID (1..115)
+- `difficulty`: `easy`, `medium`, or `hard`
+- `type`: `heartPuzzles`, `levelPuzzles`, or `treasurePuzzles`
+- `seen`: runtime flag persisted via localStorage
 
-Every puzzle includes `seen`. Seen IDs persist in browser localStorage. When all puzzles in a pool are seen, that pool auto-resets to unseen and continues cycling.
+Puzzle orchestration is handled in [web/puzzle-data.js](web/puzzle-data.js):
+
+- Builds role-specific flat arrays (`heartPuzzles`, `levelPuzzles`, `treasurePuzzles`)
+- Builds per-level pools from a level-to-difficulty map
+- Picks unseen puzzles first
+- Auto-resets pool seen flags only after full pool exhaustion
+
+Current difficulty progression by level index:
+
+- Levels 0-1: easy
+- Levels 2-3: medium
+- Levels 4-8: hard
+
+## Level-Complete Flow
+
+After a level unlock puzzle is solved:
+
+- Congratulatory overlay appears
+- On timeout or Continue, the game advances directly into the next level run
+- Character selection is not forced in this transition path
+
+## World Biomes
+
+Current region set in runtime:
+
+- Outback Ruins
+- Bushland
+- Servo
+- Coastline Lighthouse
+- Mangroves
+- Blue Mountains
+- Nullarbor
+- Observatory
+- Tasmania
 
 ## Local Development
 
 1. Run: `docker compose up --build`
 2. Open: `http://localhost:8080`
 
-Current compose service:
-
-- `web` only (Nginx static host)
+Compose currently runs a static `web` service only.
 
 ## Controls
 
 - Move lanes: `A/D` or `Left/Right`
 - Jump: `W`, `Up`, or `Space`
-- Slide: `S` or `Down`
+- Slide: `S`, `Down`
 - Pause/Resume: `P` or `Escape`
 
 ## Notes
 
 - Visual effects degrade gracefully if advanced rendering features are unavailable.
 - Audio starts after first user interaction to satisfy autoplay policies.
-- [deploy/android/README.md](deploy/android/README.md) and [deploy/ios/README.md](deploy/ios/README.md) are legacy placeholders only.
+- [deploy/android/README.md](deploy/android/README.md) and [deploy/ios/README.md](deploy/ios/README.md) are legacy placeholders.

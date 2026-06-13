@@ -857,6 +857,9 @@
       line-height: 1.45;
     }
     .character-panel {
+      --terrain-top: #d4a373;
+      --terrain-bottom: #8b5e3c;
+      --terrain-accent: #ffd166;
       position: absolute;
       inset: 0;
       z-index: 9;
@@ -881,8 +884,8 @@
       flex-direction: column;
       border-radius: 12px;
       padding: 18px 18px 0;
-      background: rgba(32, 19, 12, 0.9);
-      border: 1px solid rgba(212, 163, 115, 0.4);
+      background: linear-gradient(180deg, rgba(23, 15, 10, 0.94), rgba(13, 9, 6, 0.96));
+      border: 1px solid rgba(139, 104, 69, 0.58);
       box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
       overflow: hidden;
       overflow-x: hidden;
@@ -899,10 +902,12 @@
       --terrain-accent: #ffd166;
       margin: 0 auto 10px;
       text-align: center;
-      font-family: 'Cinzel Decorative', serif;
-      font-size: 17px;
+      font-family: 'Nunito', system-ui, sans-serif;
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1.2;
       color: #fff5cf;
-      letter-spacing: .04em;
+      letter-spacing: .06em;
       padding: 9px 12px;
       border-radius: 10px;
       border: 1px solid color-mix(in srgb, var(--terrain-accent) 45%, #000 55%);
@@ -914,26 +919,33 @@
       min-width: 0;
       max-width: 100%;
       box-sizing: border-box;
+      position: sticky;
+      top: 0;
+      z-index: 4;
     }
     .character-row {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 8px;
       margin-top: 10px;
       align-content: flex-start;
     }
     .character-btn {
+      --tile-top: #9f7754;
+      --tile-bottom: #6f4d34;
+      --tile-accent: #ffd166;
       position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      width: 168px;
+      width: 100%;
       min-height: 96px;
-      border: 1px solid rgba(212, 163, 115, 0.25);
+      border: 1px solid color-mix(in srgb, var(--tile-accent) 32%, rgba(26, 15, 9, 0.68) 68%);
       border-radius: 10px;
-      background: rgba(44, 26, 14, 0.9);
+      background: linear-gradient(180deg,
+        color-mix(in srgb, var(--tile-top) 50%, rgba(31, 18, 10, 0.9) 50%),
+        color-mix(in srgb, var(--tile-bottom) 56%, rgba(18, 11, 7, 0.95) 44%));
       color: #d2b48c;
       padding: 8px 8px 10px;
       text-align: center;
@@ -983,10 +995,29 @@
       border-color: rgba(255, 221, 120, 0.82);
       color: #352108;
     }
+    .unlock-pill {
+      margin-top: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 209, 102, 0.42);
+      background: rgba(70, 48, 28, 0.86);
+      color: #fff3d7;
+    }
+    .character-btn.locked .unlock-pill {
+      border-color: rgba(255, 168, 168, 0.42);
+      background: rgba(120, 46, 46, 0.38);
+      color: #ffd2d2;
+    }
     .character-btn.active {
-      border-color: #d4a373;
-      box-shadow: 0 0 18px rgba(212, 163, 115, 0.35);
-      color: #ffd166;
+      border-color: color-mix(in srgb, var(--tile-accent) 72%, #ffffff 28%);
+      box-shadow: 0 0 18px color-mix(in srgb, var(--tile-accent) 42%, rgba(0, 0, 0, 0.58) 58%);
+      color: color-mix(in srgb, var(--tile-accent) 78%, #fff8de 22%);
     }
     .character-btn.active .emoji {
       filter: drop-shadow(0 0 14px rgba(255, 209, 102, 0.75));
@@ -995,10 +1026,15 @@
     .character-btn.locked {
       opacity: .45;
       filter: grayscale(.25);
-      cursor: not-allowed;
+      cursor: pointer;
     }
     .character-btn.terrain-hidden {
       display: none;
+    }
+    @media (max-width: 760px) {
+      .character-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
     .character-power {
       display: flow-root;
@@ -1110,6 +1146,19 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
+    }
+    .character-actions button {
+      border-color: color-mix(in srgb, var(--terrain-accent) 48%, rgba(28, 18, 11, 0.7) 52%);
+      background: linear-gradient(180deg,
+        color-mix(in srgb, var(--terrain-top) 38%, rgba(74, 48, 30, 0.96) 62%),
+        color-mix(in srgb, var(--terrain-bottom) 44%, rgba(46, 30, 20, 0.98) 56%));
+      color: #fff4d9;
+    }
+    .character-actions #characterStartBtn {
+      background: linear-gradient(180deg,
+        color-mix(in srgb, var(--terrain-accent) 78%, #fff3c4 22%),
+        color-mix(in srgb, var(--terrain-top) 58%, #8f633e 42%));
+      color: #221307;
     }
     .character-footer {
       flex: 0 0 auto;
@@ -1259,7 +1308,7 @@
       </div>
       <div class="panel mission">
         <p class="title">Dawn Dashers</p>
-        <div id="objective" class="small">Race across southern Australia, from the Outback to Tasmania, and restore the sunrise.</div>
+        <div id="objective" class="small">Race across southern Australia through Outback, Bushland, Servo, Coastline, Mangroves, Blue Mountains, Nullarbor, Observatory, and Tasmania to restore the sunrise.</div>
         <div id="message" class="message">Use arrow keys or swipe to move, jump, and slide.</div>
       </div>
 
@@ -1268,8 +1317,8 @@
           <div class="character-scroll">
             <h3 class="character-title">Choose Your Dasher</h3>
             <div class="character-row">
-            <button class="character-btn active" data-character="emu" data-emoji="🦅" data-unlock="0">
-              <span class="emoji">🦅</span>
+            <button class="character-btn active" data-character="emu" data-emoji="🦤" data-unlock="0">
+              <span class="emoji">🦤</span>
               Enigma Emu
             </button>
             <button class="character-btn" data-character="wombat" data-emoji="🦫" data-unlock="0">
@@ -1323,6 +1372,54 @@
             <button class="character-btn" data-character="numbat" data-emoji="🦝" data-unlock="4">
               <span class="emoji">🦝</span>
               Null Numbat
+            </button>
+            <button class="character-btn" data-character="ibis" data-emoji="🕊️" data-unlock="5">
+              <span class="emoji">🕊️</span>
+              Index Ibis
+            </button>
+            <button class="character-btn" data-character="mudcrab" data-emoji="🦀" data-unlock="5">
+              <span class="emoji">🦀</span>
+              Merge Mud Crab
+            </button>
+            <button class="character-btn" data-character="jabiru" data-emoji="🐤" data-unlock="5">
+              <span class="emoji">🐤</span>
+              JIT Jabiru
+            </button>
+            <button class="character-btn" data-character="lyrebird" data-emoji="🐦" data-unlock="6">
+              <span class="emoji">🐦</span>
+              Loop Lyrebird
+            </button>
+            <button class="character-btn" data-character="wallaroo" data-emoji="🦘" data-unlock="6">
+              <span class="emoji">🦘</span>
+              Stack Wallaroo
+            </button>
+            <button class="character-btn" data-character="glider" data-emoji="🐿️" data-unlock="6">
+              <span class="emoji">🐿️</span>
+              Graph Glider
+            </button>
+            <button class="character-btn" data-character="eagle" data-emoji="🦅" data-unlock="7">
+              <span class="emoji">🦅</span>
+              Edge Eagle
+            </button>
+            <button class="character-btn" data-character="thorny" data-emoji="🦎" data-unlock="7">
+              <span class="emoji">🦎</span>
+              Thread Thorny
+            </button>
+            <button class="character-btn" data-character="quoll" data-emoji="🐺" data-unlock="7">
+              <span class="emoji">🐺</span>
+              Queue Quoll
+            </button>
+            <button class="character-btn" data-character="owl" data-emoji="🦉" data-unlock="8">
+              <span class="emoji">🦉</span>
+              Opcode Owl
+            </button>
+            <button class="character-btn" data-character="bandicoot" data-emoji="🐭" data-unlock="8">
+              <span class="emoji">🐭</span>
+              Branch Bandicoot
+            </button>
+            <button class="character-btn" data-character="cassowary" data-emoji="🦃" data-unlock="8">
+              <span class="emoji">🦃</span>
+              Cache Cassowary
             </button>
             </div>
             <div id="characterPower" class="character-power">Enigma Emu power: Dust Sprint | Fast lane weave, moderate hop drain. | Energy cost scale at this level: x1.25 (drops each level)</div>
@@ -1463,15 +1560,15 @@
             <button id="closeHelpBtn" class="modal-close">Close</button>
           </div>
           <div class="panel-list help-scroll-list">
-            <div class="panel-item"><span>Adventure Objective</span><strong>You are a dawn runner in the Southern Hemisphere. Cross Outback, Bushland, Servo, Coastline, and Tasmania, collect 7 shards in each level, and make the sun rise again.</strong></div>
-            <div class="panel-item"><span>Puzzle Type 1: Treasure Chest</span><strong>Find a chest in the run, solve its treasure puzzle, and earn food supplies only. After 3 chest pickups in a run, no more treasure chests spawn. If those 3 are collected in a level, clearing into the next level unlocks that next level's special dasher.</strong></div>
+            <div class="panel-item"><span>Adventure Objective</span><strong>You are a dawn runner in the Southern Hemisphere. Cross Outback, Bushland, Servo, Coastline, Mangroves, Blue Mountains, Nullarbor, Observatory, and Tasmania, collect 7 shards in each level, and make the sun rise again.</strong></div>
+            <div class="panel-item"><span>Puzzle Type 1: Treasure Chest</span><strong>Find one chest per level in each run, solve its treasure puzzle, and earn food supplies only. After that chest is collected, no more chest spawns in that level for that run. Clearing into the next level after collecting it unlocks that next level's special dasher.</strong></div>
             <div class="panel-item"><span>Puzzle Type 2: Heart Revival</span><strong>If hearts hit 0, one heart revival challenge opens once per run. Solve 1 puzzle to restore all 3 hearts.</strong></div>
             <div class="panel-item"><span>Puzzle Type 3: Next-Level Unlock</span><strong>After clearing a level, solve the unlock puzzle to proceed to the next terrain.</strong></div>
             <div class="panel-item"><span>Heart Rules</span><strong>You always have 3 hearts. Each new level resets to 3. Hearts do not carry to next level. Revival can happen only once per run; if hearts hit 0 again after revive, game over.</strong></div>
             <div class="panel-item"><span>Falling Objects</span><strong>Collect shards and positive score tokens. Avoid bombs and negative score tokens.</strong></div>
             <div class="panel-item"><span>Scoring</span><strong>Score comes from score tokens and level clear bonus.</strong></div>
             <div class="panel-item"><span>Energy and Food</span><strong>Move, jump, and slide consume energy. Buy food with score and it auto-uses when energy is low.</strong></div>
-            <div class="panel-item"><span>Character Pairs</span><strong>Each level gives 2 dashers: one fast and one slow. The four special dashers stay locked unless you collect all 3 chests in the previous level and then qualify into that next level.</strong></div>
+            <div class="panel-item"><span>Character Pairs</span><strong>Each level gives 2 core dashers: one fast and one slow. Every biome after the first also has 1 special dasher that stays locked until you collect the level chest and clear into the next biome.</strong></div>
             <div class="panel-item"><span>Controls</span><strong>Arrows/WASD move, Up/Space jump, Down slide, F opens Food Cart.</strong></div>
           </div>
         </div>
@@ -1547,15 +1644,14 @@
   <script src="/game-data.js"></script>
   <script src="/puzzle-tracker.js"></script>
   <script src="/puzzle-filter.js"></script>
-  <script src="/puzzles/level-1.js"></script>
-  <script src="/puzzles/level-2.js"></script>
-  <script src="/puzzles/level-3.js"></script>
-  <script src="/puzzles/level-4.js"></script>
-  <script src="/puzzles/level-5.js"></script>
+  <script src="/puzzles/questions-easy.js"></script>
+  <script src="/puzzles/questions-medium.js"></script>
+  <script src="/puzzles/questions-hard.js"></script>
   <script src="/puzzle-data.js"></script>
   <script src="/game-settings.js"></script>
   <script src="/asset-manifest.js?v=20260611g"></script>
   <script src="/terrain-styles.js?v=20260611y"></script>
-  <script src="/game.js?v=20260611y"></script>
+  <script src="/character-config.js?v=20260613a"></script>
+  <script src="/game.js?v=20260613q"></script>
 </body>
 </html>

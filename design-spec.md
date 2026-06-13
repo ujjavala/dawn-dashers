@@ -1,199 +1,252 @@
 # Dawn Dashers Design Spec (Current)
 
-This document reflects the active codebase.
+This document reflects the active runtime and data flow in the current web codebase.
 
 ## Runtime Platform
 
 - Primary runtime: Browser JavaScript
-- Rendering: Three.js + Canvas/HUD layers
+- Rendering: Three.js scene + Canvas/HUD overlays
 - Local hosting: Docker + Nginx (`docker compose up --build`)
 - No Unity runtime in active project
 - No backend API dependency in active project
 
 ## Core Experience
 
-- Fast lane-runner movement
+- Fast lane-runner movement with constant forward pressure
 - June Solstice mood: long night shifting toward dawn
-- Australian terrain identities (Outback, Bushland, Servo, Coastline, Tasmania)
-- Puzzle interruptions that feel like discoveries on route, not detached quiz screens
+- Australian biome identity with clear regional visual signatures
+- Puzzle interruptions framed as in-world discoveries, not detached quiz screens
 
-## Puzzle Architecture
+## Current Region Progression
 
-Per level, puzzle pools are fixed and role-specific:
+1. Outback Ruins
+2. Bushland
+3. Servo
+4. Coastline Lighthouse
+5. Mangroves
+6. Blue Mountains
+7. Nullarbor
+8. Observatory
+9. Tasmania
 
-- `heartPuzzles` (8): used for revive challenges
-- `levelPuzzles` (8): used for standard progression/next-level gating
-- `treasurePuzzles` (7): used for chest encounters
+## Puzzle Architecture (Current)
 
-Each puzzle object includes `seen` state. Seen IDs are persisted in localStorage and pooled selection auto-resets after full exhaustion.
+Questions are no longer stored in many per-level files.
+
+Current source files:
+
+- `web/puzzles/questions-easy.js`
+- `web/puzzles/questions-medium.js`
+- `web/puzzles/questions-hard.js`
+
+Each question object includes:
+
+- `id`: globally unique numeric ID (`1..115`)
+- `difficulty`: `easy`, `medium`, `hard`
+- `type`: one of `heartPuzzles`, `levelPuzzles`, `treasurePuzzles`
+- `seen`: runtime seen state
+
+`web/puzzle-data.js` builds runtime pools from those files and keeps role separation:
+
+- `heartPuzzles`: revive challenges
+- `levelPuzzles`: next-level unlock/progression challenges
+- `treasurePuzzles`: treasure chest challenges
+
+Seen IDs are persisted in localStorage and unseen-first selection is enforced. A pool resets only when fully exhausted.
+
+## Difficulty Scaling Rules
+
+Level-to-difficulty mapping is currently defined in `web/puzzle-data.js`:
+
+- Levels 1-2: easy
+- Levels 3-4: medium
+- Levels 5-9: hard
+
+Design intent:
+
+- Difficulty increases level-wise
+- Any level still prefers unseen questions from its mapped difficulty tier
+- Role pools remain distinct while sharing one global question catalog
+
+## Progression and Transition Behavior
+
+Level-clear flow:
+
+- Player clears level objective
+- Unlock puzzle is solved
+- Congratulatory popup appears
+- On timer expiry or Continue, run advances directly to next level
+
+Expected behavior:
+
+- Player should not be bounced back to landing/character flow during this transition
+- Next run starts with keep-progress semantics
 
 ## Narrative Tone Requirements
 
 - Adventurous, optimistic, mysterious
-- Australian setting details in every puzzle
-- Include either June Solstice motifs or computing/Turing motifs in every puzzle
-- Avoid repetitive narrative templates and stock phrases
+- Australian setting details in puzzle text
+- Include either June Solstice motifs or computing/Turing motifs in each puzzle
+- Avoid repetitive template phrasing
 
-## UI/UX Rules
+## Puzzle Copy Rules
 
-- Puzzle modal shows one primary instruction block (no duplicate question text)
-- Secondary brief panel is context only
-- Next-level puzzles should not display `(x/20)` style counters
-- Hint copy should guide without revealing direct answers
+- Puzzle modal should present one primary instruction block
+- Secondary brief panel should remain contextual, not duplicate full prompt
+- Hint copy should guide without revealing full answers
+- Preserve logic fields unless explicitly requested:
+  - `answer`
+  - `acceptedAnswers`
+  - `learnUrl`
 
-## Content Constraints
+## Biome Art Direction
 
-- Preserve puzzle logic, answers, acceptedAnswers, and learnUrl values unless explicitly requested
-- Narrative rewrites affect only text fields: title, instruction, hints, rightExplain, wrongExplain
+### Outback Ruins
 
-## Technical Constraints
+- Heat haze and open red-earth distance
+- Sparse hardy vegetation
+- Ancient marker ruins and relay traces
 
-- Keep docs and prompts aligned with actual runtime (`web/`)
-- Remove or archive references to obsolete Unity/backend flows
+### Bushland
 
-* Dense forest trails
-* Fireflies and glow insects
-* Hidden ruins
-* Natural obstacles and roots
+- Dense trail vegetation
+- Fireflies and glow insects
+- Roots, natural obstacles, hidden ruins
 
----
+### Servo (Hub Area)
 
-## Servo (Hub Area)
+- Warm roadside diner lighting
+- Dusty service station aesthetic
+- Friendly explorer camp details
+- Map boards and clue surfaces
 
-* Warm roadside diner lighting
-* Dusty service station aesthetic
-* Friendly NPC explorers
-* Map tables and clue boards
+### Coastline Lighthouse
 
----
+- Windy cliffs and wave energy
+- Weathered lighthouse materials
+- Driftwood, seabird silhouettes, salt haze
 
-## Coastline Lighthouse
+### Mangroves
 
-* Windy cliffs
-* Crashing waves
-* Weathered lighthouse
-* Seagulls and driftwood
+- Dense tree population and canopy layering
+- Rooted waterline silhouettes
+- Organic haze/reflection (avoid synthetic line-grid look)
 
----
+### Blue Mountains
 
-## Tasmania (Final Zone)
+- Layered mountain silhouettes
+- Mist/fog depth with natural movement
+- Cliff and ridgeline contrast
 
-* Cold misty mountains
-* Aurora Australis skies
-* Ancient signal tower ruins
-* Magical light reveal moments
+### Nullarbor
 
----
+- Flat expansive limestone/desert read
+- Long-horizon tension
+- Sparse structure silhouettes
 
-# VFX Direction
+### Observatory
 
-Core Effects:
+- Night-sky technical atmosphere
+- Signal beams and celestial instrumentation accents
 
-* Dust trails
-* Sand particles
-* Ember sparks
-* Golden light shards
-* Heat haze in desert
+### Tasmania (Final Zone)
 
-Collectibles:
+- Cold misty mountains
+- Aurora Australis skies
+- Ancient signal tower ruins
+- Magical light reveal moments
 
-Sun Fragments:
+## VFX Direction
 
-* Floating golden relic shards
-* Pulsing glow
-* Light trails on pickup
+Core effects:
 
-Movement:
+- Dust trails
+- Sand particles
+- Ember sparks
+- Golden light shards
+- Heat haze in desert
 
-* Sprint dust bursts
-* Jump arc streaks
-* Landing impact rings
+Collectibles (Sun Fragments):
 
----
+- Floating relic shard form
+- Pulsing glow
+- Pickup light streaks
 
-# Audio Direction
+Movement readability:
 
-Music Style:
+- Sprint dust bursts
+- Jump arc streaks
+- Landing impact rings
 
-* Adventure orchestral percussion
-* Subtle Australian tonal textures
-* Cinematic expedition energy
+## Audio Direction
 
-Sound Effects:
+Music:
 
-* Artifact chimes
-* Sand crunch footsteps
-* Wind gusts
-* Comedic animal sounds (light touch)
+- Adventure orchestral-percussion base
+- Subtle Australian tonal texture
+- Cinematic expedition momentum
 
----
+SFX:
 
-# Turing Inspired Mechanics
+- Artifact chimes
+- Sand/crunch foot layers
+- Wind gust beds
+- Light-touch comedic animal accents
 
-The Turing Engine appears as an ancient logic system controlling darkness.
+## Turing-Inspired Mechanics
 
-Mechanics should be visual and fast:
+The Turing Engine is framed as an ancient logic system controlling darkness.
 
-Examples:
+Puzzle mechanics should be visual and fast:
 
-* Pattern completion
-* Binary switches
-* Signal routing
-* Light circuit alignment
+- Pattern completion
+- Binary switches
+- Signal routing
+- Light circuit alignment
 
 Rules:
 
-* Max 15–30 seconds per challenge
-* Never stop forward momentum for long
-* Always feel like gameplay, not a quiz
+- 15-30 seconds target per challenge
+- Do not stall forward momentum for long
+- Should feel like gameplay, not detached exam screens
 
----
+## Gameplay Feel Rules
 
-# Gameplay Feel Rules
+- Always forward motion
+- Always readable at speed
+- Always meaningful events every few seconds
+- Always clear reward feedback
 
-* Always forward motion
-* Always readable at speed
-* Always something happening every few seconds
-* Always clear reward feedback
+## Performance Requirements
 
----
+- 60 FPS target
+- WebGL optimized
+- Low draw-call pressure
+- Lightweight assets
+- Fast initial load
 
-# Performance Requirements
-
-* 60 FPS target
-* WebGL optimized
-* Low draw calls
-* Lightweight assets
-* Fast initial load
-
----
-
-# Success Criteria
+## Success Criteria
 
 Within 30 seconds:
 
-* Player is running
-* Player collects something
-* Player experiences movement and feedback
+- Player is running
+- Player collects something
+- Player experiences immediate movement feedback
 
 Within 5 minutes:
 
-* Player unlocks an animal
-* Player solves a treasure clue
-* Player collects a Sun Fragment
+- Player unlocks an animal
+- Player solves at least one treasure clue
+- Player collects a Sun Fragment
 
 Within 15 minutes:
 
-* Player restores all fragments
-* Player defeats the Turing Engine
-* Sunrise returns over Australia
+- Player restores all fragments
+- Player defeats the Turing Engine
+- Sunrise returns over Australia
 
----
+## Final Design Goal
 
-# Final Design Goal
-
-The game should feel like:
-
-> A cinematic Australian treasure-run adventure where movement, discovery, and light restoration drive constant excitement.
+A cinematic Australian treasure-run adventure where movement, discovery, and light restoration drive constant excitement.
 
 Fun first. Always.

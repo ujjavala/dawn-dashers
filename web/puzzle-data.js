@@ -81,9 +81,34 @@
   const seenIds = loadSeenIds();
   // ────────────────────────────────────────────────────────────────────────────
 
-  const levels = globalThis.DawnDashersPuzzleLevels || {};
+  // ── Difficulty-based level configuration ────────────────────────────────────
+  // Maps game level index (0-based) → which difficulty tier to draw from.
+  // Add more entries here to extend to levels 6-9 without touching question files.
+  const LEVEL_DIFFICULTY = [
+    'easy',   // level 0 (in-game level 1)
+    'easy',   // level 1
+    'medium', // level 2
+    'medium', // level 3
+    'hard',   // level 4
+    'hard',   // level 5
+    'hard',   // level 6
+    'hard',   // level 7
+    'hard'    // level 8
+  ];
 
-  // Per-role flat arrays (indexes match what game.js uses to look up puzzles).
+  // Shape a raw question into a tracked puzzle entry.
+  function shapeQuestion(raw) {
+    const p = softenPuzzleText(raw) || {};
+    const id = String(p.id ?? '');
+    return { ...p, id, seen: id ? seenIds.has(id) : false };
+  }
+
+  // Build the flat arrays and per-level pools from globalThis.DawnDashersQuestions.
+  const allRaw = Array.isArray(globalThis.DawnDashersQuestions)
+    ? globalThis.DawnDashersQuestions
+    : [];
+
+  // Per-role flat arrays.
   const heartPuzzles    = [];
   const levelPuzzles    = [];
   const treasurePuzzles = [];
@@ -93,23 +118,26 @@
   const levelPoolsByLevel    = {};
   const treasurePoolsByLevel = {};
 
-  function shapePool(raw, flatArray) {
-    const start = flatArray.length;
-    const shaped = (Array.isArray(raw) ? raw : []).map((puzzle) => {
-      const p = softenPuzzleText(puzzle) || {};
-      const id = typeof p.id === 'string' && p.id.trim() ? p.id.trim() : '';
-      // Restore seen status from localStorage so the session is always aware.
-      return { ...p, id, seen: id ? seenIds.has(id.toLowerCase()) : false };
-    });
-    flatArray.push(...shaped);
-    return shaped.map((_, i) => start + i);
+  // Index shaped questions by difficulty+type for fast lookup.
+  const byDiffType = {};
+  for (const raw of allRaw) {
+    const key = (raw.difficulty || 'easy') + ':' + (raw.type || 'levelPuzzles');
+    byDiffType[key] = byDiffType[key] || [];
+    byDiffType[key].push(shapeQuestion(raw));
   }
 
-  for (let level = 0; level < 5; level += 1) {
-    const chunk = levels[level] || {};
-    heartPoolsByLevel[level]    = shapePool(chunk.heartPuzzles,    heartPuzzles);
-    levelPoolsByLevel[level]    = shapePool(chunk.levelPuzzles,    levelPuzzles);
-    treasurePoolsByLevel[level] = shapePool(chunk.treasurePuzzles, treasurePuzzles);
+  function addToPool(flatArray, questions) {
+    const start = flatArray.length;
+    flatArray.push(...questions);
+    return questions.map((_, i) => start + i);
+  }
+
+  const totalLevels = LEVEL_DIFFICULTY.length;
+  for (let level = 0; level < totalLevels; level += 1) {
+    const diff = LEVEL_DIFFICULTY[level];
+    heartPoolsByLevel[level]    = addToPool(heartPuzzles,    byDiffType[diff + ':heartPuzzles']    || []);
+    levelPoolsByLevel[level]    = addToPool(levelPuzzles,    byDiffType[diff + ':levelPuzzles']    || []);
+    treasurePoolsByLevel[level] = addToPool(treasurePuzzles, byDiffType[diff + ':treasurePuzzles'] || []);
   }
 
   /**
@@ -125,7 +153,7 @@
       const p = flatArray[id];
       if (p && !p.seen) {
         p.seen = true;
-        if (p.id) { seenIds.add(p.id.toLowerCase()); saveSeenIds(seenIds); }
+        if (p.id !== '') { seenIds.add(String(p.id)); saveSeenIds(seenIds); }
         return p;
       }
     }
@@ -136,7 +164,7 @@
       const p = flatArray[id];
       if (p && !p.seen) {
         p.seen = true;
-        if (p.id) { seenIds.add(p.id.toLowerCase()); saveSeenIds(seenIds); }
+        if (p.id !== '') { seenIds.add(String(p.id)); saveSeenIds(seenIds); }
         return p;
       }
     }
@@ -152,7 +180,7 @@
       const p = flatArray[id];
       if (p) {
         p.seen = false;
-        if (p.id) seenIds.delete(p.id.toLowerCase());
+        if (p.id !== '') seenIds.delete(String(p.id));
       }
     }
     saveSeenIds(seenIds);

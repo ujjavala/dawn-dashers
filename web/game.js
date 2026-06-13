@@ -3165,7 +3165,7 @@
     });
   }
 
-  const DASHER_VISUAL_PRESETS = {
+  const DASHER_VISUAL_PRESETS = globalThis.DawnDashersCharacterVisualPresets || {
     emu: { rig: 'birdTall', fast: true, body: 0x8c6c4d, accent: 0x5a3824, glow: 0xf4d6a2, trail: 0xd7c0a2, speed: 8.6, bob: 0.09, hop: 0.06 },
     wombat: { rig: 'burrower', fast: false, body: 0x8d6f54, accent: 0x5d4028, glow: 0xbfa68e, frameRate: 8, roll: 0.07 },
     kangaroo: { rig: 'hopper', fast: true, body: 0xa16d54, accent: 0x5b3922, glow: 0xffd28a, trail: 0xe9bd73, speed: 9.8, bob: 0.11, hop: 0.34 },
@@ -3179,7 +3179,19 @@
     tasdevil: { rig: 'canine', fast: true, body: 0x261e1e, accent: 0xb8322b, glow: 0xff714f, trail: 0xff7b57, speed: 9.6, bob: 0.11, pulseGlow: true },
     kookaburra: { rig: 'birdPerch', fast: true, body: 0x80613f, accent: 0x74dbff, glow: 0x95f8ff, trail: 0x7ee9ff, speed: 8.7, bob: 0.09, auroraGlow: true },
     quokka: { rig: 'burrower', fast: false, body: 0xb89060, accent: 0x6f4d2d, glow: 0xffe0b2, frameRate: 8, breathe: true },
-    numbat: { rig: 'striped', fast: false, body: 0xbf9b66, accent: 0x8d6032, glow: 0xffedb6, frameRate: 8, stripes: true }
+    numbat: { rig: 'striped', fast: false, body: 0xbf9b66, accent: 0x8d6032, glow: 0xffedb6, frameRate: 8, stripes: true },
+    ibis: { rig: 'birdPerch', fast: true, body: 0xf2f0e8, accent: 0x3a1f16, glow: 0xb7f2e4, trail: 0x8de6cf, speed: 9.0, bob: 0.1 },
+    mudcrab: { rig: 'burrower', fast: false, body: 0x8b3f2b, accent: 0xd98b4f, glow: 0xffc08a, frameRate: 8, roll: 0.04 },
+    jabiru: { rig: 'birdTall', fast: true, body: 0x11161b, accent: 0xd6dbe2, glow: 0x90f0dd, trail: 0x79dfcb, speed: 9.2, bob: 0.1 },
+    lyrebird: { rig: 'birdCrest', fast: true, body: 0x7f6548, accent: 0xc8a56d, glow: 0xb6ddff, trail: 0x96caf4, speed: 9.1, bob: 0.1 },
+    wallaroo: { rig: 'hopper', fast: false, body: 0x9b7654, accent: 0x5b3f2a, glow: 0xe9cba2, frameRate: 8, hop: 0.24 },
+    glider: { rig: 'tailClimber', fast: false, body: 0x9a8674, accent: 0x4c3f35, glow: 0xd8cbbd, frameRate: 8, breathe: true },
+    eagle: { rig: 'birdPerch', fast: true, body: 0x5d4a3a, accent: 0xd6b07a, glow: 0xffd9a0, trail: 0xe8be81, speed: 9.4, bob: 0.11 },
+    thorny: { rig: 'spine', fast: false, body: 0xb27745, accent: 0x7f4d2b, glow: 0xf0c486, frameRate: 8, stripes: true },
+    quoll: { rig: 'canine', fast: true, body: 0x6e5848, accent: 0xd9b87a, glow: 0xf4d2a1, trail: 0xcda56f, speed: 9.3, bob: 0.1 },
+    owl: { rig: 'birdCrest', fast: true, body: 0x6e5e52, accent: 0xcaa56d, glow: 0xcad8ff, trail: 0xaab8ea, speed: 9.0, bob: 0.09 },
+    bandicoot: { rig: 'burrower', fast: false, body: 0x8f775f, accent: 0x5e4a39, glow: 0xe7d1b3, frameRate: 8, breathe: true },
+    cassowary: { rig: 'birdTall', fast: false, body: 0x1d2530, accent: 0x4ca0ff, glow: 0x91d2ff, frameRate: 8, crest: true }
   };
 
   function getDasherVisualPreset(charKey) {
@@ -4118,7 +4130,7 @@
     },
     {
       title: 'Choose Your Character',
-      text: 'Each level gives exactly 2 dashers: one fast (full-width, higher energy use) and one slow (restricted lanes, lower energy use). Only the first 3 treasure chests appear per run. Solve the three-chest cipher in a level, then clear into the next level to wake that next level\'s special dasher. There are 4 special dashers total, and they begin after Level 1.',
+      text: 'Each level gives exactly 2 dashers: one fast (full-width, higher energy use) and one slow (restricted lanes, lower energy use). Treasure chests are capped to 1 per level each run. Collect that chest in a level, then clear into the next level to wake that next level\'s special dasher.',
       visuals: []
     },
     {
@@ -4165,7 +4177,7 @@
   };
 
   // Quirky congrats shown when advancing to the next level
-  const levelTransitionMsgs = gameData.levelTransitionMsgs || [
+  const defaultLevelTransitionMsgs = [
     null, // placeholder — level 0 is the start, no incoming transition
     {
       congrats: 'Wowww!! Outback: CLEARED! 🌵🔥',
@@ -4182,46 +4194,145 @@
     {
       congrats: 'LEGENDARY!! Coastline: OBLITERATED! 🌊🏆',
       teaser: 'Tasmania — misty peaks, ancient trails, and the terrain where the Halting Problem lives. Will this run ever truly end? (Spoiler: yes. Probably.)'
+    },
+    {
+      congrats: 'WILD!! Mangroves: MAPPED! 🌿🧭',
+      teaser: 'Blue Mountains next: fog belts, cliff drafts, and razor-thin ridge lanes.'
+    },
+    {
+      congrats: 'CLEAN!! Blue Mountains: CLEARED! ⛰️✨',
+      teaser: 'Nullarbor incoming: wide horizons, heat shimmer, and relentless crosswinds.'
+    },
+    {
+      congrats: 'BRUTAL!! Nullarbor: SURVIVED! 🏜️⚡',
+      teaser: 'Observatory comes alive at nightfall. Track stars, avoid orbital hazards, stay centered.'
+    },
+    {
+      congrats: 'COSMIC!! Observatory: DECIPHERED! 🔭🌌',
+      teaser: 'Final stretch: Tasmania. Aurora turbulence and the last dawn protocol.'
     }
   ];
 
-  const regions = gameData.regions || [
+  const levelTransitionMsgs = Array.isArray(gameData.levelTransitionMsgs)
+    && gameData.levelTransitionMsgs.length >= defaultLevelTransitionMsgs.length
+    ? gameData.levelTransitionMsgs
+    : defaultLevelTransitionMsgs;
+
+  const defaultRegions = [
     {
       name: 'Outback Ruins',
       top: '#d4a373',
       bottom: '#8b5e3c',
       accent: '#ffd166',
-      terrain: 'dunes'
+      terrain: 'dunes',
+      acts: [
+        { title: 'Act I', tagline: 'Heat & Distance' },
+        { title: 'Act II', tagline: 'Mirage Logic' },
+        { title: 'Act III', tagline: 'Solstice Burnline' }
+      ]
     },
     {
       name: 'Bushland',
       top: '#8fae66',
       bottom: '#4a6a3f',
       accent: '#52b788',
-      terrain: 'forest'
+      terrain: 'forest',
+      acts: [
+        { title: 'Act I', tagline: 'Dense Navigation' },
+        { title: 'Act II', tagline: 'Lost Paths' },
+        { title: 'Act III', tagline: 'Echo Forest' }
+      ]
     },
     {
       name: 'Servo',
       top: '#23364f',
       bottom: '#0d1728',
       accent: '#5be7ff',
-      terrain: 'industrial'
+      terrain: 'industrial',
+      acts: [
+        { title: 'Act I', tagline: 'Rest Stop Flow' },
+        { title: 'Act II', tagline: 'Signal Chaos' },
+        { title: 'Act III', tagline: 'Network Convergence' }
+      ]
     },
     {
       name: 'Coastline Lighthouse',
       top: '#9fd0e3',
       bottom: '#3f80a8',
       accent: '#4ea8de',
-      terrain: 'beach'
+      terrain: 'beach',
+      acts: [
+        { title: 'Act I', tagline: 'Stable Tide' },
+        { title: 'Act II', tagline: 'Shifting Currents' },
+        { title: 'Act III', tagline: 'Storm Signal' }
+      ]
+    },
+    {
+      name: 'Mangroves',
+      top: '#3a5845',
+      bottom: '#162f27',
+      accent: '#7ccf9a',
+      terrain: 'forest',
+      acts: [
+        { title: 'Act I', tagline: 'Root Paths' },
+        { title: 'Act II', tagline: 'Hidden Water Logic' },
+        { title: 'Act III', tagline: 'Submerged Network' }
+      ]
+    },
+    {
+      name: 'Blue Mountains',
+      top: '#5f7898',
+      bottom: '#293b57',
+      accent: '#b8d8ff',
+      terrain: 'mountains',
+      acts: [
+        { title: 'Act I', tagline: 'Ascent' },
+        { title: 'Act II', tagline: 'Fog & Echo' },
+        { title: 'Act III', tagline: 'Reconstruction' }
+      ]
+    },
+    {
+      name: 'Nullarbor',
+      top: '#b88c55',
+      bottom: '#6b4a2c',
+      accent: '#f2d085',
+      terrain: 'dunes',
+      acts: [
+        { title: 'Act I', tagline: 'Endless Road' },
+        { title: 'Act II', tagline: 'Compression' },
+        { title: 'Act III', tagline: 'Optimization State' }
+      ]
+    },
+    {
+      name: 'Observatory',
+      top: '#1c244a',
+      bottom: '#0a0f24',
+      accent: '#9fb9ff',
+      terrain: 'industrial',
+      acts: [
+        { title: 'Act I', tagline: 'Star Navigation' },
+        { title: 'Act II', tagline: 'Pattern Mapping' },
+        { title: 'Act III', tagline: 'Code Sky' }
+      ]
     },
     {
       name: 'Tasmania',
-      top: '#8395b7',
-      bottom: '#3f4c75',
-      accent: '#52b788',
-      terrain: 'mountains'
+      top: '#93a7cf',
+      bottom: '#41507f',
+      accent: '#82ffe0',
+      terrain: 'mountains',
+      acts: [
+        { title: 'Act I', tagline: 'Cold Descent' },
+        { title: 'Act II', tagline: 'Signal Tower Ruins' },
+        { title: 'Act III', tagline: 'Turing Engine Awakening' }
+      ]
     }
   ];
+
+  const regions = Array.isArray(gameData.regions)
+    && gameData.regions.length >= defaultRegions.length
+    ? gameData.regions
+    : defaultRegions;
 
   const lanes = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
   const laneCenterIndex = Math.floor(lanes.length / 2);
@@ -4242,6 +4353,112 @@
 
   function getCurrentLevelIndex() {
     return Math.max(state.progressLevel || 0, state.regionIndex || 0);
+  }
+
+  const defaultActTuningByIndex = [
+    { difficultyScale: 0.86, spawnRate: 0.9, driftScale: 0.82, laneGuideAlphaScale: 1.2, sceneDarkenOffset: -0.03, scanlineAlphaScale: 0.82, hazardRate: 0.88, heavyHazardBias: 0.14 },
+    { difficultyScale: 1, spawnRate: 1, driftScale: 1.06, laneGuideAlphaScale: 1, sceneDarkenOffset: 0, scanlineAlphaScale: 1, hazardRate: 1, heavyHazardBias: 0.24 },
+    { difficultyScale: 1.16, spawnRate: 1.15, driftScale: 1.24, laneGuideAlphaScale: 0.82, sceneDarkenOffset: 0.05, scanlineAlphaScale: 1.18, hazardRate: 1.2, heavyHazardBias: 0.34 }
+  ];
+
+  const biomeActTuningByName = {
+    'outback ruins': [
+      { difficultyScale: 0.84, spawnRate: 0.88, driftScale: 0.9, hazardRate: 0.86 },
+      { difficultyScale: 1.02, spawnRate: 1.02, driftScale: 1.18, hazardRate: 1.05 },
+      { difficultyScale: 1.18, spawnRate: 1.18, driftScale: 1.32, hazardRate: 1.28 }
+    ],
+    bushland: [
+      { difficultyScale: 0.87, spawnRate: 0.9, driftScale: 0.86, hazardRate: 0.94 },
+      { difficultyScale: 1.01, spawnRate: 1.02, driftScale: 1.05, hazardRate: 1.08 },
+      { difficultyScale: 1.14, spawnRate: 1.14, driftScale: 1.2, hazardRate: 1.22 }
+    ],
+    servo: [
+      { difficultyScale: 0.9, spawnRate: 0.96, driftScale: 0.9, hazardRate: 0.98, heavyHazardBias: 0.22 },
+      { difficultyScale: 1.06, spawnRate: 1.08, driftScale: 1.08, hazardRate: 1.16, heavyHazardBias: 0.34 },
+      { difficultyScale: 1.22, spawnRate: 1.2, driftScale: 1.18, hazardRate: 1.34, heavyHazardBias: 0.44 }
+    ],
+    'coastline lighthouse': [
+      { difficultyScale: 0.86, spawnRate: 0.9, driftScale: 0.84, hazardRate: 0.92 },
+      { difficultyScale: 1.03, spawnRate: 1.04, driftScale: 1, hazardRate: 1.08 },
+      { difficultyScale: 1.18, spawnRate: 1.16, driftScale: 1.16, hazardRate: 1.24 }
+    ],
+    mangroves: [
+      { difficultyScale: 0.9, spawnRate: 0.92, driftScale: 0.88, hazardRate: 1.02 },
+      { difficultyScale: 1.05, spawnRate: 1.06, driftScale: 1.06, hazardRate: 1.2 },
+      { difficultyScale: 1.2, spawnRate: 1.2, driftScale: 1.2, hazardRate: 1.36, heavyHazardBias: 0.48 }
+    ],
+    'blue mountains': [
+      { difficultyScale: 0.88, spawnRate: 0.9, driftScale: 0.8, hazardRate: 0.94 },
+      { difficultyScale: 1.02, spawnRate: 1.02, driftScale: 0.96, hazardRate: 1.1 },
+      { difficultyScale: 1.16, spawnRate: 1.14, driftScale: 1.08, hazardRate: 1.26 }
+    ],
+    nullarbor: [
+      { difficultyScale: 0.9, spawnRate: 0.9, driftScale: 0.92, hazardRate: 0.96 },
+      { difficultyScale: 1.06, spawnRate: 1.04, driftScale: 1.18, hazardRate: 1.12 },
+      { difficultyScale: 1.23, spawnRate: 1.18, driftScale: 1.32, hazardRate: 1.32, heavyHazardBias: 0.46 }
+    ],
+    observatory: [
+      { difficultyScale: 0.92, spawnRate: 0.94, driftScale: 0.82, hazardRate: 1.02 },
+      { difficultyScale: 1.08, spawnRate: 1.08, driftScale: 1, hazardRate: 1.16 },
+      { difficultyScale: 1.24, spawnRate: 1.22, driftScale: 1.18, hazardRate: 1.34, heavyHazardBias: 0.5 }
+    ],
+    tasmania: [
+      { difficultyScale: 0.92, spawnRate: 0.92, driftScale: 0.84, hazardRate: 1.04 },
+      { difficultyScale: 1.09, spawnRate: 1.08, driftScale: 1.02, hazardRate: 1.2 },
+      { difficultyScale: 1.24, spawnRate: 1.2, driftScale: 1.14, hazardRate: 1.38, heavyHazardBias: 0.52 }
+    ]
+  };
+
+  function normalizeBiomeName(name) {
+    return String(name || '').trim().toLowerCase();
+  }
+
+  function getCurrentActIndex() {
+    if (state.fragments >= 6) {
+      return 2;
+    }
+    if (state.fragments >= 3) {
+      return 1;
+    }
+    return 0;
+  }
+
+  function getRegionActDefinition(region, actIndex) {
+    const acts = Array.isArray(region?.acts) ? region.acts : [];
+    if (acts.length) {
+      const clampedIndex = Math.max(0, Math.min(acts.length - 1, actIndex));
+      return acts[clampedIndex] || acts[acts.length - 1];
+    }
+    const fallback = [
+      { title: 'Act I', tagline: 'Introduction' },
+      { title: 'Act II', tagline: 'Distortion' },
+      { title: 'Act III', tagline: 'Revelation' }
+    ];
+    return fallback[Math.max(0, Math.min(fallback.length - 1, actIndex))];
+  }
+
+  function getCurrentActProfile() {
+    const region = regions[state.regionIndex] || regions[0] || {};
+    const index = getCurrentActIndex();
+    const baseTuning = defaultActTuningByIndex[index] || defaultActTuningByIndex.at(-1);
+    const biomeName = normalizeBiomeName(region.name);
+    const biomeTuning = biomeActTuningByName[biomeName]?.[index] || {};
+    const tuning = {
+      ...baseTuning,
+      ...biomeTuning
+    };
+    const def = getRegionActDefinition(region, index);
+    return {
+      index,
+      title: def?.title || 'Act',
+      tagline: def?.tagline || '',
+      ...tuning
+    };
+  }
+
+  function getCurrentActDisplayLabel() {
+    const act = getCurrentActProfile();
+    return `${act.title}: ${act.tagline}`;
   }
 
   function getDifficultyCurveScales() {
@@ -4291,13 +4508,14 @@
     const terrain = regions[state.regionIndex]?.terrain || 'dunes';
     const profile = terrainTrackProfile(terrain);
     const levelFactors = getCurvatureLevelFactors();
+    const act = getCurrentActProfile();
     const t = performance.now() * 0.001;
     const depth = clamp01(depth01);
     const depthInfluence = 0.22 + Math.pow(depth, 1.28) * 0.88;
     const phase = (t * profile.bendFreq + state.distance * 0.014) * levelFactors.freqScale;
     const main = Math.sin(phase + depth * 2.8) * profile.bendAmp * levelFactors.bendScale;
     const wiggle = Math.sin(phase * profile.wiggleFreq - depth * 5.3) * profile.wiggleAmp * levelFactors.wiggleScale;
-    return (main + wiggle) * depthInfluence;
+    return (main + wiggle) * depthInfluence * act.driftScale;
   }
 
   function getTrackXNorm(baseNorm, depth01 = 1) {
@@ -4368,8 +4586,8 @@
     })()
   };
 
-  const characters = gameData.characters || {
-    emu: { name: 'Enigma Emu', emoji: '🦅', power: 'Dust Sprint', quirk: 'Fast lane weave, moderate hop drain.', unlockAt: 0, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Emu' },
+  const defaultCharacters = {
+    emu: { name: 'Enigma Emu', emoji: '🦤', power: 'Dust Sprint', quirk: 'Fast lane weave, moderate hop drain.', unlockAt: 0, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Emu' },
     wombat: { name: 'Wheeler Wombat', emoji: '🦫', power: 'Burrow Dodge', quirk: 'Cheaper slides in dunes/forest.', unlockAt: 0, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Wombat' },
     kangaroo: { name: 'Kleene Kangaroo', emoji: '🦘', power: 'Sky Hop', quirk: 'Jumps are most energy-efficient.', unlockAt: 1, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Red_kangaroo' },
     koala: { name: 'Knuth Koala', emoji: '🐨', power: 'Grip Glide', quirk: 'Balanced and steady movement.', unlockAt: 1, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Koala' },
@@ -4382,16 +4600,48 @@
     tasdevil: { name: 'Turing Tassie Devil', emoji: '😈', power: 'Charge Burst', quirk: 'High movement speed with expensive jumps.', unlockAt: 3, role: 'fast', puzzleUnlockLevel: 3, wikiUrl: 'https://en.wikipedia.org/wiki/Tasmanian_devil' },
     kookaburra: { name: 'Kernel Kookaburra', emoji: '🐦', power: 'Light Call', quirk: 'Fast top-tier lane traversal.', unlockAt: 4, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Kookaburra' },
     quokka: { name: 'Quine Quokka', emoji: '🐹', power: 'Calm Climb', quirk: 'Highest efficiency but restricted lanes.', unlockAt: 4, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Quokka' },
-    numbat: { name: 'Null Numbat', emoji: '🦝', power: 'Pattern Focus', quirk: 'Very low move drain and cheap food cost.', unlockAt: 4, role: 'slow', puzzleUnlockLevel: 4, wikiUrl: 'https://en.wikipedia.org/wiki/Numbat' }
+    numbat: { name: 'Null Numbat', emoji: '🦝', power: 'Pattern Focus', quirk: 'Very low move drain and cheap food cost.', unlockAt: 4, role: 'slow', puzzleUnlockLevel: 4, wikiUrl: 'https://en.wikipedia.org/wiki/Numbat' },
+    ibis: { name: 'Index Ibis', emoji: '🕊️', power: 'Marsh Vector', quirk: 'Rapid lane snaps through tight wetland bends.', unlockAt: 5, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Australian_white_ibis' },
+    mudcrab: { name: 'Merge Mud Crab', emoji: '🦀', power: 'Clamp Drift', quirk: 'Stable low-drain movement through slick terrain.', unlockAt: 5, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Mud_crab' },
+    jabiru: { name: 'JIT Jabiru', emoji: '🐤', power: 'Swamp Compile', quirk: 'Fast adaptive paths through tangled mangrove lanes.', unlockAt: 5, role: 'fast', puzzleUnlockLevel: 5, wikiUrl: 'https://en.wikipedia.org/wiki/Black-necked_stork' },
+    lyrebird: { name: 'Loop Lyrebird', emoji: '🐦', power: 'Echo Sprint', quirk: 'High momentum with precise hop recovery windows.', unlockAt: 6, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Superb_lyrebird' },
+    wallaroo: { name: 'Stack Wallaroo', emoji: '🦘', power: 'Ridge Brace', quirk: 'Predictable movement and efficient defensive lanes.', unlockAt: 6, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Wallaroo' },
+    glider: { name: 'Graph Glider', emoji: '🐿️', power: 'Cliff Arc', quirk: 'Long glide windows with efficient mountain recovery.', unlockAt: 6, role: 'slow', puzzleUnlockLevel: 6, wikiUrl: 'https://en.wikipedia.org/wiki/Sugar_glider' },
+    eagle: { name: 'Edge Eagle', emoji: '🦅', power: 'Horizon Cut', quirk: 'Long-range lane commits with high burst demand.', unlockAt: 7, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Wedge-tailed_eagle' },
+    thorny: { name: 'Thread Thorny', emoji: '🦎', power: 'Desert Buffer', quirk: 'Low-energy survival under harsh hazard density.', unlockAt: 7, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Thorny_devil' },
+    quoll: { name: 'Queue Quoll', emoji: '🐺', power: 'Dust Pivot', quirk: 'Predictive pivots through Nullarbor hazard chains.', unlockAt: 7, role: 'fast', puzzleUnlockLevel: 7, wikiUrl: 'https://en.wikipedia.org/wiki/Quoll' },
+    owl: { name: 'Opcode Owl', emoji: '🦉', power: 'Night Parse', quirk: 'Fast interpretation of shifting constellation paths.', unlockAt: 8, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Boobook_owl' },
+    bandicoot: { name: 'Branch Bandicoot', emoji: '🐭', power: 'Root Cache', quirk: 'Conservative movement with excellent energy retention.', unlockAt: 8, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Bandicoot' },
+    cassowary: { name: 'Cache Cassowary', emoji: '🦃', power: 'Orbit Vault', quirk: 'High-pressure observatory routing with stable energy spend.', unlockAt: 8, role: 'slow', puzzleUnlockLevel: 8, wikiUrl: 'https://en.wikipedia.org/wiki/Cassowary' }
   };
-  const levelCharacterPairs = gameData.levelCharacterPairs || {
+
+  const configuredCharacters = gameData.characters && typeof gameData.characters === 'object'
+    ? gameData.characters
+    : {};
+  const characters = Object.keys(configuredCharacters).length >= Object.keys(defaultCharacters).length
+    ? configuredCharacters
+    : { ...configuredCharacters, ...defaultCharacters };
+
+  const defaultLevelCharacterPairs = {
     0: { fast: 'emu', slow: 'wombat' },
     1: { fast: 'kangaroo', slow: 'koala' },
     2: { fast: 'possum', slow: 'echidna' },
     3: { fast: 'dingo', slow: 'bilby' },
-    4: { fast: 'kookaburra', slow: 'quokka' }
+    4: { fast: 'kookaburra', slow: 'quokka' },
+    5: { fast: 'ibis', slow: 'mudcrab' },
+    6: { fast: 'lyrebird', slow: 'wallaroo' },
+    7: { fast: 'eagle', slow: 'thorny' },
+    8: { fast: 'owl', slow: 'bandicoot' }
   };
-  const characterFood = gameData.characterFood || {
+  const configuredLevelCharacterPairs = gameData.levelCharacterPairs && typeof gameData.levelCharacterPairs === 'object'
+    ? gameData.levelCharacterPairs
+    : null;
+  const levelCharacterPairs = configuredLevelCharacterPairs
+    && Object.keys(configuredLevelCharacterPairs).length >= Object.keys(defaultLevelCharacterPairs).length
+    ? configuredLevelCharacterPairs
+    : defaultLevelCharacterPairs;
+
+  const defaultCharacterFood = {
     emu: { name: 'Seed Mix', icon: '🌾', cost: 220, restore: 250, moveCost: 50, jumpCost: 68, slideCost: 42 },
     wombat: { name: 'Root Pack', icon: '🥕', cost: 190, restore: 230, moveCost: 30, jumpCost: 48, slideCost: 24 },
     kangaroo: { name: 'Grass Bundle', icon: '🥬', cost: 235, restore: 270, moveCost: 48, jumpCost: 60, slideCost: 38 },
@@ -4405,13 +4655,32 @@
     tasdevil: { name: 'Protein Haunch', icon: '🥩', cost: 285, restore: 360, moveCost: 41, jumpCost: 68, slideCost: 29 },
     kookaburra: { name: 'Worm Satchel', icon: '🪱', cost: 280, restore: 350, moveCost: 40, jumpCost: 50, slideCost: 30 },
     quokka: { name: 'Summit Greens', icon: '🥗', cost: 230, restore: 330, moveCost: 22, jumpCost: 36, slideCost: 18 },
-    numbat: { name: 'Termite Trail Mix', icon: '🫘', cost: 210, restore: 345, moveCost: 20, jumpCost: 34, slideCost: 16 }
+    numbat: { name: 'Termite Trail Mix', icon: '🫘', cost: 210, restore: 345, moveCost: 20, jumpCost: 34, slideCost: 16 },
+    ibis: { name: 'Mangrove Fly Pack', icon: '🦟', cost: 275, restore: 360, moveCost: 40, jumpCost: 54, slideCost: 30 },
+    mudcrab: { name: 'Brine Root Tray', icon: '🪸', cost: 235, restore: 345, moveCost: 23, jumpCost: 38, slideCost: 16 },
+    jabiru: { name: 'Delta Reed Cache', icon: '🪷', cost: 265, restore: 372, moveCost: 36, jumpCost: 48, slideCost: 26 },
+    lyrebird: { name: 'Echo Berry Mix', icon: '🫐', cost: 290, restore: 370, moveCost: 39, jumpCost: 52, slideCost: 28 },
+    wallaroo: { name: 'Ridge Herb Stack', icon: '🌿', cost: 245, restore: 350, moveCost: 24, jumpCost: 38, slideCost: 17 },
+    glider: { name: 'Canopy Nectar', icon: '🍯', cost: 255, restore: 366, moveCost: 25, jumpCost: 34, slideCost: 16 },
+    eagle: { name: 'Thermal Strip', icon: '🍖', cost: 305, restore: 390, moveCost: 42, jumpCost: 58, slideCost: 32 },
+    thorny: { name: 'Dew Capsule', icon: '💧', cost: 240, restore: 355, moveCost: 22, jumpCost: 36, slideCost: 16 },
+    quoll: { name: 'Saltbush Jerky', icon: '🥓', cost: 275, restore: 382, moveCost: 34, jumpCost: 46, slideCost: 24 },
+    owl: { name: 'Starlight Moth Pack', icon: '🦋', cost: 310, restore: 395, moveCost: 41, jumpCost: 56, slideCost: 30 },
+    bandicoot: { name: 'Orbit Root Bundle', icon: '🥔', cost: 250, restore: 360, moveCost: 23, jumpCost: 37, slideCost: 16 },
+    cassowary: { name: 'Meteor Grain Bowl', icon: '🌾', cost: 270, restore: 384, moveCost: 24, jumpCost: 35, slideCost: 16 }
   };
+  const configuredCharacterFood = gameData.characterFood && typeof gameData.characterFood === 'object'
+    ? gameData.characterFood
+    : null;
+  const characterFood = configuredCharacterFood
+    && Object.keys(configuredCharacterFood).length >= Object.keys(defaultCharacterFood).length
+    ? configuredCharacterFood
+    : defaultCharacterFood;
   state.foodStocks = Object.keys(characterFood).reduce((acc, key) => {
     acc[key] = 0;
     return acc;
   }, {});
-  const characterRegionMap = gameData.characterRegionMap || {
+  const defaultCharacterRegionMap = {
     emu: 0,
     wombat: 0,
     kangaroo: 1,
@@ -4425,9 +4694,57 @@
     tasdevil: 3,
     kookaburra: 4,
     quokka: 4,
-    numbat: 4
+    numbat: 4,
+    ibis: 5,
+    mudcrab: 5,
+    jabiru: 5,
+    lyrebird: 6,
+    wallaroo: 6,
+    glider: 6,
+    eagle: 7,
+    thorny: 7,
+    quoll: 7,
+    owl: 8,
+    bandicoot: 8,
+    cassowary: 8
   };
+  const configuredCharacterRegionMap = gameData.characterRegionMap && typeof gameData.characterRegionMap === 'object'
+    ? gameData.characterRegionMap
+    : null;
+  const characterRegionMap = configuredCharacterRegionMap
+    && Object.keys(configuredCharacterRegionMap).length >= Object.keys(defaultCharacterRegionMap).length
+    ? configuredCharacterRegionMap
+    : defaultCharacterRegionMap;
+
+  function ensureCharacterDefinitionsForButtons() {
+    characterButtons.forEach((button) => {
+      const id = button.dataset.character;
+      if (!id || characters[id]) {
+        return;
+      }
+      const unlockAt = Number.isFinite(Number(button.dataset.unlock)) ? Number(button.dataset.unlock) : 0;
+      const rawName = String(button.textContent || '').replace(/\s+/g, ' ').trim();
+      characters[id] = {
+        name: rawName || id,
+        emoji: button.dataset.emoji || '🧭',
+        power: 'Adaptive Dash',
+        quirk: 'Stable movement profile while this entry is being mapped.',
+        unlockAt,
+        role: 'fast',
+        wikiUrl: 'https://en.wikipedia.org/wiki/Australian_fauna'
+      };
+      if (!characterFood[id]) {
+        characterFood[id] = characterFood.emu;
+      }
+      if (!Number.isInteger(characterRegionMap[id])) {
+        characterRegionMap[id] = Math.max(0, Math.min(regions.length - 1, unlockAt));
+      }
+    });
+  }
+  ensureCharacterDefinitionsForButtons();
+
   let selectedCharacter = 'emu';
+  let previewCharacter = null;
   const puzzleState = {
     hintIndex: 0,
     currentIndex: 0,
@@ -4511,7 +4828,7 @@
         for (const id of poolIds) { if (flatArray[id]) flatArray[id].seen = false; }
       };
 
-  const TREASURE_CHEST_LIMIT_PER_RUN = 3;
+  const TREASURE_CHEST_LIMIT_PER_LEVEL = 1;
 
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -4693,7 +5010,7 @@
     state.message = keepProgress ? 'New level started. Hearts reset to 3.' : 'Go!';
     state.difficulty = 1 + state.progressLevel * 0.45;
     state.distance = 0;
-    state.regionIndex = characterRegionMap[selectedCharacter] ?? 0;
+    state.regionIndex = Math.max(0, Math.min(regions.length - 1, state.progressLevel));
     state.spawnTimer = 0;
     state.spawnPattern = null;
     state.spawnPatternStep = 0;
@@ -4907,13 +5224,15 @@
     if (open && !superModeEnabled && !isCharacterAvailableForCurrentLevel(selectedCharacter)) {
       const pair = getPairForLevel(state.progressLevel);
       selectedCharacter = pair.fast;
-      state.regionIndex = characterRegionMap[selectedCharacter] ?? 0;
+      state.regionIndex = Math.max(0, Math.min(regions.length - 1, state.progressLevel));
     }
     characterPanel.classList.toggle('open', open);
     characterPanel.setAttribute('aria-hidden', String(!open));
     if (open) {
+      previewCharacter = null;
       updateCharacterAvailability();
       refreshCharacterBio();
+      syncCharacterStartButtonState();
     }
     syncAudioToRegion();
   }
@@ -4954,7 +5273,7 @@
       if (Number.isInteger(puzzleUnlockLevel)) {
         const requirement = getSpecialUnlockRequirement(puzzleUnlockLevel);
         if (requirement) {
-          pushMessage(`Unlock ${characters[id].name} by collecting 3 chests in Level ${requirement.sourceLevel + 1} and clearing to Level ${requirement.targetLevel + 1}.`);
+          pushMessage(`Unlock ${characters[id].name} by collecting ${TREASURE_CHEST_LIMIT_PER_LEVEL} chest in Level ${requirement.sourceLevel + 1} and clearing to Level ${requirement.targetLevel + 1}.`);
         }
         return;
       }
@@ -4964,14 +5283,16 @@
       return;
     }
     selectedCharacter = id;
+    previewCharacter = null;
     syncAdminProgressToSelectedCharacter();
-    state.regionIndex = characterRegionMap[selectedCharacter] ?? 0;
+    state.regionIndex = Math.max(0, Math.min(regions.length - 1, state.progressLevel));
     applyRegionThreeTheme(regions[state.regionIndex]);
     void syncSelectedDasherModel();
     syncAudioToRegion();
     characterButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.character === id));
     applyCharacterSelectionTheme();
     refreshCharacterBio();
+    syncCharacterStartButtonState();
   }
 
   function syncAdminProgressToSelectedCharacter() {
@@ -4980,7 +5301,7 @@
     }
     const targetLevel = Math.max(0, Math.min(regions.length - 1, characters[selectedCharacter].unlockAt || 0));
     state.progressLevel = targetLevel;
-    state.regionIndex = characterRegionMap[selectedCharacter] ?? targetLevel;
+    state.regionIndex = targetLevel;
     puzzleState.pendingAdvance = null;
   }
 
@@ -4989,10 +5310,33 @@
       return;
     }
     const region = regions[state.regionIndex] || regions[0];
+    if (characterPanel) {
+      characterPanel.style.setProperty('--terrain-top', region.top);
+      characterPanel.style.setProperty('--terrain-bottom', region.bottom);
+      characterPanel.style.setProperty('--terrain-accent', region.accent);
+    }
     characterTitleEl.style.setProperty('--terrain-top', region.top);
     characterTitleEl.style.setProperty('--terrain-bottom', region.bottom);
     characterTitleEl.style.setProperty('--terrain-accent', region.accent);
-    characterTitleEl.textContent = `Choose Your Dasher - ${region.name}`;
+    characterTitleEl.textContent = `CHOOSE YOUR DASHER - ${String(region.name || '').toUpperCase()}`;
+
+    // Tint each character tile by its own biome so trios are easy to identify at a glance.
+    characterButtons.forEach((button) => {
+      const id = button.dataset.character;
+      if (!id) {
+        return;
+      }
+      let mappedRegionIndex = 0;
+      if (Number.isInteger(characterRegionMap[id])) {
+        mappedRegionIndex = characterRegionMap[id];
+      } else if (Number.isInteger(characters[id]?.unlockAt)) {
+        mappedRegionIndex = characters[id].unlockAt;
+      }
+      const tileRegion = regions[Math.max(0, Math.min(regions.length - 1, mappedRegionIndex))] || regions[0];
+      button.style.setProperty('--tile-top', tileRegion.top);
+      button.style.setProperty('--tile-bottom', tileRegion.bottom);
+      button.style.setProperty('--tile-accent', tileRegion.accent);
+    });
   }
 
   function isSpecialDasher(id) {
@@ -5013,6 +5357,7 @@
       if (!role) {
         return;
       }
+      button.setAttribute('aria-label', `${characters[id].name} (${getCharacterDisplayLabel(id)})`);
       const special = isSpecialDasher(id);
       button.classList.toggle('role-fast', !special && role === 'fast');
       button.classList.toggle('role-slow', !special && role === 'slow');
@@ -5024,6 +5369,13 @@
         button.appendChild(pill);
       }
       pill.textContent = getCharacterDisplayLabel(id);
+
+      let unlockPill = button.querySelector('.unlock-pill');
+      if (!unlockPill) {
+        unlockPill = document.createElement('span');
+        unlockPill.className = 'unlock-pill';
+        button.appendChild(unlockPill);
+      }
     });
   }
 
@@ -5047,7 +5399,16 @@
     if (!requirement) {
       return 'Standard';
     }
-    return `Collect 3 chests in Level ${requirement.sourceLevel + 1} and clear to Level ${requirement.targetLevel + 1}`;
+    const chestWord = TREASURE_CHEST_LIMIT_PER_LEVEL === 1 ? 'chest' : 'chests';
+    return `Collect ${TREASURE_CHEST_LIMIT_PER_LEVEL} ${chestWord} in Level ${requirement.sourceLevel + 1} and clear to Level ${requirement.targetLevel + 1}`;
+  }
+
+  function getCharacterUnlockHint(id) {
+    if (isSpecialDasher(id)) {
+      return getSpecialUnlockText(characters[id]?.puzzleUnlockLevel);
+    }
+    const unlockAt = Number.isInteger(characters[id]?.unlockAt) ? characters[id].unlockAt : 0;
+    return `Reach Level ${unlockAt + 1}`;
   }
 
   function isCharacterAvailableForCurrentLevel(id) {
@@ -5091,7 +5452,7 @@
     const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
     state.chestCollectsByLevelRun[safeLevel] = (state.chestCollectsByLevelRun[safeLevel] || 0) + 1;
     const chestCount = state.chestCollectsByLevelRun[safeLevel];
-    if (chestCount === TREASURE_CHEST_LIMIT_PER_RUN) {
+    if (chestCount === TREASURE_CHEST_LIMIT_PER_LEVEL) {
       const targetLevel = safeLevel + 1;
       if (targetLevel <= regions.length - 1 && !state.puzzleBankUnlocks[targetLevel]) {
         pushMessage(`Solstice chest milestone ready. Clear to Level ${targetLevel + 1} to unlock that next level's special dasher.`);
@@ -5099,13 +5460,9 @@
     }
   }
 
-  function getTreasureChestCollectTotalRun() {
-    return Object.values(state.chestCollectsByLevelRun)
-      .reduce((sum, count) => sum + (Number.isFinite(count) ? count : 0), 0);
-  }
-
-  function hasReachedTreasureChestLimitForRun() {
-    return getTreasureChestCollectTotalRun() >= TREASURE_CHEST_LIMIT_PER_RUN;
+  function hasReachedTreasureChestLimitForLevel(level) {
+    const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
+    return (state.chestCollectsByLevelRun[safeLevel] || 0) >= TREASURE_CHEST_LIMIT_PER_LEVEL;
   }
 
   function registerPuzzleBankSolve(puzzle) {
@@ -5307,7 +5664,11 @@
   }
 
   function getMovementLaneBounds() {
-    const role = characters[selectedCharacter]?.role || 'fast';
+    return getMovementLaneBoundsForCharacter(selectedCharacter);
+  }
+
+  function getMovementLaneBoundsForCharacter(characterId) {
+    const role = characters[characterId]?.role || 'fast';
     if (role === 'slow' && state.activeBoostMoves.slowFullWidth > 0) {
       return [0, lanes.length - 1];
     }
@@ -5387,18 +5748,21 @@
   }
 
   function refreshCharacterBio() {
-    if (!characterPower || !characters[selectedCharacter]) {
+    const focusId = previewCharacter || selectedCharacter;
+    if (!characterPower || !characters[focusId]) {
       return;
     }
-    const current = characters[selectedCharacter];
-    const food = getCurrentFoodSpec();
-    const [minLane, maxLane] = getMovementLaneBounds();
+    const current = characters[focusId];
+    const food = characterFood[focusId] || characterFood.emu;
+    const [minLane, maxLane] = getMovementLaneBoundsForCharacter(focusId);
     const laneMode = current.role === 'slow' ? `Restricted lanes ${minLane + 1}-${maxLane + 1}` : 'Full-width lanes';
     const energyScale = getEnergyScaleForLevel();
-    const specialUnlockText = getSpecialUnlockText(current.puzzleUnlockLevel);
-    const displayLabel = getCharacterDisplayLabel(selectedCharacter);
+    const unlockHint = getCharacterUnlockHint(focusId);
+    const displayLabel = getCharacterDisplayLabel(focusId);
+    const isAvailableNow = superModeEnabled || isCharacterAvailableForCurrentLevel(focusId);
+    const lockHint = isAvailableNow ? 'Ready to run in this level.' : `Locked for now. ${unlockHint}`;
     characterPower.innerHTML = `
-      <div class="spec-card ${isSpecialDasher(selectedCharacter) ? 'role-special' : `role-${current.role}`}">
+      <div class="spec-card ${isSpecialDasher(focusId) ? 'role-special' : `role-${current.role}`}">
         <div class="spec-head">
           <span class="spec-name">${current.name}</span>
           <span class="spec-role">${displayLabel}</span>
@@ -5413,12 +5777,22 @@
           <div class="spec-item"><span>Energy Slide</span><strong>${getEnergyCost('slide')}</strong></div>
           <div class="spec-item"><span>Lanes</span><strong>${laneMode}</strong></div>
           <div class="spec-item"><span>Level Scale</span><strong>x${energyScale.toFixed(2)}</strong></div>
-          <div class="spec-item"><span>Special Unlock</span><strong>${specialUnlockText}</strong></div>
+          <div class="spec-item"><span>Status</span><strong>${lockHint}</strong></div>
         </div>
         <a id="characterWikiLink" class="small character-wiki-link" href="${current.wikiUrl || 'https://en.wikipedia.org/wiki/Australian_fauna'}" target="_blank" rel="noopener noreferrer">Learn more about ${current.name}</a>
       </div>`;
     characterPower.style.height = 'auto';
     characterPower.style.height = `${characterPower.scrollHeight}px`;
+  }
+
+  function syncCharacterStartButtonState() {
+    if (!characterStartBtn) {
+      return;
+    }
+    const focusId = previewCharacter || selectedCharacter;
+    const canStartWithFocus = superModeEnabled || isCharacterAvailableForCurrentLevel(focusId);
+    characterStartBtn.disabled = !canStartWithFocus;
+    characterStartBtn.title = canStartWithFocus ? 'Start Run' : 'Pick an unlocked dasher to start';
   }
 
   function resumeSavedRun(run) {
@@ -5522,19 +5896,19 @@
       button.classList.remove('terrain-hidden');
       button.classList.toggle('locked', !isUnlocked);
       button.setAttribute('aria-disabled', String(!isUnlocked));
+      const unlockPill = button.querySelector('.unlock-pill');
+      if (unlockPill) {
+        unlockPill.textContent = isUnlocked ? 'UNLOCKED' : `LOCKED L${(characters[id]?.unlockAt || 0) + 1}`;
+      }
       if (isUnlocked) {
         button.title = superModeEnabled
           ? `${characters[id].power} (Super Mode unlocked)`
           : `${characters[id].power}`;
       } else {
-        const puzzleUnlockLevel = characters[id].puzzleUnlockLevel;
-        if (Number.isInteger(puzzleUnlockLevel)) {
-          button.title = getSpecialUnlockText(puzzleUnlockLevel);
-        } else {
-          button.title = `Available in level ${characters[id].unlockAt + 1}`;
-        }
+        button.title = getCharacterUnlockHint(id);
       }
     });
+    syncCharacterStartButtonState();
   }
 
   function pushMessage(text) {
@@ -5616,9 +5990,11 @@
   function spawnItem() {
     const roll = Math.random();
     const lane = getNextSpawnLane();
+    const act = getCurrentActProfile();
     const shardDeficit = Math.max(0, 7 - state.fragments);
+    const level = getPuzzleDifficultyLevel();
     const fragChance = Math.max(.26, .38 - state.progressLevel * .014 - shardDeficit * .008);
-    const treasureChestChance = hasReachedTreasureChestLimitForRun()
+    const treasureChestChance = hasReachedTreasureChestLimitForLevel(level)
       ? 0
       : Math.min(0.09, 0.04 + state.progressLevel * 0.01);
     const plus100Chance = 0.16;
@@ -5660,11 +6036,14 @@
     }
 
     // Bombs only: penalty values stay simple (-100 / -500).
-    const bombPenalty = Math.random() < 0.75 ? 100 : 500;
+    const heavyHazardBias = Math.max(0, Math.min(0.75, Number.isFinite(act.heavyHazardBias) ? act.heavyHazardBias : 0.24));
+    const lightHazardChance = Math.max(0.18, Math.min(0.85, 0.75 - heavyHazardBias));
+    const bombPenalty = Math.random() < lightHazardChance ? 100 : 500;
     state.items.push({ type: 'obstacle', lane, z: 1, hit: 1, penalty: bombPenalty });
 
     // Occasionally spawn a second hazard to force quick lane commitment.
-    if (Math.random() < Math.min(0.46, 0.2 + state.progressLevel * 0.06)) {
+    const hazardRate = Math.max(0.55, Math.min(1.9, Number.isFinite(act.hazardRate) ? act.hazardRate : 1));
+    if (Math.random() < Math.min(0.72, (0.2 + state.progressLevel * 0.06) * hazardRate)) {
       const [minLane, maxLane] = getMovementLaneBounds();
       const side = Math.random() < 0.5 ? -1 : 1;
       const lane2 = Math.max(minLane, Math.min(maxLane, lane + side));
@@ -5817,9 +6196,24 @@
     return pool;
   }
 
-  function getPuzzlePoolIdsForLevel(level) {
+  function resolvePoolLevelKey(poolMap, level) {
+    const keys = Object.keys(poolMap)
+      .map((key) => Number.parseInt(key, 10))
+      .filter((key) => Number.isInteger(key))
+      .sort((a, b) => a - b);
+    if (!keys.length) {
+      return 0;
+    }
     const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
-    const ids = levelPuzzlePools[safeLevel] || levelPuzzlePools[0] || [];
+    if (keys.includes(safeLevel)) {
+      return safeLevel;
+    }
+    return keys[safeLevel % keys.length];
+  }
+
+  function getPuzzlePoolIdsForLevel(level) {
+    const poolLevel = resolvePoolLevelKey(levelPuzzlePools, level);
+    const ids = levelPuzzlePools[poolLevel] || levelPuzzlePools[0] || [];
     return ids.filter((id) => Number.isInteger(id) && turingPuzzles[id]);
   }
 
@@ -5980,8 +6374,8 @@
   }
 
   function pickNextHeartRevivePuzzle(level) {
-    const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
-    const poolIds = heartPoolsByLevel[safeLevel] || heartPoolsByLevel[0] || [];
+    const poolLevel = resolvePoolLevelKey(heartPoolsByLevel, level);
+    const poolIds = heartPoolsByLevel[poolLevel] || heartPoolsByLevel[0] || [];
     const puzzle = pickUnseenPuzzle(heartPuzzles, poolIds);
     if (puzzle) {
       puzzleState.activePuzzle = puzzle;
@@ -5991,8 +6385,8 @@
   }
 
   function pickNextLevelPuzzle(level) {
-    const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
-    const poolIds = levelPoolsByLevel[safeLevel] || levelPoolsByLevel[0] || [];
+    const poolLevel = resolvePoolLevelKey(levelPoolsByLevel, level);
+    const poolIds = levelPoolsByLevel[poolLevel] || levelPoolsByLevel[0] || [];
     const puzzle = pickUnseenPuzzle(levelPuzzles, poolIds);
     if (puzzle) {
       puzzleState.activePuzzle = puzzle;
@@ -6061,8 +6455,8 @@
   }
 
   function chooseTreasurePuzzle(level) {
-    const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
-    const poolIds = treasurePoolsByLevel[safeLevel] || treasurePoolsByLevel[0] || [];
+    const poolLevel = resolvePoolLevelKey(treasurePoolsByLevel, level);
+    const poolIds = treasurePoolsByLevel[poolLevel] || treasurePoolsByLevel[0] || [];
     const puzzle = pickUnseenPuzzle(treasurePuzzles, poolIds);
     if (puzzle) {
       markPuzzleSignatureUsed(puzzle);
@@ -6333,7 +6727,7 @@
     const previousLevel = Math.max(0, next.nextLevel - 1);
     const chestCountForPreviousLevel = state.chestCollectsByLevelRun[previousLevel] || 0;
     let specialUnlockedNames = '';
-    if (next.nextLevel > 0 && chestCountForPreviousLevel >= TREASURE_CHEST_LIMIT_PER_RUN) {
+    if (next.nextLevel > 0 && chestCountForPreviousLevel >= TREASURE_CHEST_LIMIT_PER_LEVEL) {
       specialUnlockedNames = unlockPuzzleBankCharactersForLevel(next.nextLevel, false);
     }
     const allUnlockedNames = [next.unlockedNames, specialUnlockedNames].filter(Boolean).join(', ');
@@ -6516,9 +6910,12 @@
         levelCompleteOverlay.setAttribute('aria-hidden', 'true');
       }
       state.continueFromLevelUnlock = true;
-      setCharacterSelectionOpen(true);
-      state.objective = 'Choose your character for the next level.';
-      state.message = 'Next level unlocked! Pick your dasher.';
+      setCharacterSelectionOpen(false);
+      setLanding(false);
+      setGameplayChrome(true);
+      state.objective = `Running in ${regions[state.regionIndex].name} · ${getCurrentActDisplayLabel()}`;
+      state.message = 'Next level unlocked! Continuing run.';
+      onStartButtonPressed(true);
       syncHud();
     }, 2600);
   }
@@ -6572,29 +6969,34 @@
 
   function advanceDifficulty(dt) {
     const shardDeficit = Math.max(0, 7 - state.fragments);
-    state.difficulty += dt * (.04 + state.progressLevel * .018 + shardDeficit * .006) * difficultyMultipliers[gameDifficulty];
+    const act = getCurrentActProfile();
+    state.difficulty += dt * (.04 + state.progressLevel * .018 + shardDeficit * .006) * difficultyMultipliers[gameDifficulty] * act.difficultyScale;
   }
 
   function updateRegion() {
-    const fixedIndex = characterRegionMap[selectedCharacter] ?? 0;
-    if (state.regionIndex !== fixedIndex) {
-      state.regionIndex = fixedIndex;
-      state.objective = `Running in ${regions[state.regionIndex].name}`;
+    const levelIndex = Math.max(0, Math.min(regions.length - 1, state.progressLevel));
+    if (state.regionIndex !== levelIndex) {
+      state.regionIndex = levelIndex;
       applyRegionThreeTheme(regions[state.regionIndex]);
       syncAudioToRegion();
+    }
+    const runningObjective = `Running in ${regions[state.regionIndex].name} · ${getCurrentActDisplayLabel()}`;
+    if (state.running && state.objective !== runningObjective && (state.objective.startsWith('Running in ') || state.objective.includes('Traverse the expedition map'))) {
+      state.objective = runningObjective;
       syncHud();
     }
   }
 
   function updateSpawnTimers(dt) {
     const speedMult = difficultyMultipliers[gameDifficulty];
+    const act = getCurrentActProfile();
     state.spawnTimer -= dt;
     const shardDeficit = Math.max(0, 7 - state.fragments);
 
     if (state.spawnTimer <= 0) {
       spawnItem();
       const nextSpawn = .92 - state.difficulty * .06 - state.progressLevel * .08 - shardDeficit * .025;
-      state.spawnTimer = Math.max(.28, nextSpawn / speedMult);
+      state.spawnTimer = Math.max(.24, nextSpawn / (speedMult * act.spawnRate));
     }
   }
 
@@ -6700,8 +7102,9 @@
     }
 
     if (item.type === 'treasureChest') {
-      if (hasReachedTreasureChestLimitForRun()) {
-        pushMessage(`Treasure chest cap reached for this run (${TREASURE_CHEST_LIMIT_PER_RUN}/${TREASURE_CHEST_LIMIT_PER_RUN}).`);
+      const level = getPuzzleDifficultyLevel();
+      if (hasReachedTreasureChestLimitForLevel(level)) {
+        pushMessage(`Treasure chest cap reached for Level ${level + 1} (${TREASURE_CHEST_LIMIT_PER_LEVEL}/${TREASURE_CHEST_LIMIT_PER_LEVEL}).`);
         return;
       }
       playSfx('collect');
@@ -6751,6 +7154,7 @@
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
     const region = regions[state.regionIndex];
+    const act = getCurrentActProfile();
 
     if (terrain3dEnabled && threeState.ready) {
       // Completely clear the 2D canvas so Three.js shows through.
@@ -6770,7 +7174,16 @@
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
 
-    if (region.terrain === 'dunes') {
+    const regionName = normalizeBiomeName(region.name);
+    if (regionName === 'mangroves') {
+      drawMangrovesScene(w, h, act);
+    } else if (regionName === 'blue mountains') {
+      drawBlueMountainsScene(w, h, act);
+    } else if (regionName === 'nullarbor') {
+      drawNullarborScene(w, h, act);
+    } else if (regionName === 'observatory') {
+      drawObservatoryScene(w, h, act);
+    } else if (region.terrain === 'dunes') {
       drawOutbackScene(w, h);
     } else if (region.terrain === 'forest') {
       drawBushlandScene(w, h);
@@ -6782,24 +7195,85 @@
       drawTasmaniaScene(w, h);
     }
 
+    drawBiomeSignatureOverlay(w, h, region);
+
     // Keep mood but avoid over-darkening bright sky terrains like Tasmania.
-    const sceneDarken = region.terrain === 'mountains' ? 0.07 : 0.16;
+    const sceneDarkenBase = region.terrain === 'mountains' ? 0.07 : 0.16;
+    const sceneDarken = Math.max(0, Math.min(0.34, sceneDarkenBase + act.sceneDarkenOffset));
     ctx.fillStyle = `rgba(12, 8, 5, ${sceneDarken})`;
     ctx.fillRect(0, 0, w, h);
 
-    drawCinematicGrade(w, h, region.terrain);
+    drawCinematicGrade(w, h, region.terrain, act);
+    drawActAtmosphereOverlay(w, h, region, act);
 
-    drawRunnerTrack(w, h, region);
+    drawRunnerTrack(w, h, region, act);
   }
 
-  function drawRunnerTrack(w, h, region) {
+  function drawBiomeSignatureOverlay(w, h, region) {
+    const name = String(region?.name || '').toLowerCase();
+    const t = performance.now() * 0.001;
+
+    if (name.includes('mangrove')) {
+      const haze = ctx.createLinearGradient(0, h * 0.38, 0, h * 0.9);
+      haze.addColorStop(0, 'rgba(96, 150, 116, 0)');
+      haze.addColorStop(1, 'rgba(96, 150, 116, 0.14)');
+      ctx.fillStyle = haze;
+      ctx.fillRect(0, 0, w, h);
+      return;
+    }
+
+    if (name.includes('nullarbor')) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255, 224, 150, 0.16)';
+      ctx.lineWidth = 1.2;
+      for (let i = 0; i < 8; i += 1) {
+        const y = h * 0.58 + i * 18;
+        ctx.beginPath();
+        ctx.moveTo(0, y + Math.sin(t + i) * 2);
+        ctx.lineTo(w, y + Math.cos(t * 0.9 + i) * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
+
+    if (name.includes('observatory')) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(180, 200, 255, 0.62)';
+      for (let i = 0; i < 24; i += 1) {
+        const x = (i * 73 + (t * 24) % 113) % w;
+        const y = (i * 41 + (t * 12) % 67) % (h * 0.48);
+        const r = i % 5 === 0 ? 1.8 : 1.1;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+      return;
+    }
+
+    if (name.includes('blue mountains')) {
+      const fog = ctx.createLinearGradient(0, h * 0.3, 0, h * 0.9);
+      fog.addColorStop(0, 'rgba(185, 206, 232, 0)');
+      fog.addColorStop(1, 'rgba(185, 206, 232, 0.18)');
+      ctx.fillStyle = fog;
+      ctx.fillRect(0, 0, w, h);
+    }
+  }
+
+  function drawRunnerTrack(w, h, region, act) {
     const t = performance.now() * 0.001;
     const terrain = region.terrain;
+    const regionName = normalizeBiomeName(region?.name);
+    const isNullarbor = regionName === 'nullarbor';
     const horizonY = h * 0.58;
     const frontY = h * 0.8;
 
     const midGrad = ctx.createLinearGradient(0, horizonY, 0, frontY);
-    if (terrain === 'dunes') {
+    if (isNullarbor) {
+      midGrad.addColorStop(0, 'rgba(198, 184, 158, .2)');
+      midGrad.addColorStop(1, 'rgba(148, 132, 108, .32)');
+    } else if (terrain === 'dunes') {
       midGrad.addColorStop(0, 'rgba(160, 136, 106, .18)');
       midGrad.addColorStop(1, 'rgba(108, 88, 68, .28)');
     } else if (terrain === 'forest') {
@@ -6819,7 +7293,10 @@
     ctx.fillRect(0, horizonY, w, frontY - horizonY);
 
     const frontGrad = ctx.createLinearGradient(0, frontY, 0, h);
-    if (terrain === 'dunes') {
+    if (isNullarbor) {
+      frontGrad.addColorStop(0, 'rgba(162, 142, 116, .2)');
+      frontGrad.addColorStop(1, 'rgba(112, 95, 74, .34)');
+    } else if (terrain === 'dunes') {
       frontGrad.addColorStop(0, 'rgba(116, 92, 66, .12)');
       frontGrad.addColorStop(1, 'rgba(68, 48, 34, .22)');
     } else if (terrain === 'forest') {
@@ -6840,7 +7317,8 @@
 
     drawProceduralTerrainTexture(terrain, w, h, horizonY, t);
 
-    const showPathGuides = pathGuideSettings.enabled === true;
+    // Path guide/rut overlays are globally disabled for a cleaner scene.
+    const showPathGuides = false;
     const laneTopY = h * 0.585;
     const laneBottomY = h * 0.845;
     if (showPathGuides) {
@@ -6854,8 +7332,10 @@
         const laneAlphaSide = Number.isFinite(pathGuideSettings.laneAlphaSide) ? pathGuideSettings.laneAlphaSide : 0.05;
         const laneWidthCenter = Number.isFinite(pathGuideSettings.laneWidthCenter) ? pathGuideSettings.laneWidthCenter : 1.15;
         const laneWidthSide = Number.isFinite(pathGuideSettings.laneWidthSide) ? pathGuideSettings.laneWidthSide : 0.7;
-        const alpha = laneIndex === laneCenterIndex ? laneAlphaCenter : laneAlphaSide;
-        const laneTint = terrain === 'beach'
+        const alpha = (laneIndex === laneCenterIndex ? laneAlphaCenter : laneAlphaSide) * act.laneGuideAlphaScale;
+        const laneTint = isNullarbor
+          ? `rgba(230, 218, 194, ${alpha * 0.92})`
+          : terrain === 'beach'
           ? `rgba(232, 213, 174, ${alpha * 0.88})`
           : `rgba(222, 214, 198, ${alpha})`;
         ctx.strokeStyle = laneTint;
@@ -6880,7 +7360,9 @@
         const near = getTrackXNorm(0.5 + offset, 0.98);
         const rutAlpha = Number.isFinite(pathGuideSettings.rutAlpha) ? pathGuideSettings.rutAlpha : 0.17;
         const rutWidth = Number.isFinite(pathGuideSettings.rutWidth) ? pathGuideSettings.rutWidth : 0.85;
-        ctx.strokeStyle = `rgba(24, 20, 16, ${rutAlpha})`;
+        ctx.strokeStyle = isNullarbor
+          ? `rgba(98, 84, 64, ${rutAlpha * 0.72})`
+          : `rgba(24, 20, 16, ${rutAlpha})`;
         ctx.lineWidth = rutWidth;
         ctx.beginPath();
         ctx.moveTo(w * far, laneTopY + 4);
@@ -6907,9 +7389,12 @@
     ctx.font = '700 28px Nunito';
     ctx.textAlign = 'left';
     ctx.fillText(region.name.toUpperCase(), 16, h - 40);
+    ctx.fillStyle = hexToRgba(region.accent, 0.68);
+    ctx.font = '700 13px Nunito';
+    ctx.fillText(getCurrentActDisplayLabel().toUpperCase(), 16, h - 18);
   }
 
-  function drawCinematicGrade(w, h, terrain) {
+  function drawCinematicGrade(w, h, terrain, act) {
     // Vignette and grain to unify scenes into a less cartoon, more filmic frame.
     const vignette = ctx.createRadialGradient(w * 0.5, h * 0.56, Math.min(w, h) * 0.22, w * 0.5, h * 0.56, Math.max(w, h) * 0.8);
     vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
@@ -6920,7 +7405,8 @@
     if (visualSettings.cinematicScanlines === true) {
       const t = performance.now() * 0.001;
       ctx.save();
-      ctx.globalAlpha = terrain === 'industrial' ? 0.09 : 0.07;
+      const baseAlpha = terrain === 'industrial' ? 0.09 : 0.07;
+      ctx.globalAlpha = baseAlpha * act.scanlineAlphaScale;
       for (let i = 0; i < 38; i++) {
         const y = (i * 23 + t * 42) % h;
         ctx.fillStyle = i % 3 === 0 ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)';
@@ -6928,6 +7414,54 @@
       }
       ctx.restore();
     }
+  }
+
+  function drawActAtmosphereOverlay(w, h, region, act) {
+    const t = performance.now() * 0.001;
+    const accent = region.accent || '#ffd166';
+
+    if (act.index === 0) {
+      const haze = ctx.createLinearGradient(0, h * 0.22, 0, h * 0.88);
+      haze.addColorStop(0, 'rgba(255,255,255,0)');
+      haze.addColorStop(1, hexToRgba(accent, 0.06));
+      ctx.fillStyle = haze;
+      ctx.fillRect(0, 0, w, h);
+      return;
+    }
+
+    if (act.index === 1) {
+      ctx.save();
+      ctx.globalAlpha = 0.1;
+      ctx.strokeStyle = hexToRgba(accent, 0.46);
+      ctx.lineWidth = 1.2;
+      for (let i = 0; i < 12; i += 1) {
+        const y = h * 0.45 + i * 14 + Math.sin(t * 2.6 + i * 0.8) * 5;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.quadraticCurveTo(w * 0.5, y + Math.sin(t * 2 + i) * 8, w, y + Math.cos(t * 1.7 + i) * 6);
+        ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
+
+    const glow = ctx.createRadialGradient(w * 0.5, h * 0.28, h * 0.08, w * 0.5, h * 0.28, h * 0.62);
+    glow.addColorStop(0, hexToRgba(accent, 0.18));
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.save();
+    ctx.globalAlpha = 0.07;
+    ctx.fillStyle = hexToRgba(accent, 0.32);
+    for (let i = 0; i < 9; i += 1) {
+      const x = ((i / 9) * w + (t * 30 + i * 17) % 90) % w;
+      const y = h * 0.18 + Math.sin(t * 1.4 + i * 0.9) * 14;
+      ctx.beginPath();
+      ctx.arc(x, y, 2 + (i % 3), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   function drawWrappedCenteredText(text, x, y, maxWidth, lineHeight) {
@@ -7977,6 +8511,378 @@
     ctx.fillRect(0, h * 0.46, w, h * 0.24);
   }
 
+  function drawMangrovesScene(w, h, act) {
+    const t = performance.now() * 0.001;
+
+    const swampSky = ctx.createLinearGradient(0, 0, 0, h * 0.7);
+    swampSky.addColorStop(0, 'rgba(20, 46, 40, 0.95)');
+    swampSky.addColorStop(0.5, 'rgba(34, 78, 66, 0.9)');
+    swampSky.addColorStop(1, 'rgba(18, 52, 44, 0.55)');
+    ctx.fillStyle = swampSky;
+    ctx.fillRect(0, 0, w, h * 0.72);
+
+    const waterGrad = ctx.createLinearGradient(0, h * 0.54, 0, h);
+    waterGrad.addColorStop(0, 'rgba(18, 64, 58, 0.42)');
+    waterGrad.addColorStop(1, 'rgba(10, 30, 28, 0.86)');
+    ctx.fillStyle = waterGrad;
+    ctx.fillRect(0, h * 0.54, w, h * 0.46);
+
+    // Patchy reflections to keep water alive without synthetic horizontal bands.
+    for (let i = 0; i < 10; i += 1) {
+      const px = w * (0.08 + ((i * 0.17) % 0.84)) + Math.sin(t * (0.35 + i * 0.03) + i) * 18;
+      const py = h * (0.6 + ((i * 0.041) % 0.3)) + Math.cos(t * (0.9 + i * 0.04) + i * 0.8) * 6;
+      const pw = 42 + (i % 4) * 24;
+      const ph = 4 + (i % 3) * 2;
+      ctx.fillStyle = `rgba(118, 198, 164, ${0.05 + (i % 4) * 0.02})`;
+      ctx.beginPath();
+      ctx.ellipse(px, py, pw, ph, Math.sin(i * 1.7) * 0.08, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Dense mangrove belt: high tree count for a full forest read.
+    const mangroveTreeCount = 34;
+    for (let tree = 0; tree < mangroveTreeCount; tree += 1) {
+      const depth = tree / mangroveTreeCount;
+      const tx = w * (0.01 + depth * 0.98) + Math.sin(tree * 2.1) * 8;
+      const baseY = h * (0.67 + (tree % 3) * 0.02);
+      const topY = h * (0.36 + (tree % 4) * 0.035);
+      const lean = Math.sin(t * 0.4 + tree * 0.8) * (3 + (1 - depth) * 4);
+
+      // Main trunk.
+      ctx.strokeStyle = 'rgba(58, 40, 30, 0.64)';
+      ctx.lineWidth = 3.2 + (1 - depth) * 2.2;
+      ctx.beginPath();
+      ctx.moveTo(tx, baseY);
+      ctx.bezierCurveTo(tx + lean * 0.25, h * 0.56, tx + lean * 0.75, h * 0.46, tx + lean, topY);
+      ctx.stroke();
+
+      // Short branch hints so they read as trees, not poles.
+      ctx.strokeStyle = 'rgba(68, 48, 36, 0.38)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(tx + lean * 0.7, topY + 10);
+      ctx.lineTo(tx + lean * 0.7 - 10, topY + 4);
+      ctx.moveTo(tx + lean * 0.7, topY + 16);
+      ctx.lineTo(tx + lean * 0.7 + 12, topY + 10);
+      ctx.stroke();
+
+      // Canopy clumps.
+      const crownX = tx + lean;
+      const crownY = topY - 4;
+      ctx.fillStyle = 'rgba(42, 96, 70, 0.48)';
+      ctx.beginPath();
+      ctx.arc(crownX - 12, crownY + 5, 12, 0, Math.PI * 2);
+      ctx.arc(crownX + 10, crownY + 4, 11, 0, Math.PI * 2);
+      ctx.arc(crownX, crownY - 6, 13, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(66, 126, 92, 0.28)';
+      ctx.beginPath();
+      ctx.arc(crownX - 6, crownY - 4, 7, 0, Math.PI * 2);
+      ctx.arc(crownX + 7, crownY - 2, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Subtle mangrove roots near waterline (reduced visual dominance).
+      ctx.strokeStyle = 'rgba(86, 60, 44, 0.26)';
+      ctx.lineWidth = 1.2;
+      for (let r = 0; r < 2; r += 1) {
+        const rootY = baseY - r * 5;
+        const spread = 14 + r * 6;
+        ctx.beginPath();
+        ctx.moveTo(tx, rootY);
+        ctx.quadraticCurveTo(tx - spread * 0.45, rootY + 5, tx - spread, rootY + 12 + r * 2);
+        ctx.moveTo(tx, rootY);
+        ctx.quadraticCurveTo(tx + spread * 0.45, rootY + 5, tx + spread, rootY + 12 + r * 2);
+        ctx.stroke();
+      }
+    }
+
+    // Drifting leaves and insects (reduced density to avoid noisy look).
+    for (let i = 0; i < 46; i += 1) {
+      const speed = 10 + (i % 7) * 2.5;
+      const x = ((t * speed + i * 47) % (w + 120)) - 60;
+      const y = h * (0.18 + (i / 46) * 0.68) + Math.sin(t * 1.5 + i * 0.5) * 6;
+      const size = 1.4 + (i % 3) * 0.8;
+      ctx.fillStyle = i % 5 === 0
+        ? `rgba(214, 242, 145, ${0.11 + (i % 4) * 0.03})`
+        : `rgba(122, 198, 112, ${0.1 + (i % 4) * 0.04})`;
+      ctx.beginPath();
+      ctx.ellipse(x, y, size, size * 1.5, Math.sin(t + i), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Croc-like silhouette glide for scene identity.
+    const crocX = ((t * (22 + act.index * 4)) % (w + 180)) - 90;
+    const crocY = h * 0.78 + Math.sin(t * 1.7) * 2;
+    ctx.fillStyle = 'rgba(26, 42, 28, 0.58)';
+    ctx.beginPath();
+    ctx.ellipse(crocX, crocY, 42, 11, 0.06, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(crocX + 42, crocY);
+    ctx.lineTo(crocX + 58, crocY - 5);
+    ctx.lineTo(crocX + 58, crocY + 5);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawBlueMountainsScene(w, h, act) {
+    const t = performance.now() * 0.001;
+
+    const sky = ctx.createLinearGradient(0, 0, 0, h * 0.7);
+    sky.addColorStop(0, 'rgba(52, 78, 118, 0.94)');
+    sky.addColorStop(0.45, 'rgba(86, 114, 156, 0.88)');
+    sky.addColorStop(1, 'rgba(56, 78, 112, 0.4)');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, h * 0.72);
+
+    // Brown foothills in front, so the range doesn't read as only blue slabs.
+    ctx.fillStyle = 'rgba(126, 98, 74, 0.54)';
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    for (let x = 0; x <= w; x += 16) {
+      const nx = x / w;
+      const roll = Math.sin(nx * 5.6 + 0.7) * 11 + Math.cos(nx * 10.8 + 0.2) * 5;
+      ctx.lineTo(x, h * 0.7 + roll);
+    }
+    ctx.lineTo(w, h);
+    ctx.closePath();
+    ctx.fill();
+
+    // Tasmania-style mountain massing: layered silhouettes, not horizontal string lines.
+    const mountainLayers = [
+      { baseY: 0.74, amp: 0.11, detail: 0.028, alpha: 0.58, color: [88, 112, 146], seedX: 10.4, seedY: 6.8 },
+      { baseY: 0.69, amp: 0.14, detail: 0.036, alpha: 0.72, color: [104, 128, 162], seedX: 22.9, seedY: 12.6 },
+      { baseY: 0.64, amp: 0.17, detail: 0.045, alpha: 0.86, color: [126, 150, 182], seedX: 35.1, seedY: 18.4 }
+    ];
+
+    mountainLayers.forEach((layer, index) => {
+      ctx.fillStyle = `rgba(${layer.color[0]}, ${layer.color[1]}, ${layer.color[2]}, ${layer.alpha})`;
+      ctx.beginPath();
+      ctx.moveTo(0, h);
+      for (let x = 0; x <= w; x += 10) {
+        const nx = x / w;
+        const primary = Math.abs(octaveNoise(nx * 2.7 + layer.seedX, layer.seedY));
+        const sharp = Math.pow(primary, 1.75);
+        const jag = Math.abs(octaveNoise(nx * 8.1 + layer.seedX * 1.5, layer.seedY * 0.92));
+        const crag = (jag - 0.5) * layer.detail;
+        const y = h * (layer.baseY - sharp * (layer.amp * 1.28) + crag);
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(w, h);
+      ctx.closePath();
+      ctx.fill();
+
+      // White cap highlights on upper ridges.
+      ctx.strokeStyle = index < 2 ? 'rgba(234, 244, 252, 0.5)' : 'rgba(244, 250, 255, 0.68)';
+      ctx.lineWidth = index < 2 ? 1.8 : 2.3;
+      ctx.beginPath();
+      for (let x = 0; x <= w; x += 14) {
+        const nx = x / w;
+        const ridge = Math.abs(octaveNoise(nx * 2.7 + layer.seedX, layer.seedY));
+        const micro = octaveNoise(nx * 9.2 + layer.seedX * 1.8, layer.seedY * 0.7);
+        const y = h * (layer.baseY - ridge * layer.amp + micro * layer.detail) - (index < 2 ? 8 : 11);
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    });
+
+    // Freeform fog ribbons (non-ellipse) drifting through the valley.
+    for (let i = 0; i < 8; i += 1) {
+      const y = h * (0.42 + i * 0.05) + Math.cos(t * 0.18 + i * 0.7) * 3.4;
+      const drift = Math.sin(t * (0.09 + i * 0.01) + i) * 12;
+      const fog = ctx.createLinearGradient(0, y - 8, 0, y + 8);
+      fog.addColorStop(0, 'rgba(214, 228, 242, 0)');
+      fog.addColorStop(0.5, `rgba(214, 228, 242, ${0.08 + (i % 3) * 0.02})`);
+      fog.addColorStop(1, 'rgba(214, 228, 242, 0)');
+      ctx.fillStyle = fog;
+
+      ctx.beginPath();
+      ctx.moveTo(-60 + drift, y - 4);
+      ctx.bezierCurveTo(w * 0.2 + drift, y - 13, w * 0.42 + drift, y + 9, w * 0.64 + drift, y - 2);
+      ctx.bezierCurveTo(w * 0.82 + drift, y - 10, w + 90 + drift, y + 8, w + 90 + drift, y + 4);
+      ctx.lineTo(w + 90 + drift, y + 12);
+      ctx.bezierCurveTo(w * 0.78 + drift, y + 18, w * 0.42 + drift, y + 16, -60 + drift, y + 12);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Cable-car route and moving carriage.
+    const cableY = h * 0.37;
+    ctx.strokeStyle = 'rgba(188, 206, 228, 0.42)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(0, cableY - 10);
+    ctx.lineTo(w, cableY + 14);
+    ctx.stroke();
+
+    const carX = ((t * (38 + act.index * 6)) % (w + 90)) - 45;
+    const carY = cableY - 8 + (carX / w) * 24;
+    ctx.fillStyle = 'rgba(226, 182, 82, 0.76)';
+    ctx.fillRect(carX - 10, carY, 20, 12);
+    ctx.strokeStyle = 'rgba(60, 46, 34, 0.6)';
+    ctx.beginPath();
+    ctx.moveTo(carX, carY);
+    ctx.lineTo(carX, carY - 8);
+    ctx.stroke();
+  }
+
+  function drawNullarborScene(w, h, act) {
+    const t = performance.now() * 0.001;
+
+    const sky = ctx.createLinearGradient(0, 0, 0, h * 0.64);
+    sky.addColorStop(0, 'rgba(198, 208, 212, 0.96)');
+    sky.addColorStop(0.5, 'rgba(211, 202, 184, 0.9)');
+    sky.addColorStop(1, 'rgba(178, 160, 132, 0.54)');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, h * 0.68);
+
+    // Far limestone escarpment: mostly flat with subtle breaks.
+    ctx.fillStyle = 'rgba(194, 184, 164, 0.56)';
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.535);
+    for (let x = 0; x <= w; x += 18) {
+      const nx = x / w;
+      const ridge = Math.sin(nx * 2.8 + 0.4) * 2.4 + Math.cos(nx * 6.2) * 1.1;
+      ctx.lineTo(x, h * 0.536 + ridge);
+    }
+    ctx.lineTo(w, h * 0.64);
+    ctx.lineTo(0, h * 0.64);
+    ctx.closePath();
+    ctx.fill();
+
+    // Broad, treeless limestone plain.
+    ctx.fillStyle = 'rgba(140, 122, 96, 0.66)';
+    ctx.fillRect(0, h * 0.62, w, h * 0.38);
+
+    // Chalk bands and horizontal bedding lines.
+    for (let i = 0; i < 11; i += 1) {
+      const y = h * (0.635 + i * 0.029) + Math.sin(t * (0.8 + act.index * 0.11) + i * 0.7) * 1.8;
+      ctx.strokeStyle = `rgba(224, 214, 192, ${0.08 + (i % 4) * 0.02})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y + Math.cos(t * 0.7 + i) * 1.1);
+      ctx.stroke();
+    }
+
+    // Sparse low scrub and sinkhole-like limestone pocks (no trees).
+    for (let i = 0; i < 28; i += 1) {
+      const px = ((i * 97) % (w + 120)) - 60;
+      const py = h * (0.66 + ((i * 37) % 28) / 100) + Math.sin(t * 0.35 + i) * 0.8;
+      const r = 2.2 + (i % 3) * 1.1;
+      ctx.fillStyle = `rgba(92, 100, 76, ${0.2 + (i % 4) * 0.05})`;
+      ctx.beginPath();
+      ctx.ellipse(px, py, r * 1.8, r, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(196, 184, 156, 0.24)';
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.arc(px + r * 0.9, py + r * 0.25, r * 0.7, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Crosswind dust streaks to keep motion alive over open plain.
+    for (let i = 0; i < 64; i += 1) {
+      const x = ((t * (42 + (i % 6) * 8) + i * 58) % (w + 180)) - 90;
+      const y = h * (0.36 + (i / 64) * 0.46) + Math.sin(t * 1.05 + i * 0.4) * 5;
+      const len = 16 + (i % 4) * 6;
+      ctx.strokeStyle = `rgba(236, 216, 178, ${0.07 + (i % 4) * 0.035})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x - len, y);
+      ctx.lineTo(x + len, y + 1.2);
+      ctx.stroke();
+    }
+
+    // Heat-haze bands near horizon.
+    for (let i = 0; i < 4; i += 1) {
+      const hazeY = h * (0.57 + i * 0.022) + Math.sin(t * 0.5 + i) * 1.1;
+      const haze = ctx.createLinearGradient(0, hazeY - 3, 0, hazeY + 3);
+      haze.addColorStop(0, 'rgba(235, 222, 198, 0)');
+      haze.addColorStop(0.5, `rgba(235, 222, 198, ${0.13 - i * 0.02})`);
+      haze.addColorStop(1, 'rgba(235, 222, 198, 0)');
+      ctx.fillStyle = haze;
+      ctx.fillRect(0, hazeY - 3, w, 6);
+    }
+  }
+
+  function drawObservatoryScene(w, h, act) {
+    const t = performance.now() * 0.001;
+
+    const sky = ctx.createLinearGradient(0, 0, 0, h * 0.7);
+    sky.addColorStop(0, 'rgba(6, 10, 30, 1)');
+    sky.addColorStop(0.55, 'rgba(14, 24, 58, 0.9)');
+    sky.addColorStop(1, 'rgba(10, 18, 42, 0.45)');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, h * 0.74);
+
+    // Constellation drift and twinkling stars.
+    for (let i = 0; i < 120; i += 1) {
+      const x = (i * 71 + (t * (6 + act.index * 1.5))) % w;
+      const y = (i * 43 + (t * 2.5)) % (h * 0.56);
+      const r = i % 5 === 0 ? 1.9 : 1.1;
+      const a = 0.3 + (Math.sin(t * 1.8 + i * 0.6) + 1) * 0.2;
+      ctx.fillStyle = `rgba(196, 214, 255, ${a})`;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.strokeStyle = 'rgba(148, 176, 244, 0.22)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 12; i += 1) {
+      const x1 = (i * 97 + t * 9) % w;
+      const y1 = (i * 51) % (h * 0.5);
+      const x2 = (x1 + 72 + (i % 3) * 24) % w;
+      const y2 = (y1 + 36 + (i % 4) * 14) % (h * 0.5);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+
+    // Rotating dish silhouettes and scanning beams.
+    const baseY = h * 0.67;
+    for (let i = 0; i < 3; i += 1) {
+      const x = w * (0.2 + i * 0.28);
+      const rot = Math.sin(t * (0.8 + i * 0.2)) * 0.45;
+      ctx.fillStyle = 'rgba(44, 56, 78, 0.72)';
+      ctx.fillRect(x - 4, baseY - 38, 8, 38);
+      ctx.save();
+      ctx.translate(x, baseY - 42);
+      ctx.rotate(rot);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 24, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      const beam = ctx.createLinearGradient(0, 0, 0, -h * 0.4);
+      beam.addColorStop(0, 'rgba(158, 186, 255, 0.28)');
+      beam.addColorStop(1, 'rgba(158, 186, 255, 0)');
+      ctx.fillStyle = beam;
+      ctx.beginPath();
+      ctx.moveTo(-5, -2);
+      ctx.lineTo(5, -2);
+      ctx.lineTo(28, -h * 0.36);
+      ctx.lineTo(-28, -h * 0.36);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Orbital debris-like particles.
+    for (let i = 0; i < 36; i += 1) {
+      const orbit = t * (0.8 + (i % 5) * 0.16) + i * 0.7;
+      const x = w * 0.5 + Math.cos(orbit) * (80 + (i % 6) * 26);
+      const y = h * 0.28 + Math.sin(orbit * 0.9) * (36 + (i % 4) * 14);
+      ctx.fillStyle = `rgba(184, 208, 255, ${0.12 + (i % 4) * 0.05})`;
+      ctx.beginPath();
+      ctx.arc(x, y, 1.2 + (i % 3) * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   function drawTasmaniaScene(w, h) {
     const t = performance.now() * 0.001;
     const vortexX = w * 0.56;
@@ -8650,7 +9556,7 @@
 
   // ─── Vector character sprite system ─────────────────────────────────────────
 
-  const CHAR_COLORS = {
+  const CHAR_COLORS = globalThis.DawnDashersCharacterColors || {
     emu:        { body: '#7a6548', neck: '#8a7558', beak: '#c89040', eye: '#1a0e06', legs: '#6b5438' },
     kookaburra: { body: '#7a5c18', wings: '#3a2808', beak: '#d09828', eye: '#1a0e06', chest: '#f0e0a0' },
     cockatoo:   { body: '#f0ece0', wings: '#d8c880', crest: '#ffd000', beak: '#c09048', eye: '#2a1808' },
@@ -8664,8 +9570,75 @@
     bilby:      { body: '#706860', ear: '#e8c0b8', belly: '#c0b0a0', eye: '#281820', nose: '#322020' },
     tasdevil:   { body: '#201818', chest: '#f0e8e0', jaw: '#302020', eye: '#e02010' },
     quokka:     { body: '#b08840', belly: '#d0b068', ear: '#c09860', eye: '#281808' },
-    numbat:     { body: '#c08848', stripe: '#381e08', belly: '#e0c080', tail: '#a06828', eye: '#180e08' }
+    numbat:     { body: '#c08848', stripe: '#381e08', belly: '#e0c080', tail: '#a06828', eye: '#180e08' },
+    ibis:       { body: '#f0ede3', wings: '#2f2a25', beak: '#d79f58', eye: '#20150d' },
+    mudcrab:    { body: '#8f3f2a', belly: '#cb7a42', claw: '#d68e55', eye: '#2a120a' },
+    jabiru:     { body: '#171c22', wings: '#dde2ea', beak: '#21272d', eye: '#9decd8' },
+    lyrebird:   { body: '#86674a', wings: '#6b5039', crest: '#ceb183', beak: '#b9894f', eye: '#21150d' },
+    wallaroo:   { body: '#9c7552', belly: '#d7b58a', ear: '#b48f69', eye: '#2b190d' },
+    glider:     { body: '#998673', belly: '#d7cabc', tail: '#5c4d40', eye: '#1f1610' },
+    eagle:      { body: '#5a493c', wings: '#3e3228', beak: '#d2a45a', eye: '#20140c' },
+    thorny:     { body: '#b17845', spine: '#f1c987', nose: '#4a2916', eye: '#1a0e07' },
+    quoll:      { body: '#6d5747', belly: '#ceb089', tail: '#4b3a2f', eye: '#190f09' },
+    owl:        { body: '#716258', wings: '#544941', beak: '#cda068', eye: '#1a1008' },
+    bandicoot:  { body: '#8f7761', belly: '#d7c1a7', ear: '#ad9278', eye: '#1f140d' },
+    cassowary:  { body: '#1f2b38', neck: '#2d7ecf', beak: '#8bc8ff', eye: '#d0efff' }
   };
+
+  function drawMudCrabSprite(gait, expression, sliding) {
+    const c = CHAR_COLORS.mudcrab;
+    const wave = gait * (sliding ? 0.25 : 0.75);
+    const bodyY = sliding ? 8 : 0;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(0, 30 + bodyY, 18, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Side legs
+    ctx.strokeStyle = c.claw;
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 3; i += 1) {
+      const ly = 8 + i * 5 + bodyY;
+      ctx.beginPath();
+      ctx.moveTo(-6, ly);
+      ctx.lineTo(-14 - i * 5, ly + (i % 2 ? 4 : -2) + wave * 2);
+      ctx.moveTo(6, ly);
+      ctx.lineTo(14 + i * 5, ly + (i % 2 ? -2 : 4) - wave * 2);
+      ctx.stroke();
+    }
+
+    // Body shell
+    ctx.fillStyle = c.body;
+    ctx.beginPath();
+    ctx.ellipse(0, 10 + bodyY, 15, 11, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = c.belly;
+    ctx.beginPath();
+    ctx.ellipse(0, 13 + bodyY, 10, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Claws
+    const pinch = Math.sin(performance.now() * 0.01) * 4;
+    ctx.strokeStyle = c.claw;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-12, 6 + bodyY);
+    ctx.lineTo(-22, -2 + bodyY - pinch);
+    ctx.moveTo(12, 6 + bodyY);
+    ctx.lineTo(22, -2 + bodyY + pinch);
+    ctx.stroke();
+    ctx.fillStyle = c.claw;
+    ctx.beginPath();
+    ctx.ellipse(-24, -4 + bodyY - pinch, 5, 3, -0.3, 0, Math.PI * 2);
+    ctx.ellipse(24, -4 + bodyY + pinch, 5, 3, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (!sliding) {
+      drawEyeSet(-4, 4 + bodyY, 3.2, expression, c.eye);
+      drawEyeSet(4, 4 + bodyY, 3.2, expression, c.eye);
+    }
+  }
 
   function drawEyeSet(ex, ey, r, expression, eyeColor) {
     // Whites / base
@@ -9206,6 +10179,82 @@
     }
   }
 
+  function drawThornySprite(gait, expression, sliding) {
+    const c = CHAR_COLORS.thorny || CHAR_COLORS.echidna;
+    const crawl = gait * (sliding ? 0.2 : 1);
+    const bodyY = sliding ? 10 : 0;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath();
+    ctx.ellipse(0, 30 + bodyY, 19, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Tail
+    ctx.strokeStyle = c.body;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(14, 10 + bodyY);
+    ctx.quadraticCurveTo(28, 14 + bodyY + crawl * 2, 30, 24 + bodyY);
+    ctx.stroke();
+
+    // Body
+    ctx.fillStyle = c.body;
+    ctx.beginPath();
+    ctx.ellipse(0, 10 + bodyY, 17, 12, 0.06, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Spiky dorsal silhouette
+    ctx.fillStyle = c.spine || '#f1c987';
+    for (let i = 0; i < 7; i += 1) {
+      const x = -12 + i * 4;
+      const peak = 1 + (i % 2 ? 0 : 3);
+      ctx.beginPath();
+      ctx.moveTo(x - 2, 2 + bodyY);
+      ctx.lineTo(x, -7 - peak + bodyY);
+      ctx.lineTo(x + 2, 2 + bodyY);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Legs
+    ctx.strokeStyle = c.body;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-9, 14 + bodyY); ctx.lineTo(-16, 21 + bodyY + crawl * 1.2);
+    ctx.moveTo(-3, 16 + bodyY); ctx.lineTo(-10, 24 + bodyY - crawl * 0.8);
+    ctx.moveTo(4, 16 + bodyY);  ctx.lineTo(11, 24 + bodyY + crawl * 0.8);
+    ctx.moveTo(10, 14 + bodyY); ctx.lineTo(17, 21 + bodyY - crawl * 1.2);
+    ctx.stroke();
+
+    if (!sliding) {
+      // Angular head and snout
+      ctx.fillStyle = c.body;
+      ctx.beginPath();
+      ctx.moveTo(-12, 4 + bodyY);
+      ctx.lineTo(-21, -1 + bodyY);
+      ctx.lineTo(-14, -8 + bodyY);
+      ctx.lineTo(-4, -5 + bodyY);
+      ctx.closePath();
+      ctx.fill();
+
+      // Face spikes
+      ctx.fillStyle = c.spine || '#f1c987';
+      ctx.beginPath();
+      ctx.moveTo(-16, -5 + bodyY);
+      ctx.lineTo(-18, -11 + bodyY);
+      ctx.lineTo(-13, -7 + bodyY);
+      ctx.closePath();
+      ctx.fill();
+
+      // Eye and nose
+      drawEyeSet(-10, -3 + bodyY, 3.2, expression, c.eye || '#1a0e07');
+      ctx.fillStyle = c.nose || '#4a2916';
+      ctx.beginPath();
+      ctx.ellipse(-20, -1 + bodyY, 1.8, 1.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   function drawDingoSprite(gait, expression, sliding) {
     const c = CHAR_COLORS.dingo;
     const legSwing = gait * (sliding ? 0 : 13);
@@ -9285,70 +10334,103 @@
     }
   }
 
-  function drawGenericRunnerSprite(charKey, gait, expression, sliding) {
-    // Fallback for platypus, possum, bilby, quokka, numbat, tasdevil
+  function drawDistinctRunnerSprite(charKey, gait, expression, sliding) {
     const c = CHAR_COLORS[charKey] || CHAR_COLORS.wombat;
-    const waddle = gait * (sliding ? 0 : 10);
+    const stride = gait * (sliding ? 0 : 10);
     const bodyY = sliding ? 10 : 0;
-    const isTasDevil = charKey === 'tasdevil';
-    const isPlatypus = charKey === 'platypus';
-    const isBilby = charKey === 'bilby';
-    const isQuokka = charKey === 'quokka';
-    const isNumbat = charKey === 'numbat';
+    const profileByKey = {
+      possum: { bodyRX: 12, bodyRY: 15, headRX: 9, headRY: 8, bodyTilt: -0.06, tail: 'curl', ears: 'point', eyeDX: 3.8, eyeDY: -15 },
+      bilby: { bodyRX: 11.5, bodyRY: 15, headRX: 8.5, headRY: 8, bodyTilt: 0.03, tail: 'stub', ears: 'bilby', eyeDX: 3.6, eyeDY: -15.5 },
+      quokka: { bodyRX: 12.5, bodyRY: 15.5, headRX: 10.5, headRY: 9, bodyTilt: 0, tail: 'stub', ears: 'round', eyeDX: 4.1, eyeDY: -15 },
+      platypus: { bodyRX: 14, bodyRY: 12.5, headRX: 8.5, headRY: 7.2, bodyTilt: 0.08, tail: 'paddle', ears: 'none', eyeDX: 2.9, eyeDY: -13.2 },
+      numbat: { bodyRX: 13.5, bodyRY: 13.5, headRX: 8.4, headRY: 7.8, bodyTilt: -0.04, tail: 'brush', ears: 'point', eyeDX: 3.2, eyeDY: -14.4 },
+      tasdevil: { bodyRX: 13, bodyRY: 16.5, headRX: 11.5, headRY: 10, bodyTilt: 0.02, tail: 'stub', ears: 'point', eyeDX: 4.6, eyeDY: -16 },
+      glider: { bodyRX: 12.5, bodyRY: 14.2, headRX: 8.8, headRY: 8, bodyTilt: -0.02, tail: 'long', ears: 'round', eyeDX: 4.6, eyeDY: -15.3 },
+      quoll: { bodyRX: 12, bodyRY: 14.6, headRX: 9.4, headRY: 8.2, bodyTilt: 0.03, tail: 'ring', ears: 'point', eyeDX: 4.1, eyeDY: -15 }
+    };
+    const p = profileByKey[charKey] || profileByKey.possum;
 
-    // Shadow
     ctx.fillStyle = 'rgba(0,0,0,0.18)';
     ctx.beginPath();
-    ctx.ellipse(0, 32 + bodyY, 15, 5, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 32 + bodyY, 15 + p.bodyRX * 0.08, 5, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Tail
-    if (charKey === 'possum' || isNumbat || charKey === 'platypus') {
+    // Tail silhouette per character.
+    if (p.tail !== 'stub') {
       ctx.strokeStyle = c.tail || c.body;
-      ctx.lineWidth = isNumbat ? 5 : 3;
+      ctx.lineWidth = p.tail === 'brush' ? 5 : 3.5;
       ctx.beginPath();
-      ctx.moveTo(10, 10 + bodyY);
-      ctx.quadraticCurveTo(24, 16 + bodyY - waddle * 0.4, 28 + waddle * 0.3, 26 + bodyY);
-      ctx.stroke();
+      if (p.tail === 'paddle') {
+        ctx.moveTo(11, 9 + bodyY);
+        ctx.quadraticCurveTo(24, 13 + bodyY - stride * 0.25, 30, 20 + bodyY);
+        ctx.stroke();
+        ctx.fillStyle = c.tail || c.body;
+        ctx.beginPath();
+        ctx.ellipse(32, 21 + bodyY, 7, 4, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        const curl = p.tail === 'curl' ? 5 : p.tail === 'ring' ? 3 : 2;
+        ctx.moveTo(10, 10 + bodyY);
+        ctx.quadraticCurveTo(24, 16 + bodyY - stride * 0.3, 29 + stride * 0.2, 24 + bodyY + curl);
+        ctx.stroke();
+      }
     }
 
     // Legs
     ctx.strokeStyle = c.body;
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.moveTo(-7, 14 + bodyY); ctx.lineTo(-7 + waddle, 26 + bodyY);
-    ctx.moveTo(7, 14 + bodyY);  ctx.lineTo(7 - waddle, 26 + bodyY);
+    ctx.moveTo(-7, 14 + bodyY); ctx.lineTo(-7 + stride, 26 + bodyY);
+    ctx.moveTo(7, 14 + bodyY);  ctx.lineTo(7 - stride, 26 + bodyY);
     ctx.stroke();
 
     // Body
+    ctx.save();
+    ctx.rotate(p.bodyTilt);
     ctx.fillStyle = c.body;
     ctx.beginPath();
-    ctx.ellipse(0, 4 + bodyY, 13, 16, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 4 + bodyY, p.bodyRX, p.bodyRY, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Numbat stripes
-    if (isNumbat) {
-      ctx.strokeStyle = c.stripe;
+    ctx.fillStyle = c.belly || c.body;
+    ctx.beginPath();
+    ctx.ellipse(-1, 8 + bodyY, p.bodyRX * 0.58, p.bodyRY * 0.62, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Character motifs.
+    if (charKey === 'numbat') {
+      ctx.strokeStyle = c.stripe || '#381e08';
       ctx.lineWidth = 2;
-      for (let i = 0; i < 5; i++) {
-        const sy = -4 + i * 5 + bodyY;
+      for (let i = 0; i < 6; i += 1) {
+        const sy = -4 + i * 4.5 + bodyY;
         ctx.beginPath();
-        ctx.moveTo(-12, sy); ctx.lineTo(12, sy + 2);
+        ctx.moveTo(-11, sy);
+        ctx.lineTo(11, sy + 2);
         ctx.stroke();
       }
     }
-
-    // Belly
-    ctx.fillStyle = c.belly;
-    ctx.beginPath();
-    ctx.ellipse(0, 8 + bodyY, 8, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Platypus bill
-    if (isPlatypus) {
-      ctx.fillStyle = c.bill;
+    if (charKey === 'quoll') {
+      ctx.fillStyle = 'rgba(245, 226, 188, 0.82)';
+      for (let i = 0; i < 5; i += 1) {
+        ctx.beginPath();
+        ctx.arc(-8 + i * 4, 2 + bodyY + (i % 2 ? 2 : 0), 1.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    if (charKey === 'glider' && !sliding) {
+      ctx.fillStyle = 'rgba(210, 188, 168, 0.52)';
       ctx.beginPath();
-      ctx.ellipse(-18, -14, 12, 5, 0.2, 0, Math.PI * 2);
+      ctx.moveTo(-9, -6);
+      ctx.lineTo(-18, 6 + bodyY);
+      ctx.lineTo(-7, 10 + bodyY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(9, -6);
+      ctx.lineTo(18, 6 + bodyY);
+      ctx.lineTo(7, 10 + bodyY);
+      ctx.closePath();
       ctx.fill();
     }
 
@@ -9356,52 +10438,61 @@
       // Head
       ctx.fillStyle = c.body;
       ctx.beginPath();
-      ctx.ellipse(0, -14, isTasDevil ? 13 : 10, 10, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -14, p.headRX, p.headRY, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Tas devil white chest
-      if (isTasDevil) {
-        ctx.fillStyle = c.chest;
+      if (charKey === 'platypus') {
+        ctx.fillStyle = c.bill || '#c09048';
         ctx.beginPath();
-        ctx.ellipse(0, -8, 8, 12, 0, 0, Math.PI * 2);
+        ctx.ellipse(-16, -14, 11, 4.5, 0.22, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // Bilby big ears
-      if (isBilby) {
+      if (charKey === 'tasdevil') {
+        ctx.fillStyle = c.chest || '#f0e8e0';
+        ctx.beginPath();
+        ctx.ellipse(0, -8, 8, 11, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (p.ears === 'bilby') {
         ctx.fillStyle = c.body;
         ctx.beginPath();
         ctx.ellipse(-8, -26, 4, 14, -0.3, 0, Math.PI * 2);
         ctx.ellipse(6, -26, 3.5, 12, 0.25, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = c.ear;
+        ctx.fillStyle = c.ear || '#e8c0b8';
         ctx.beginPath();
         ctx.ellipse(-8, -26, 2, 10, -0.3, 0, Math.PI * 2);
         ctx.ellipse(6, -26, 2, 8, 0.25, 0, Math.PI * 2);
         ctx.fill();
-      }
-
-      // Quokka rounded ears + smile
-      if (isQuokka) {
-        ctx.fillStyle = c.ear;
+      } else if (p.ears === 'round') {
+        ctx.fillStyle = c.ear || c.body;
         ctx.beginPath();
-        ctx.ellipse(-10, -22, 6, 6, 0, 0, Math.PI * 2);
-        ctx.ellipse(10, -22, 6, 6, 0, 0, Math.PI * 2);
+        ctx.ellipse(-9, -21, 5.5, 5.5, 0, 0, Math.PI * 2);
+        ctx.ellipse(9, -21, 5.5, 5.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (p.ears === 'point') {
+        ctx.fillStyle = c.body;
+        ctx.beginPath();
+        ctx.moveTo(-6, -21); ctx.lineTo(-10, -29); ctx.lineTo(-2, -23);
+        ctx.moveTo(6, -21);  ctx.lineTo(10, -29);  ctx.lineTo(2, -23);
         ctx.fill();
       }
 
-      // Nose
       ctx.fillStyle = c.nose || '#2a1808';
       ctx.beginPath();
-      ctx.ellipse(isPlatypus ? -16 : 0, -10, isPlatypus ? 2 : 3, 2, 0, 0, Math.PI * 2);
+      if (charKey === 'platypus') {
+        ctx.ellipse(-16, -12, 1.6, 1.1, 0, 0, Math.PI * 2);
+      } else {
+        ctx.ellipse(0, -10, 3, 2, 0, 0, Math.PI * 2);
+      }
       ctx.fill();
 
-      // Eyes
-      drawEyeSet(-4, -16, 4, expression, c.eye);
-      drawEyeSet(4, -16, 4, expression, c.eye);
+      drawEyeSet(-p.eyeDX, p.eyeDY, 3.8, expression, c.eye);
+      drawEyeSet(p.eyeDX, p.eyeDY, 3.8, expression, c.eye);
 
-      // Quokka smile
-      if (isQuokka && expression !== 'hurt') {
+      if (charKey === 'quokka' && expression !== 'hurt') {
         ctx.strokeStyle = '#5a3018';
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -9441,17 +10532,22 @@
 
     if (charKey === 'emu') {
       drawEmuSprite(gait, expression, s);
-    } else if (charKey === 'cockatoo' || charKey === 'kookaburra') {
+    } else if (charKey === 'cockatoo' || charKey === 'kookaburra' || charKey === 'ibis' || charKey === 'jabiru' || charKey === 'lyrebird' || charKey === 'eagle' || charKey === 'owl' || charKey === 'cassowary') {
       drawFlyingBirdSprite(charKey, gait, expression, s);
-    } else if (charKey === 'kangaroo' || charKey === 'wallaby') {
+    } else if (charKey === 'kangaroo' || charKey === 'wallaby' || charKey === 'wallaroo') {
       drawKangarooSprite(charKey, gait, expression, s);
-    } else if (charKey === 'wombat' || charKey === 'koala' || charKey === 'echidna') {
+    } else if (charKey === 'thorny') {
+      drawThornySprite(gait, expression, s);
+    } else if (charKey === 'wombat' || charKey === 'koala' || charKey === 'echidna' || charKey === 'bandicoot') {
       drawCompactMarsupialSprite(charKey, gait, expression, s);
+    } else if (charKey === 'mudcrab') {
+      drawMudCrabSprite(gait, expression, s);
     } else if (charKey === 'dingo') {
       drawDingoSprite(gait, expression, s);
+    } else if (charKey === 'possum' || charKey === 'bilby' || charKey === 'quokka' || charKey === 'platypus' || charKey === 'numbat' || charKey === 'tasdevil' || charKey === 'glider' || charKey === 'quoll') {
+      drawDistinctRunnerSprite(charKey, gait, expression, s);
     } else {
-      // possum, bilby, quokka, platypus, numbat, tasdevil
-      drawGenericRunnerSprite(charKey, gait, expression, s);
+      drawDistinctRunnerSprite('possum', gait, expression, s);
     }
 
     ctx.restore();
@@ -10038,14 +11134,16 @@
 
   function bindCharacterControls() {
     characterButtons.forEach((button) => {
-      button.addEventListener('click', () => {
+      bindClick(button, () => {
         const id = button.dataset.character;
         if (!id || !characters[id]) {
           return;
         }
         if (!superModeEnabled && !isCharacterAvailableForCurrentLevel(id)) {
-          const pair = getPairForLevel(state.progressLevel);
-          pushMessage(`Pick ${characters[pair.fast].name} (fast) or ${characters[pair.slow].name} (slow).`);
+          previewCharacter = id;
+          characterButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.character === id));
+          refreshCharacterBio();
+          syncCharacterStartButtonState();
           return;
         }
         setSelectedCharacter(id);
@@ -10240,9 +11338,13 @@
           levelCompleteOverlay.classList.remove('open');
           levelCompleteOverlay.setAttribute('aria-hidden', 'true');
         }
-        setCharacterSelectionOpen(true);
-        state.objective = 'Choose your character for the next level.';
-        state.message = 'Pick your dasher!';
+        state.continueFromLevelUnlock = true;
+        setCharacterSelectionOpen(false);
+        setLanding(false);
+        setGameplayChrome(true);
+        state.objective = `Running in ${regions[state.regionIndex].name} · ${getCurrentActDisplayLabel()}`;
+        state.message = 'Next level unlocked! Continuing run.';
+        onStartButtonPressed(true);
         syncHud();
       });
     }
@@ -10266,6 +11368,15 @@
     }
     if (characterStartBtn) {
       characterStartBtn.addEventListener('click', () => {
+        const focusId = previewCharacter || selectedCharacter;
+        if (!superModeEnabled && !isCharacterAvailableForCurrentLevel(focusId)) {
+          refreshCharacterBio();
+          syncCharacterStartButtonState();
+          return;
+        }
+        if (focusId !== selectedCharacter) {
+          setSelectedCharacter(focusId);
+        }
         const keepProgress = state.continueFromLevelUnlock;
         state.continueFromLevelUnlock = false;
         setCharacterSelectionOpen(false);
