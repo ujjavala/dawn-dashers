@@ -53,77 +53,130 @@
     };
   }
 
+  // ── localStorage persistence ────────────────────────────────────────────────
+  const SEEN_STORAGE_KEY = 'DawnDashers_PuzzleSeen';
+
+  // Load the set of seen puzzle IDs from localStorage (returns a Set<string>).
+  function loadSeenIds() {
+    try {
+      const raw = globalThis.localStorage?.getItem(SEEN_STORAGE_KEY);
+      if (!raw) return new Set();
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? new Set(parsed) : new Set();
+    } catch {
+      return new Set();
+    }
+  }
+
+  // Persist the full set of seen IDs to localStorage.
+  function saveSeenIds(seenSet) {
+    try {
+      if (globalThis.localStorage) {
+        globalThis.localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify([...seenSet]));
+      }
+    } catch { /* quota / private-mode — silently ignore */ }
+  }
+
+  // Single shared seen-ID set for this page load.
+  const seenIds = loadSeenIds();
+  // ────────────────────────────────────────────────────────────────────────────
+
   const levels = globalThis.DawnDashersPuzzleLevels || {};
-  const turingPuzzles = [];
+
+  // Per-role flat arrays (indexes match what game.js uses to look up puzzles).
+  const heartPuzzles    = [];
+  const levelPuzzles    = [];
   const treasurePuzzles = [];
-  const levelPuzzlePools = {};
-  const levelTreasurePools = {};
-  const levelRolePools = {};
-  const puzzleSplit = {
-    heart: 8,
-    advance: 8,
-    treasure: 7
-  };
+
+  // Per-level pools of indexes into the flat arrays above.
+  const heartPoolsByLevel    = {};
+  const levelPoolsByLevel    = {};
+  const treasurePoolsByLevel = {};
+
+  function shapePool(raw, flatArray) {
+    const start = flatArray.length;
+    const shaped = (Array.isArray(raw) ? raw : []).map((puzzle) => {
+      const p = softenPuzzleText(puzzle) || {};
+      const id = typeof p.id === 'string' && p.id.trim() ? p.id.trim() : '';
+      // Restore seen status from localStorage so the session is always aware.
+      return { ...p, id, seen: id ? seenIds.has(id.toLowerCase()) : false };
+    });
+    flatArray.push(...shaped);
+    return shaped.map((_, i) => start + i);
+  }
 
   for (let level = 0; level < 5; level += 1) {
-    const chunk = levels[level] || { turingPuzzles: [], treasurePuzzles: [] };
-    const levelCore = Array.isArray(chunk.turingPuzzles)
-      ? chunk.turingPuzzles.map((puzzle, idx) => {
-          const shaped = softenPuzzleText(puzzle) || {};
-          return {
-            ...shaped,
-            id: typeof shaped.id === 'string' && shaped.id.trim().length
-              ? shaped.id.trim()
-              : `L${level + 1}-CORE-${idx + 1}`
-          };
-        })
-      : [];
-    const levelTreasure = Array.isArray(chunk.treasurePuzzles)
-      ? chunk.treasurePuzzles.map((puzzle, idx) => {
-          const shaped = softenPuzzleText(puzzle) || {};
-          return {
-            ...shaped,
-            id: typeof shaped.id === 'string' && shaped.id.trim().length
-              ? shaped.id.trim()
-              : `L${level + 1}-TREASURE-${idx + 1}`
-          };
-        })
-      : [];
+    const chunk = levels[level] || {};
+    heartPoolsByLevel[level]    = shapePool(chunk.heartPuzzles,    heartPuzzles);
+    levelPoolsByLevel[level]    = shapePool(chunk.levelPuzzles,    levelPuzzles);
+    treasurePoolsByLevel[level] = shapePool(chunk.treasurePuzzles, treasurePuzzles);
+  }
 
-    const coreStart = turingPuzzles.length;
-    turingPuzzles.push(...levelCore);
-    const coreIds = levelCore.map((_, idx) => coreStart + idx);
-    levelPuzzlePools[level] = coreIds;
+  /**
+   * Pick the first unseen puzzle from a pool.
+   * Marks it seen in memory AND in localStorage.
+   * If every puzzle in the pool has been seen, resets only that pool and picks again.
+   */
+  function pickUnseen(flatArray, poolIds) {
+    if (!poolIds?.length) return null;
 
-    const treasureStart = treasurePuzzles.length;
-    treasurePuzzles.push(...levelTreasure);
-    const treasureIds = levelTreasure.map((_, idx) => treasureStart + idx);
-    levelTreasurePools[level] = treasureIds;
+    // Try to find an unseen puzzle.
+    for (const id of poolIds) {
+      const p = flatArray[id];
+      if (p && !p.seen) {
+        p.seen = true;
+        if (p.id) { seenIds.add(p.id.toLowerCase()); saveSeenIds(seenIds); }
+        return p;
+      }
+    }
 
-    const heartCoreIds = coreIds.slice(0, puzzleSplit.heart);
-    const advanceStart = heartCoreIds.length;
-    const advanceCoreIds = coreIds.slice(advanceStart, advanceStart + puzzleSplit.advance);
-    const neededCoreForTreasure = Math.max(0, puzzleSplit.treasure - treasureIds.length);
-    const treasureCoreStart = advanceStart + advanceCoreIds.length;
-    const treasureCoreIds = coreIds.slice(treasureCoreStart, treasureCoreStart + neededCoreForTreasure);
-    const treasureRefs = [
-      ...treasureCoreIds.map((id) => ({ source: 'core', id })),
-      ...treasureIds.map((id) => ({ source: 'treasure', id }))
-    ].slice(0, puzzleSplit.treasure);
+    // All seen in this pool: reset only this pool, then pick again.
+    resetSeen(flatArray, poolIds);
+    for (const id of poolIds) {
+      const p = flatArray[id];
+      if (p && !p.seen) {
+        p.seen = true;
+        if (p.id) { seenIds.add(p.id.toLowerCase()); saveSeenIds(seenIds); }
+        return p;
+      }
+    }
 
-    levelRolePools[level] = {
-      heartCoreIds,
-      advanceCoreIds,
-      treasureRefs
-    };
+    return null;
+  }
+
+  /**
+   * Reset seen flags for a pool in memory AND remove those IDs from localStorage.
+   */
+  function resetSeen(flatArray, poolIds) {
+    for (const id of poolIds) {
+      const p = flatArray[id];
+      if (p) {
+        p.seen = false;
+        if (p.id) seenIds.delete(p.id.toLowerCase());
+      }
+    }
+    saveSeenIds(seenIds);
   }
 
   globalThis.DawnDashersPuzzleData = {
-    turingPuzzles,
+    // Flat arrays per role
+    heartPuzzles,
+    levelPuzzles,
     treasurePuzzles,
-    levelPuzzlePools,
-    levelTreasurePools,
-    levelRolePools,
-    puzzleSplit
+
+    // Per-level index pools
+    heartPoolsByLevel,
+    levelPoolsByLevel,
+    treasurePoolsByLevel,
+
+    // Utilities used by game.js
+    pickUnseen,
+    resetSeen,
+
+    // Legacy aliases so existing game.js code doesn't break while being migrated
+    turingPuzzles: [...heartPuzzles, ...levelPuzzles],
+    levelPuzzlePools:   levelPoolsByLevel,
+    levelTreasurePools: treasurePoolsByLevel,
+    puzzleSplit: { heart: 8, advance: 8, treasure: 7 }
   };
 })();

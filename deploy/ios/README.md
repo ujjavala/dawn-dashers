@@ -1,18 +1,9 @@
-# Dawn Dashers iOS Deployment
+# iOS Deploy Notes (Legacy)
 
-This folder is for iOS Xcode output.
+This folder is kept only as historical reference.
 
-Use Unity menu:
+Current Dawn Dashers runtime is browser-first in `web/` and is served locally via Docker/Nginx.
 
-- Tools > Dawn Dashers > Build iOS
+There is no active iOS build pipeline in this repository at the moment.
 
-Output:
-
-- Xcode project in this folder
-
-For standalone phone installs:
-
-- Open the generated Xcode project
-- Set signing
-- Archive and install on device
-- The app runs offline using local fallback content
+If iOS packaging is reintroduced later, this folder can be repurposed for Xcode project artifacts.

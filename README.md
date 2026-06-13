@@ -1,309 +1,51 @@
 # Dawn Dashers
 
-Unity WebGL + Mobile adventure runner for the DEV June Solstice Game Jam.
+Browser-first runner + puzzle adventure inspired by the June Solstice.
+
 ![Dawn Dashers Gameplay](web/dawn-dashers.gif)
 
-## Current Status
+## Current Stack
 
-This repository includes a production-style gameplay framework with:
+- Runtime: JavaScript in [web/game.js](web/game.js)
+- Rendering: Three.js + Canvas/HUD layers
+- Puzzle content: [web/puzzles](web/puzzles)
+- Puzzle orchestration and seen persistence: [web/puzzle-data.js](web/puzzle-data.js)
+- Puzzle tracking/filter helpers: [web/puzzle-tracker.js](web/puzzle-tracker.js), [web/puzzle-filter.js](web/puzzle-filter.js)
+- Local dev hosting: Docker + Nginx via [docker-compose.yml](docker-compose.yml)
 
-- Core game flow (menu -> character select -> exploration -> puzzles -> boss -> victory)
-- Character abilities and role profiles (fast vs slow dashers)
-- Sun Fragment progression and region unlock logic
-- Five puzzle archetypes inspired by Turing-style logic
-- Boss phase controller for Turing Engine fight
-- HUD, map, upgrade, and victory UI controllers
-- Mobile-safe responsive UI helpers
-- Audio and VFX event pipeline for game-feel polish
-- API client integration for dialogue, puzzle hints, and road events
-- Docker Compose stack for local web + backend runtime
-- Standalone mobile deployment folders and build scripts for Android/iOS
+## Removed Legacy Components
 
-## Web Runtime
+- Unity project folders (`Assets`, `Packages`, `ProjectSettings`)
+- Backend API service (runtime no longer calls API endpoints)
 
-The current browser build in `web/` now includes a visual/audio realism pass on top of the existing gameplay loop:
+## Puzzle Model
 
-- Three.js 3D terrain pass behind gameplay HUD/entities
-- Dynamic terrain deformation with lighting, fog, and biome-tinted materials
-- Noise-driven procedural ground texturing for each biome
-- Screensaver-style dynamic background motion (heat shimmer, layered dunes, drifting haze, parallax silhouettes)
-- Added terrain micro-details per biome (bush underbrush, branches, pollen motes, surf foam, pebbles, alpine ridges, snow drifts)
-- Bushland realism pass: irregular tree silhouettes, layered canopy depth, volumetric haze/god-rays, and organic forest-floor clutter
-- WebAudio ambient soundtrack with biome-aware tone shaping
-- Centered end-of-run result card (Game Over / Run Ended / Restart prompt) for clearer UX
-- Super Mode (admin toggle): unlock all characters/terrains immediately via character selection
-- Simplified core loop option: shard pickups and bomb hazards with explicit score popups (+500 / -100)
-- Per-level character pairing: each level offers exactly 2 choices (1 fast, 1 slow)
-- Expanded roster in web runtime: Emu, Wombat, Kangaroo, Koala, Possum, Echidna, Dingo, Bilby, Kookaburra, Quokka
-- Energy and food economy:
-   - Every lane move, jump, and slide consumes energy
-   - Movement is blocked when energy is insufficient
-   - Food is purchased using score and auto-consumed to restore energy when needed
-   - Food type/cost/restore values are character-specific
-- Fast vs slow behavior tuning:
-   - Fast dashers can navigate full lane width but consume more energy
-   - Slow dashers are lane-restricted but consume less energy and need cheaper food
-- Character selection UI overhaul:
-   - Terrain-tinted selection title
-   - Visual FAST/SLOW role badges on cards
-   - Structured spec card for each character (power, food, costs, energy rates, lane profile, level scale)
-   - Special unlock characters per level with unique movement/energy/food profiles
-   - Special unlock rule: collect 3 treasure chests in one run for that level
-   - Character knowledge links: each card includes a wiki link for the selected animal
-- Gameplay controls UI refresh:
-   - Compact icon controls instead of text-heavy dock buttons
-   - Food cart remains an icon action in the right-side dock
-   - Main run controls moved to a right-side vertical rail similar to the heart rail
-   - Single media-style play/pause control that changes icon by run state
-- Mobile controls and HUD pass:
-   - Region and Mode HUD chips removed from the web runtime to reduce clutter
-   - Mobile HUD now uses denser chip sizing and spacing on narrow screens
-   - During active runs on mobile, the full control dock auto-hides and a single quick-menu button is shown
-   - Tapping the quick-menu button pauses the run and reveals the full dock controls
-   - Swipe thresholds are reduced and short taps now map to jump/slide for better Android responsiveness
-- Pause behavior update:
-   - Pausing freezes movement and falling items
-   - Food shopping and puzzle interactions remain usable while paused
-- Food shop update:
-   - Cart-based purchasing flow instead of one-click buy
-   - Character-specific food icons and special buff foods
-   - Special foods can temporarily reduce fast-character energy use or give slow characters wider lane access
-- Puzzle content refresh:
-   - Puzzle bank rewritten with an Australian setting/tone while preserving Alan Turing/computation themes
-   - Puzzle pools and hint strictness now scale with level/character tier
-- Heart + revive flow:
-   - Hearts are fixed to 3 max in run HUD
-   - Hearts reset to 3 at each level start
-   - Hearts do not carry forward between levels
-   - First full wipe in a level offers one revive path; second full wipe in same level ends run
-   - Revive action is presented in direct game-over popup context
-- Puzzle flow separation:
-   - Treasure chest puzzles grant food supplies
-   - Heart revival challenge restores hearts (once per level)
-   - Next-level unlock puzzle controls level progression
-- Help UX:
-   - Help modal now uses a vintage treasure-scroll/list visual style
-   - Rule explanations expanded for puzzle types, revive behavior, and objective
-- Hint behavior:
-   - Hint progression no longer repeats the same hint while remaining count drops
-   - Single-hint puzzles avoid misleading remaining-hint counters
-   - Hint labels use correct singular/plural grammar
-- Finale:
-   - Expedition completion now ends with a full-page smiling sunrise celebration screen
-- Landing Help modal now fully wired and interactive from menu
-- Runtime SFX for jump, hit, and collectible feedback
-- Broader terrain realism pass:
-   - Outback: fence posts, station remnants, tank/sign silhouettes, sand motion
-   - Bushland: logs, stumps, stones, drifting leaves/pollen
-   - Servo: towers, cabling, service pipes, data rain/glitch motion
-   - Coastline: jetty, fishing boats, palms, shoreline realism, rain/surf foam
-   - Tasmania: pines, cabin, frozen patches, snow drift motion
-- Settings panel controls for:
-   - Difficulty (Easy/Medium/Hard)
-   - 3D Terrain Pass (On/Off)
-   - Music (On/Off)
-   - Music volume
-   - SFX volume
+Each level file provides three role-specific pools:
 
-Notes:
+- `heartPuzzles`: 8 (IDs like `L1_HP01`)
+- `levelPuzzles`: 8 (IDs like `L1_LP01`)
+- `treasurePuzzles`: 7 (IDs like `L1_TP01`)
 
-- 3D terrain gracefully falls back to the 2D terrain renderer if WebGL/Three.js is unavailable.
-- Audio starts after user interaction to comply with browser autoplay policies.
+Every puzzle includes `seen`. Seen IDs persist in browser localStorage. When all puzzles in a pool are seen, that pool auto-resets to unseen and continues cycling.
 
-## One-Command Local Stack (Web + API)
+## Local Development
 
-Run from repository root:
+1. Run: `docker compose up --build`
+2. Open: `http://localhost:8080`
 
-1. `docker compose up --build`
-2. Open `http://localhost:8080` for the playable browser demo.
-3. API endpoints are available at `http://localhost:8000` and proxied at `http://localhost:8080/api`.
+Current compose service:
 
-Included services:
-
-- `api`: FastAPI service (`/health`, `/dialogue`, `/hint`, `/road-event`)
-- `web`: Nginx static host and API reverse proxy
-
-Environment app config for Super Mode:
-
-- Local Docker: `web/app-config.local.js` is mounted as `web/app-config.js`, so Super Mode can be shown for local admin testing.
-- Production/Vercel: `web/app-config.js` (and `web/app-config.prod.js`) keep Super Mode disabled.
-- Runtime hard-gate still allows Super Mode only on local hosts (`localhost`/`127.0.0.1`/`::1`).
-
-Files:
-
-- `docker-compose.yml`
-- `backend/Dockerfile`
-- `backend/app/main.py`
-- `web/nginx.conf`
-
-## Requirements
-
-- Unity 6 (recommended: 6000.0.40f1)
-- Universal Render Pipeline (URP)
-- TextMeshPro package
-- Input System package (already included in manifest)
-
-## Open the Project
-
-1. Open Unity Hub.
-2. Add project from disk: this repository root.
-3. Open with Unity 6.
-4. Let Unity import packages and compile scripts.
-
-## Scene Setup (One-time)
-
-Create these scenes under Assets/Scenes:
-
-- MainMenu
-- CharacterSelect
-- OutbackRunner
-- ServoCheckpoint
-- AuroraFlight
-- TuringBoss
-- Victory
-
-In each gameplay scene, add these foundational objects:
-
-- GameBootstrap (attach GameManager, ObjectiveSystem, PlatformBootstrap, AudioDirector)
-- UI Canvas (attach ResponsiveSafeArea on root safe-area panel)
-- Player (tag Player, attach PlayerCharacterController + ability components)
-- Directional Light (used by DaylightSystem)
-
-Recommended UI wiring:
-
-- HUD text labels -> HUDController (Score, Health, Lantern, Fragments, Objective, Ability Cooldown)
-- Character select buttons -> CharacterSelectController.SelectCharacter(characterId)
-- Start button -> CharacterSelectController.StartAdventure
-- Region travel buttons -> RegionMapController.TravelToRegion(regionId, sceneName)
-
-API/UI wiring:
-
-- Add `ApiServiceClient` in scene and assign `ApiConfig` ScriptableObject.
-- Wire NPC dialogue button -> `NpcDialoguePanelController.RequestDialogue(region)`.
-- Wire hint button -> `PuzzleHintPanelController.RequestHint(puzzleType)`.
-- Wire road event button -> `RoadEventPanelController.RollRoadEvent()`.
-- Add `ApiStatusIndicator` with TMP label for runtime health state.
-
-Optional tooling helper:
-
-- Run Unity menu command `Tools > Dawn Dashers > Generate Jam Content` to create scenes, character assets, and starter prefabs.
+- `web` only (Nginx static host)
 
 ## Controls
 
-Desktop/Web:
+- Move lanes: `A/D` or `Left/Right`
+- Jump: `W`, `Up`, or `Space`
+- Slide: `S` or `Down`
+- Pause/Resume: `P` or `Escape`
 
-- Move lanes: A/D or Left/Right
-- Jump: W, Up, or Space
-- Slide: S or Down
-- Pause/Resume: P or Escape
-- Open food cart: F
+## Notes
 
-Mobile:
-
-- On-screen controls use icon-only actions and compact HUD chips for smaller displays
-- During active runs, controls collapse into a single quick-menu button
-- Quick-menu button pauses to reveal full controls, then switches to resume action while paused
-- Swipe and tap gestures are tuned for responsive Android play
-
-## Run in Editor
-
-1. Open MainMenu scene.
-2. Press Play.
-3. Verify flow: Menu -> CharacterSelect -> OutbackRunner.
-
-## Build for WebGL
-
-1. File -> Build Profiles.
-2. Select Web.
-3. Platform: WebGL.
-4. Add all scenes in the intended order.
-5. Player Settings recommendations:
-   - Color Space: Linear
-   - Compression Format: Brotli
-   - Texture Compression: ASTC/ETC2 fallback as needed
-   - Managed Stripping Level: Medium
-6. Build to Build/WebGL.
-
-Deploy options:
-
-- itch.io: upload Build/WebGL folder (or zipped output)
-- GitHub Pages: host generated WebGL build via static site workflow
-
-## Web Demo for Laptop Testing
-
-- `docker compose up --build`
-- Open `http://localhost:8080`
-- This is a browser-playable Dawn Dashers runner for quick desktop testing.
-
-## Build for Android
-
-1. Install Android Build Support in Unity Hub.
-2. File -> Build Profiles -> Android.
-3. Player Settings:
-   - Scripting Backend: IL2CPP
-   - ARM64 enabled
-   - Target API level per current Play requirements
-4. Build APK/AAB.
-
-Recommended mobile deploy folder:
-
-- `deploy/android/`
-
-Build options:
-
-- Unity menu: `Tools > Dawn Dashers > Build Android`
-- Output APK is designed to run standalone on the phone with offline fallback content.
-
-## Build for iOS
-
-1. Install iOS Build Support in Unity Hub.
-2. File -> Build Profiles -> iOS.
-3. Player Settings:
-   - Scripting Backend: IL2CPP
-   - Target minimum iOS version for your test devices
-4. Build Xcode project.
-5. Open in Xcode, set signing team, archive, and deploy.
-
-Recommended mobile deploy folder:
-
-- `deploy/ios/`
-
-Build options:
-
-- Unity menu: `Tools > Dawn Dashers > Build iOS`
-- Output Xcode project is designed to run standalone on the phone with offline fallback content.
-
-## Responsive + Performance Notes
-
-- ResponsiveSafeArea prevents notches/cutouts overlap on mobile.
-- TouchControlsVisibility toggles touch UI root based on platform.
-- PlatformBootstrap sets target frame rate and disables vSync for WebGL/mobile consistency.
-- Keep atlases compressed and avoid large uncompressed textures for WebGL memory safety.
-
-## Optional Backend / AI Integration
-
-The game runs fully without backend services and degrades gracefully when API is offline.
-
-Optional MCP/Gemini integration can be added for:
-
-- Dynamic NPC dialogue
-- Dynamic clue generation
-- Puzzle hints
-
-Keep AI features optional and non-blocking for core gameplay.
-
-## Mobile + Web Responsiveness
-
-- `ResponsiveSafeArea` applies notch-safe anchors on iOS/Android.
-- `TouchControlsVisibility` toggles touch input UI on mobile.
-- `PlatformBootstrap` sets frame targets for WebGL and mobile.
-- `ApiConfig` supports separate base URLs for editor vs WebGL/mobile proxy mode.
-- Android and iOS installs use offline local content automatically so the app stays self-sufficient on device.
-- For mobile installs, use Unity-built APK/Xcode output; Expo is not used because this is a Unity project.
-
-## Suggested Next Production Steps
-
-- Create low-poly prefab kit (player, enemies, region modules).
-- Connect Animator controllers for run/jump/hit/celebrate loops.
-- Author audio clips and assign AudioCueLibrary.
-- Add a CI pipeline for WebGL builds and smoke tests.
+- Visual effects degrade gracefully if advanced rendering features are unavailable.
+- Audio starts after first user interaction to satisfy autoplay policies.
+- [deploy/android/README.md](deploy/android/README.md) and [deploy/ios/README.md](deploy/ios/README.md) are legacy placeholders only.

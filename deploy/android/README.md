@@ -1,23 +1,9 @@
-# Dawn Dashers Android Deployment
+# Android Deploy Notes (Legacy)
 
-This folder is for Android build outputs.
+This folder is kept only as historical reference.
 
-Use Unity menu:
+Current Dawn Dashers runtime is browser-first in `web/` and is served locally via Docker/Nginx.
 
-- Tools > Dawn Dashers > Build Android
+There is no active Android build pipeline in this repository at the moment.
 
-Output:
-
-- `DawnDashers-Android.apk`
-
-For standalone phone installs:
-
-- Sideload the APK to the device
-- The app runs offline using local fallback content
-
-Mobile runtime notes (latest web/mobile control pass):
-
-- HUD is compacted for smaller Android screens
-- Non-essential Region/Mode chips are removed from top HUD during play
-- While actively running, controls collapse to a single quick-menu button
-- Tapping quick-menu pauses the run and reveals full control dock
+If Android packaging is reintroduced later, this folder can be repurposed for wrapper/app build outputs.

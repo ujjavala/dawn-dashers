@@ -9,6 +9,7 @@
   ],
   "exclude": [
     "Dawn Dashers Game UI Design/**",
-    "node_modules/**"
+    "node_modules/**",
+    "web/puzzle-filter.js"
   ]
 }

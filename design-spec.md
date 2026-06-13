@@ -1,263 +1,55 @@
-# DESIGN_PROMPT.md
+# Dawn Dashers Design Spec (Current)
 
-# Dawn Dashers
+This document reflects the active codebase.
 
-Build a polished, highly playable Unity WebGL game inspired by:
+## Runtime Platform
 
-* Temple Run
-* Crash Bandicoot
-* Subway Surfers
-* Indiana Jones (treasure hunt adventure tone)
-* Australian wildlife and landscapes
+- Primary runtime: Browser JavaScript
+- Rendering: Three.js + Canvas/HUD layers
+- Local hosting: Docker + Nginx (`docker compose up --build`)
+- No Unity runtime in active project
+- No backend API dependency in active project
 
-The game should feel exciting within the first 10 seconds.
+## Core Experience
 
-Fun is more important than educational content.
+- Fast lane-runner movement
+- June Solstice mood: long night shifting toward dawn
+- Australian terrain identities (Outback, Bushland, Servo, Coastline, Tasmania)
+- Puzzle interruptions that feel like discoveries on route, not detached quiz screens
 
----
+## Puzzle Architecture
 
-# Core Vision
+Per level, puzzle pools are fixed and role-specific:
 
-Australia is experiencing the longest night of the year.
+- `heartPuzzles` (8): used for revive challenges
+- `levelPuzzles` (8): used for standard progression/next-level gating
+- `treasurePuzzles` (7): used for chest encounters
 
-A rogue machine called the Turing Engine has stolen the sunrise and scattered seven Sun Fragments across Australia.
+Each puzzle object includes `seen` state. Seen IDs are persisted in localStorage and pooled selection auto-resets after full exhaustion.
 
-Players race through dangerous but playful environments, solving treasure clues, rescuing wildlife, and restoring daylight.
+## Narrative Tone Requirements
 
-The game should feel:
+- Adventurous, optimistic, mysterious
+- Australian setting details in every puzzle
+- Include either June Solstice motifs or computing/Turing motifs in every puzzle
+- Avoid repetitive narrative templates and stock phrases
 
-* Fast
-* Adventurous
-* Warm
-* Cinematic
-* Funny
-* Family friendly
+## UI/UX Rules
 
-The game should NOT feel:
+- Puzzle modal shows one primary instruction block (no duplicate question text)
+- Secondary brief panel is context only
+- Next-level puzzles should not display `(x/20)` style counters
+- Hint copy should guide without revealing direct answers
 
-* Academic
-* Corporate
-* Sci-fi neon
-* Horror or dark survival
-* Like homework
+## Content Constraints
 
-Alan Turing should inspire mechanics, not dominate the narrative.
+- Preserve puzzle logic, answers, acceptedAnswers, and learnUrl values unless explicitly requested
+- Narrative rewrites affect only text fields: title, instruction, hints, rightExplain, wrongExplain
 
----
+## Technical Constraints
 
-# Gameplay Style
-
-Primary Genre:
-
-3D Endless Runner Adventure (with branching treasure paths)
-
-Secondary Genre:
-
-Treasure Hunt Action Runner
-
-Gameplay Loop:
-
-Run
-→ Dodge obstacles
-→ Collect artifacts
-→ Follow treasure clues
-→ Unlock animals
-→ Solve quick logic challenge
-→ Recover Sun Fragment
-→ Restore light to world
-
-The player should constantly be moving forward.
-
-No long pauses or complex menus.
-
----
-
-# Art Direction
-
-## Overall Style
-
-Adventure treasure-exploration aesthetic inspired by:
-
-* Indiana Jones (classic adventure tone)
-* Uncharted (cinematic exploration)
-* Crash Bandicoot (cartoon exaggeration)
-* Temple Run (fast readability)
-
-Tone:
-
-* Dusty
-* Warm
-* Mysterious
-* Playful
-
-NOT dark, neon, or sci-fi.
-
----
-
-## Visual Priorities
-
-1. Strong silhouettes (readable at speed)
-2. Warm earthy environments
-3. High contrast gameplay elements
-4. Exaggerated cartoon animation
-5. Clear collectible visibility
-
----
-
-## Color Palette (IMPORTANT)
-
-### Primary Environment Colors
-
-Desert Sand:
-#D2B48C
-
-Clay Brown:
-#8B5E3C
-
-Rock Brown:
-#5C4033
-
-Sun-Faded Gold:
-#D4A373
-
-Ancient Paper Beige:
-#F3E5C0
-
----
-
-### Gameplay Accent Colors
-
-Sun Fragment Glow:
-#FFD166
-
-Fire / Torch Light:
-#FF6B35
-
-UI Highlight Gold:
-#F4C542
-
-Danger / Darkness (soft, not black):
-#2B2B2B
-
----
-
-### Rare Magical Zone (Tasmania only)
-
-Aurora Green:
-#52B788
-
-Ice Cyan:
-#4EA8DE
-
-Used only in endgame / special zones.
-
----
-
-## Lighting Style
-
-* Warm directional sunlight in daytime sections
-* Heavy use of dust particles and “god rays”
-* Strong contrast between lit and shadow areas
-* Firelight flicker in night exploration
-* Bloom on Sun Fragments
-* Dynamic world brightness increases as fragments are collected
-
-The game should feel like:
-
-> “Exploring an ancient forgotten land at dusk during an expedition”
-
----
-
-# Typography
-
-Primary Font:
-
-Cinzel Decorative (treasure / expedition feel)
-
-Secondary UI Font:
-
-Nunito (readability)
-
-Fallback:
-
-Arial Rounded
-
----
-
-# UI Design
-
-Style:
-
-* Treasure map aesthetic
-* Weathered parchment panels
-* Compass and artifact iconography
-* Gold trim borders
-
-Inspired by:
-
-* Indiana Jones maps
-* Adventure journals
-* Expedition UI overlays
-
-Buttons:
-
-* Pressed ink / carved stone look
-* Slight bounce on hover
-* Soft glow highlight
-
----
-
-# Character Design
-
-Characters should be:
-
-* Highly expressive
-* Cartoon-stylized
-* Big readable silhouettes
-* Exaggerated motion
-
-Playable characters:
-
-Emu
-Wombat
-Possum
-Echidna
-
----
-
-## Animation Style
-
-* Squash and stretch
-* Strong anticipation before movement
-* Exaggerated reactions
-* Fast readable motion
-
-Examples:
-
-Obstacle hit → dramatic cartoon tumble
-Collect fragment → glowing celebration burst
-Sprint → dust trail explosion
-Glide → stretched wind motion
-Charge → ground impact shockwave
-
----
-
-# Environment Design
-
-Each region should feel like a treasure expedition zone.
-
----
-
-## Outback Ruins
-
-* Red desert dunes
-* Broken solar observatories
-* Rusted expedition equipment
-* Ancient stone markers
-
----
-
-## Bushland
+- Keep docs and prompts aligned with actual runtime (`web/`)
+- Remove or archive references to obsolete Unity/backend flows
 
 * Dense forest trails
 * Fireflies and glow insects

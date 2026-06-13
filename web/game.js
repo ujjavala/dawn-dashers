@@ -101,6 +101,7 @@
   const SFX_VOLUME_KEY = 'dawn_dashers_sfx_volume_v1';
   const TERRAIN_3D_KEY = 'dawn_dashers_terrain_3d_v1';
   const PUZZLE_BANK_UNLOCKS_KEY = 'dawn_dashers_puzzle_bank_unlocks_v1';
+  const BG_MUSIC_CANDIDATE_SRCS = ['../bg-music.mp3', '/bg-music.mp3', 'bg-music.mp3'];
   const HUNGER_MODAL_RESURFACE_DELAY_MS = 5000;
   const gameSettings = globalThis.DawnDashersGameSettings || {};
   const curvatureSettings = gameSettings.curvature || {};
@@ -189,10 +190,8 @@
     master: null,
     music: null,
     sfx: null,
-    padA: null,
-    padB: null,
-    pulse: null,
-    pulseGain: null,
+    bgMusicEl: null,
+    bgMusicSrc: '',
     started: false
   };
 
@@ -3889,35 +3888,69 @@
 
   function startAmbientAudio() {
     ensureAudioContext();
-    if (!audioState.ctx || audioState.started) {
+    if (!audioState.bgMusicEl) {
+      const bgMusicEl = new Audio();
+      bgMusicEl.loop = true;
+      bgMusicEl.preload = 'auto';
+      bgMusicEl.volume = 0;
+      audioState.bgMusicEl = bgMusicEl;
+
+      let bgMusicSrcIndex = 0;
+      const setBgMusicSource = (index) => {
+        const nextIndex = Math.max(0, Math.min(BG_MUSIC_CANDIDATE_SRCS.length - 1, index));
+        bgMusicSrcIndex = nextIndex;
+        audioState.bgMusicSrc = BG_MUSIC_CANDIDATE_SRCS[nextIndex];
+        bgMusicEl.src = audioState.bgMusicSrc;
+      };
+
+      bgMusicEl.addEventListener('error', () => {
+        if (bgMusicSrcIndex < BG_MUSIC_CANDIDATE_SRCS.length - 1) {
+          setBgMusicSource(bgMusicSrcIndex + 1);
+        }
+      });
+
+      setBgMusicSource(0);
+    }
+    if (audioState.started) {
       return;
     }
-    // Ambient hum layer intentionally disabled; keep only gameplay SFX.
     audioState.started = true;
     syncAudioToRegion();
   }
 
   function ensureAudioStarted() {
-    ensureAudioContext();
-    if (!audioState.ctx) {
-      return;
-    }
-    if (audioState.ctx.state === 'suspended') {
-      audioState.ctx.resume();
-    }
     startAmbientAudio();
+    if (audioState.ctx && audioState.ctx.state === 'suspended') {
+      audioState.ctx.resume().catch(() => {});
+    }
+    syncAudioToRegion();
   }
 
   function syncAudioToRegion() {
-    if (!audioState.ctx || !audioState.started) {
+    if (!audioState.started) {
       return;
     }
-    const now = audioState.ctx.currentTime;
-    const musicGainTarget = 0;
-    audioState.music.gain.cancelScheduledValues(now);
-    audioState.music.gain.linearRampToValueAtTime(musicGainTarget, now + 0.18);
-    audioState.sfx.gain.cancelScheduledValues(now);
-    audioState.sfx.gain.linearRampToValueAtTime(sfxVolume, now + 0.1);
+    const shouldPlayOutsideRunMusic = !state.running;
+    const musicGainTarget = shouldPlayOutsideRunMusic && musicEnabled ? musicVolume * 0.62 : 0;
+    if (audioState.ctx && audioState.music?.gain) {
+      const now = audioState.ctx.currentTime;
+      // Keep the WebAudio music bus silent; bg-music.mp3 is played via HTMLAudioElement.
+      audioState.music.gain.cancelScheduledValues(now);
+      audioState.music.gain.linearRampToValueAtTime(0, now + 0.18);
+    }
+    if (audioState.bgMusicEl) {
+      audioState.bgMusicEl.volume = musicGainTarget;
+      if (musicGainTarget > 0) {
+        audioState.bgMusicEl.play().catch(() => {});
+      } else {
+        audioState.bgMusicEl.pause();
+      }
+    }
+    if (audioState.ctx && audioState.sfx?.gain) {
+      const now = audioState.ctx.currentTime;
+      audioState.sfx.gain.cancelScheduledValues(now);
+      audioState.sfx.gain.linearRampToValueAtTime(sfxVolume, now + 0.1);
+    }
   }
 
   function playSfx(kind) {
@@ -4398,7 +4431,7 @@
   const puzzleState = {
     hintIndex: 0,
     currentIndex: 0,
-    activeCorePuzzleId: null,
+    activePuzzle: null,
     hintsUsedThisPuzzle: 0,
     hintRewardGrantedThisPuzzle: false,
     pendingAdvance: null,
@@ -4448,71 +4481,37 @@
     3: [1, 7],
     4: [6, 9]
   };
-  const turingPuzzles = Array.isArray(puzzleData.turingPuzzles) && puzzleData.turingPuzzles.length
-    ? puzzleData.turingPuzzles
-    : [
-      {
-        title: 'Outback Reversed Message',
-        instruction: 'A dusty radio near an outback roadhouse reverses the name of the thinker who inspired this machine. Decode: N A L A.',
-        answer: 'ALAN',
-        acceptedAnswers: ['alan'],
-        hints: ['Read the signal backward from right to left.'],
-        rightExplain: 'Correct. Reversing N A L A gives A L A N, the Turing clue hidden in the outback static.',
-        wrongExplain: 'Oops. This outback radio trick is a straight reversal, right-to-left.',
-        learnUrl: 'https://en.wikipedia.org/wiki/Turing_machine'
-      }
-    ];
-  const levelTreasurePools = puzzleData.levelTreasurePools || {
-    0: [0],
-    1: [1],
-    2: [2],
-    3: [3],
-    4: [3]
-  };
+  // Role-specific flat puzzle arrays from puzzle-data.js
+  const heartPuzzles    = Array.isArray(puzzleData.heartPuzzles)    ? puzzleData.heartPuzzles    : [];
+  const levelPuzzles    = Array.isArray(puzzleData.levelPuzzles)    ? puzzleData.levelPuzzles    : [];
   const treasurePuzzles = Array.isArray(puzzleData.treasurePuzzles) ? puzzleData.treasurePuzzles : [];
-  const TREASURE_CHEST_LIMIT_PER_RUN = 3;
-  const dataSplit = puzzleData.puzzleSplit && typeof puzzleData.puzzleSplit === 'object'
-    ? puzzleData.puzzleSplit
-    : {};
-  const PER_LEVEL_PUZZLE_SPLIT = {
-    heart: Number.isInteger(dataSplit.heart) ? dataSplit.heart : 8,
-    advance: Number.isInteger(dataSplit.advance) ? dataSplit.advance : 8,
-    treasure: Number.isInteger(dataSplit.treasure) ? dataSplit.treasure : 7
-  };
 
-  function buildLevelRolePools() {
-    const pools = {};
-    const levelCount = Math.max(regions.length, 5);
-    for (let level = 0; level < levelCount; level += 1) {
-      const coreIds = (levelPuzzlePools[level] || levelPuzzlePools[0] || [])
-        .filter((id) => Number.isInteger(id) && turingPuzzles[id]);
-      const treasureIds = (levelTreasurePools[level] || levelTreasurePools[0] || [])
-        .filter((id) => Number.isInteger(id) && treasurePuzzles[id]);
+  // Legacy alias so other code that still reads turingPuzzles keeps working
+  const turingPuzzles = Array.isArray(puzzleData.turingPuzzles) ? puzzleData.turingPuzzles : [...heartPuzzles, ...levelPuzzles];
 
-      const heartCoreIds = coreIds.slice(0, PER_LEVEL_PUZZLE_SPLIT.heart);
-      const advanceStart = heartCoreIds.length;
-      const advanceCoreIds = coreIds.slice(advanceStart, advanceStart + PER_LEVEL_PUZZLE_SPLIT.advance);
+  const heartPoolsByLevel    = puzzleData.heartPoolsByLevel    || {};
+  const levelPoolsByLevel    = puzzleData.levelPoolsByLevel    || {};
+  const treasurePoolsByLevel = puzzleData.treasurePoolsByLevel || {};
 
-      const neededCoreForTreasure = Math.max(0, PER_LEVEL_PUZZLE_SPLIT.treasure - treasureIds.length);
-      const treasureCoreStart = advanceStart + advanceCoreIds.length;
-      const treasureCoreIds = coreIds.slice(treasureCoreStart, treasureCoreStart + neededCoreForTreasure);
-      const treasureRefs = [
-        ...treasureCoreIds.map((id) => ({ source: 'core', id })),
-        ...treasureIds.map((id) => ({ source: 'treasure', id }))
-      ].slice(0, PER_LEVEL_PUZZLE_SPLIT.treasure);
-
-      pools[level] = {
-        heartCoreIds,
-        advanceCoreIds,
-        treasureRefs
+  // pickUnseen from puzzle-data.js — marks puzzle.seen = true and returns it
+  const pickUnseenPuzzle = typeof puzzleData.pickUnseen === 'function'
+    ? puzzleData.pickUnseen
+    : function(flatArray, poolIds) {
+        for (const id of poolIds) {
+          const p = flatArray[id];
+          if (p && !p.seen) { p.seen = true; return p; }
+        }
+        return null;
       };
-    }
-    return pools;
-  }
 
-  const levelRolePools = puzzleData.levelRolePools && typeof puzzleData.levelRolePools === 'object'
-    ? puzzleData.levelRolePools
-    : buildLevelRolePools();
+  // resetSeen from puzzle-data.js
+  const resetSeenPuzzles = typeof puzzleData.resetSeen === 'function'
+    ? puzzleData.resetSeen
+    : function(flatArray, poolIds) {
+        for (const id of poolIds) { if (flatArray[id]) flatArray[id].seen = false; }
+      };
+
+  const TREASURE_CHEST_LIMIT_PER_RUN = 3;
 
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -4704,7 +4703,7 @@
     puzzleState.pendingAdvance = null;
     puzzleState.pendingTreasure = null;
     puzzleState.pendingHeartRevive = null;
-    puzzleState.activeCorePuzzleId = null;
+    puzzleState.activePuzzle = null;
     closeModal(puzzleModal);
     setCharacterSelectionOpen(false);
     setLanding(false);
@@ -4782,6 +4781,7 @@
 
   function onStartButtonPressed(keepProgress = false) {
     ensureAudioStarted();
+    syncAudioToRegion();
     if (state.pendingReviveOffer) {
       activateReviveOffer();
       return;
@@ -4803,6 +4803,7 @@
     }
     landingOverlay.classList.toggle('open', open);
     landingOverlay.setAttribute('aria-hidden', String(!open));
+    syncAudioToRegion();
   }
 
   function setGameplayChrome(visible) {
@@ -4914,6 +4915,7 @@
       updateCharacterAvailability();
       refreshCharacterBio();
     }
+    syncAudioToRegion();
   }
 
   function getSavedRuns() {
@@ -5874,6 +5876,40 @@
     return getPuzzleIdSignature(puzzle) || getPuzzleContentSignature(puzzle);
   }
 
+  function getPuzzleTrackerKey(puzzle) {
+    if (!puzzle || typeof puzzle !== 'object') {
+      return '';
+    }
+    if (typeof puzzle.id === 'string' && puzzle.id.trim()) {
+      return puzzle.id.trim();
+    }
+    return getPuzzleSignature(puzzle);
+  }
+
+  function isPuzzleMarkedShown(puzzle) {
+    const tracker = globalThis.PuzzleTracker;
+    if (!tracker || typeof tracker.hasBeenShown !== 'function') {
+      return false;
+    }
+    const key = getPuzzleTrackerKey(puzzle);
+    if (!key) {
+      return false;
+    }
+    return tracker.hasBeenShown(key);
+  }
+
+  function markPuzzleAsShown(puzzle) {
+    const tracker = globalThis.PuzzleTracker;
+    if (!tracker || typeof tracker.markAsShown !== 'function') {
+      return;
+    }
+    const key = getPuzzleTrackerKey(puzzle);
+    if (!key) {
+      return;
+    }
+    tracker.markAsShown(key);
+  }
+
   function getPhaseHistorySignature(phase, level) {
     const key = `${phase}:${Math.max(0, Math.min(regions.length - 1, level))}`;
     const value = puzzleHistory[key];
@@ -5897,7 +5933,10 @@
     const idSignature = getPuzzleIdSignature(puzzle);
     const contentSignature = getPuzzleContentSignature(puzzle);
     if (!idSignature && !contentSignature) {
-      return false;
+      return isPuzzleMarkedShown(puzzle);
+    }
+    if (isPuzzleMarkedShown(puzzle)) {
+      return true;
     }
     if (idSignature && (puzzleState.usedPuzzleSignatures.includes(idSignature) || shownPuzzleSignatures.includes(idSignature))) {
       return true;
@@ -5910,6 +5949,7 @@
 
   function markPuzzleSignatureUsed(puzzle) {
     const signatures = [getPuzzleIdSignature(puzzle), getPuzzleContentSignature(puzzle)].filter(Boolean);
+    markPuzzleAsShown(puzzle);
     if (!signatures.length) {
       return;
     }
@@ -5939,56 +5979,32 @@
     return puzzleState.solvedByLevel[level];
   }
 
-  function getAdvancePuzzlePoolIdsForLevel(level) {
+  function pickNextHeartRevivePuzzle(level) {
     const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
-    const pool = levelRolePools[safeLevel] || levelRolePools[0] || { advanceCoreIds: [] };
-    return pool.advanceCoreIds;
+    const poolIds = heartPoolsByLevel[safeLevel] || heartPoolsByLevel[0] || [];
+    const puzzle = pickUnseenPuzzle(heartPuzzles, poolIds);
+    if (puzzle) {
+      puzzleState.activePuzzle = puzzle;
+      markPuzzleSignatureUsed(puzzle);
+    }
+    return puzzle;
   }
 
-  function getHeartPuzzlePoolIdsForLevel(level) {
+  function pickNextLevelPuzzle(level) {
     const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
-    const pool = levelRolePools[safeLevel] || levelRolePools[0] || { heartCoreIds: [] };
-    return pool.heartCoreIds;
-  }
-
-  function pickUnusedCorePuzzleIdFromPool(poolIds, phase, level) {
-    let candidates = poolIds.filter((id) => {
-      if (puzzleState.usedCorePuzzleIds.includes(id)) {
-        return false;
-      }
-      const puzzle = turingPuzzles[id];
-      return !isPuzzleSignatureUsed(puzzle);
-    });
-
-    const lastSignature = getPhaseHistorySignature(phase, level);
-    if (lastSignature && candidates.length > 1) {
-      const nonRepeat = candidates.filter((id) => getPuzzleSignature(turingPuzzles[id]) !== lastSignature);
-      if (nonRepeat.length) {
-        candidates = nonRepeat;
-      }
+    const poolIds = levelPoolsByLevel[safeLevel] || levelPoolsByLevel[0] || [];
+    const puzzle = pickUnseenPuzzle(levelPuzzles, poolIds);
+    if (puzzle) {
+      puzzleState.activePuzzle = puzzle;
+      markPuzzleSignatureUsed(puzzle);
     }
-
-    if (!candidates.length) {
-      return null;
-    }
-    const puzzleId = candidates[Math.floor(Math.random() * candidates.length)];
-    puzzleState.activeCorePuzzleId = puzzleId;
-    puzzleState.usedCorePuzzleIds.push(puzzleId);
-    const picked = turingPuzzles[puzzleId];
-    markPuzzleSignatureUsed(picked);
-    setPhaseHistorySignature(phase, level, getPuzzleSignature(picked));
-    return puzzleId;
+    return puzzle;
   }
 
-  function pickNextHeartRevivePuzzleId(level) {
-    const poolIds = getHeartPuzzlePoolIdsForLevel(level);
-    return pickUnusedCorePuzzleIdFromPool(poolIds, 'heart', level);
-  }
-
-  function pickNextAdvancePuzzleId(level) {
-    const poolIds = getAdvancePuzzlePoolIdsForLevel(level);
-    return pickUnusedCorePuzzleIdFromPool(poolIds, 'advance', level);
-  }
+  // Legacy shims so call-sites that still reference the old integer-id pickers don't crash
+  function pickNextHeartRevivePuzzleId(level) { return pickNextHeartRevivePuzzle(level); }
+  function pickNextAdvancePuzzleId(level)     { return pickNextLevelPuzzle(level); }
+  function pickNextCorePuzzleId(level)        { return pickNextLevelPuzzle(level); }
 
   function beginHeartReviveChallenge(level) {
     const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
@@ -6003,7 +6019,7 @@
     puzzleState.pendingHeartRevive = { level: safeLevel };
     puzzleState.pendingTreasure = null;
     puzzleState.pendingAdvance = null;
-    puzzleState.activeCorePuzzleId = null;
+    puzzleState.activePuzzle = null;
     state.paused = true;
     state.hungerPaused = false;
 
@@ -6038,57 +6054,24 @@
     return true;
   }
 
-  function pickNextCorePuzzleId(level) {
-    const poolIds = getPuzzlePoolIdsForLevel(level);
-    return pickUnusedCorePuzzleIdFromPool(poolIds, 'core', level);
-  }
-
   function getTreasureRefPoolForLevel(level) {
     const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
     const pool = levelRolePools[safeLevel] || levelRolePools[0] || { treasureRefs: [] };
     return pool.treasureRefs;
   }
 
-  function chooseTreasurePuzzleRef(level) {
-    const refs = getTreasureRefPoolForLevel(level);
-
-    let candidates = refs.filter((ref) => {
-      const key = getTreasureRefKey(ref);
-      if (!key || puzzleState.seenTreasureRefs.includes(key)) {
-        return false;
-      }
-      return !isPuzzleSignatureUsed(getPuzzleByRef(ref));
-    });
-    if (!candidates.length) {
-      return null;
+  function chooseTreasurePuzzle(level) {
+    const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
+    const poolIds = treasurePoolsByLevel[safeLevel] || treasurePoolsByLevel[0] || [];
+    const puzzle = pickUnseenPuzzle(treasurePuzzles, poolIds);
+    if (puzzle) {
+      markPuzzleSignatureUsed(puzzle);
     }
-
-    const lastSignature = getPhaseHistorySignature('treasure', level);
-    if (lastSignature && candidates.length > 1) {
-      const nonRepeatBySignature = candidates.filter((ref) => getPuzzleSignature(getPuzzleByRef(ref)) !== lastSignature);
-      if (nonRepeatBySignature.length) {
-        candidates = nonRepeatBySignature;
-      }
-    }
-
-    if (candidates.length > 1 && puzzleState.lastTreasureRefKey) {
-      const nonRepeat = candidates.filter((ref) => getTreasureRefKey(ref) !== puzzleState.lastTreasureRefKey);
-      if (nonRepeat.length) {
-        candidates = nonRepeat;
-      }
-    }
-
-    const puzzleRef = candidates[Math.floor(Math.random() * candidates.length)];
-    const key = getTreasureRefKey(puzzleRef);
-    if (key && !puzzleState.seenTreasureRefs.includes(key)) {
-      puzzleState.seenTreasureRefs.push(key);
-    }
-    const picked = getPuzzleByRef(puzzleRef);
-    markPuzzleSignatureUsed(picked);
-    setPhaseHistorySignature('treasure', level, getPuzzleSignature(picked));
-    puzzleState.lastTreasureRefKey = key;
-    return puzzleRef;
+    return puzzle;
   }
+
+  // Legacy shim
+  function chooseTreasurePuzzleRef(level) { return chooseTreasurePuzzle(level) ? { source: 'treasure', _direct: true } : null; }
 
   function openTreasurePuzzleFromChest(item) {
     const rewardFood = Math.max(1, item.foodReward || 1);
@@ -6101,14 +6084,15 @@
       return;
     }
 
-    const puzzleRef = chooseTreasurePuzzleRef(level);
-    if (!puzzleRef) {
+    const treasurePuzzle = chooseTreasurePuzzle(level);
+    if (!treasurePuzzle) {
       state.foodStocks[selectedCharacter] = (state.foodStocks[selectedCharacter] || 0) + rewardFood;
       pushMessage(`Chest opened. Treasure puzzle bank exhausted this session, +${rewardFood} food granted.`);
       syncHud();
       return;
     }
-    puzzleState.pendingTreasure = { level, puzzleRef, foodReward: rewardFood };
+    puzzleState.activePuzzle = treasurePuzzle;
+    puzzleState.pendingTreasure = { level, puzzleRef: null, foodReward: rewardFood };
     state.paused = true;
     state.hungerPaused = false;
 
@@ -6210,37 +6194,33 @@
   }
 
   function getCurrentPuzzle() {
+    // Return already-picked active puzzle if present
+    if (puzzleState.activePuzzle) {
+      return puzzleState.activePuzzle;
+    }
     if (puzzleState.pendingTreasure) {
-      return getPuzzleByRef(puzzleState.pendingTreasure.puzzleRef);
+      const level = puzzleState.pendingTreasure.level;
+      const p = chooseTreasurePuzzle(level);
+      puzzleState.activePuzzle = p;
+      return p;
     }
     if (puzzleState.pendingAdvance) {
       const level = Math.max(0, Math.min(regions.length - 1, puzzleState.pendingAdvance.nextLevel || state.progressLevel));
-      if (!Number.isInteger(puzzleState.activeCorePuzzleId)) {
-        pickNextAdvancePuzzleId(level);
-      }
-      if (Number.isInteger(puzzleState.activeCorePuzzleId)) {
-        return turingPuzzles[puzzleState.activeCorePuzzleId] || null;
-      }
-      return null;
+      const p = pickNextLevelPuzzle(level);
+      puzzleState.activePuzzle = p;
+      return p;
     }
     if (puzzleState.pendingHeartRevive) {
       const level = puzzleState.pendingHeartRevive.level;
-      if (!Number.isInteger(puzzleState.activeCorePuzzleId)) {
-        pickNextHeartRevivePuzzleId(level);
-      }
-      if (Number.isInteger(puzzleState.activeCorePuzzleId)) {
-        return turingPuzzles[puzzleState.activeCorePuzzleId] || null;
-      }
-      return null;
+      const p = pickNextHeartRevivePuzzle(level);
+      puzzleState.activePuzzle = p;
+      return p;
     }
-    if (!Number.isInteger(puzzleState.activeCorePuzzleId)) {
-      const level = getPuzzleDifficultyLevel();
-      pickNextCorePuzzleId(level);
-    }
-    if (Number.isInteger(puzzleState.activeCorePuzzleId)) {
-      return turingPuzzles[puzzleState.activeCorePuzzleId] || null;
-    }
-    return null;
+    // Default: level puzzle
+    const level = getPuzzleDifficultyLevel();
+    const p = pickNextLevelPuzzle(level);
+    puzzleState.activePuzzle = p;
+    return p;
   }
 
   function normalizeAnswer(value) {
@@ -6292,7 +6272,7 @@
         ? `Treasure Case: ${puzzle.title}`
         : isHeartRevive
           ? `Heart Revival: ${puzzle.title}`
-        : `${puzzle.title} (${Math.max(1, seenInLevelCount)}/${levelPoolIds.length})`;
+          : puzzle.title;
     }
     if (puzzleInstruction) puzzleInstruction.textContent = puzzle.instruction;
     if (puzzleQuestion) {
@@ -6302,7 +6282,7 @@
           ? 'Heart Revival Brief'
           : 'Junior Codebreaker Brief';
       const regionName = regions[state.regionIndex]?.name || 'Outback Sector';
-      puzzleQuestion.textContent = `${chapter} - ${regionName}: ${puzzle.instruction} Enter your decoded result in the field below to continue the expedition.`;
+      puzzleQuestion.textContent = `${chapter} - ${regionName}: Enter your decoded result in the field below to continue the expedition.`;
     }
     if (puzzleAnswerInput) {
       puzzleAnswerInput.value = '';
@@ -6423,7 +6403,7 @@
         return;
       }
 
-      puzzleState.activeCorePuzzleId = null;
+      puzzleState.activePuzzle = null;
       setTimeout(() => {
           if (puzzleModal?.classList.contains('open')) {
           hydratePuzzlePanel();
@@ -6503,7 +6483,7 @@
       pushMessage('Heart revival puzzle cannot be skipped.');
       return;
     }
-    puzzleState.activeCorePuzzleId = null;
+    puzzleState.activePuzzle = null;
     pushMessage('Puzzle skipped. Next puzzle queued in Puzzle Core.');
     if (puzzleStatus) {
       puzzleStatus.textContent = 'Skipped. Opening the next puzzle...';
@@ -10141,7 +10121,11 @@
 
   function bindModalControls() {
     bindClick(closeClueBtn, () => closeModal(clueModal));
-    bindClick(closePuzzleBtn, () => closeModal(puzzleModal));
+    bindClick(closePuzzleBtn, () => {
+      // Puzzle is already marked seen when shown; clear active cache so reopen picks next unseen.
+      puzzleState.activePuzzle = null;
+      closeModal(puzzleModal);
+    });
     bindClick(clueHintBtn, requestHint);
     bindClick(clueSolveBtn, () => {
       closeModal(clueModal);
@@ -10313,6 +10297,7 @@
 
   function initializeGame() {
     initThreeTerrain();
+    ensureAudioStarted();
     bindTouchControls();
     bindGameplayControls();
     bindCharacterControls();
