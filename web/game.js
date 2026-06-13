@@ -7207,7 +7207,7 @@
     ctx.fillStyle = `rgba(12, 8, 5, ${sceneDarken})`;
     ctx.fillRect(0, 0, w, h);
 
-    drawCinematicGrade(w, h, region.terrain, act);
+    drawCinematicGrade(w, h, region.terrain, act, regionName);
     drawActAtmosphereOverlay(w, h, region, act);
 
     drawRunnerTrack(w, h, region, act);
@@ -7270,8 +7270,9 @@
     const terrain = region.terrain;
     const regionName = normalizeBiomeName(region?.name);
     const isServo = regionName === 'servo';
-    if (isServo) {
-      // Servo scene has its own detailed forecourt composition; skip global track overlays.
+    const isTasmania = regionName === 'tasmania';
+    if (isServo || isTasmania) {
+      // Some scenes have their own full foreground composition; skip global track overlays.
       return;
     }
     const isNullarbor = regionName === 'nullarbor';
@@ -7415,7 +7416,7 @@
     ctx.fillText(getCurrentActDisplayLabel().toUpperCase(), 16, h - 18);
   }
 
-  function drawCinematicGrade(w, h, terrain, act) {
+  function drawCinematicGrade(w, h, terrain, act, regionName) {
     // Vignette and grain to unify scenes into a less cartoon, more filmic frame.
     const vignette = ctx.createRadialGradient(w * 0.5, h * 0.56, Math.min(w, h) * 0.22, w * 0.5, h * 0.56, Math.max(w, h) * 0.8);
     vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
@@ -7423,7 +7424,7 @@
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, w, h);
 
-    if (visualSettings.cinematicScanlines === true) {
+    if (visualSettings.cinematicScanlines === true && regionName !== 'tasmania') {
       const t = performance.now() * 0.001;
       ctx.save();
       const baseAlpha = terrain === 'industrial' ? 0.09 : 0.07;
@@ -9277,15 +9278,16 @@
     ctx.closePath();
     ctx.fill();
 
-    // Snow drift streaks across ground.
-    ctx.strokeStyle = 'rgba(232, 243, 255, .28)';
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 16; i++) {
-      const y = h * (0.73 + i * 0.018);
+    // Foreground windblown snow flecks (no full-width lines).
+    for (let i = 0; i < 130; i++) {
+      const fx = ((t * (10 + (i % 6) * 2) + i * 41) % (w + 90)) - 45;
+      const fy = h * (0.74 + (i / 130) * 0.24) + Math.sin(t * 0.9 + i * 0.5) * 2;
+      const rx = 1 + (i % 3) * 0.7;
+      const ry = 0.5 + (i % 2) * 0.35;
+      ctx.fillStyle = `rgba(232, 243, 255, ${0.1 + (i % 4) * 0.05})`;
       ctx.beginPath();
-      ctx.moveTo(0, y + Math.sin(t * 0.6 + i) * 2.5);
-      ctx.quadraticCurveTo(w * 0.45, y - 6, w, y + Math.cos(t * 0.7 + i) * 2.5);
-      ctx.stroke();
+      ctx.ellipse(fx, fy, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     // Round-canopy trees to keep the stylized 2D silhouette language.
