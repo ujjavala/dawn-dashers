@@ -27,42 +27,25 @@ Dawn Dashers honours him through gameplay, narrative, and engineering:
 
 ### In the puzzles
 
-Every in-game challenge is a **Turing-style codebreaking puzzle** — the kind of lateral, symbolic
-reasoning that Turing and his team used at Bletchley Park. Puzzles involve ciphers, logic gates,
-prime numbers, finite-state sketches, and pattern recognition. Each puzzle links to a Wikipedia
-article so players can follow the rabbit hole.
+Every in-game challenge is a codebreaking-style puzzle involving ciphers, patterns, and symbolic
+reasoning. Each puzzle links to a Wikipedia article so players can follow the rabbit hole.
 
-The puzzle IDs use a naming convention (`l1_tp01`, `l2_hp01`, …) that mirrors how Bletchley
-catalogued intercepts — level, type, sequence.
+Puzzle IDs are numeric. The dedup system tracks them by id so the same puzzle can't appear twice
+in the same session.
 
 ### In the characters
 
-The 27 playable dashers are all Australian animals  and each character's **power** and **quirk** are inspired by
-concepts from Turing's work:
+The playable dashers are all Australian animals. Each character's name is a computing or
+mathematics term paired with the animal — *Enigma Emu*, *Kleene Kangaroo*, *Turing Tassie Devil*,
+*JIT Jabiru*, *Queue Quoll*, and so on — as a nod to Turing and the field he founded.
 
-- *Emu* — relentless forward motion (Turing's unstoppable curiosity)
-- *Wombat* — burrow-dodge (evasion, steganography)
-- *Echidna* — spiny defence (cryptographic hardening)
-- *Cassowary* — apex predator speed (Colossus, the world's first electronic computer)
-
-The "special" dashers can only be unlocked by solving enough treasure puzzles — a direct nod to
-the idea that Turing's deeper insights were hidden behind layers of prior work.
+Some dashers can only be unlocked by solving enough puzzles at the right level.
 
 ### In the world
 
-The nine biomes map a spiritual journey from Turing's birthplace to his vindication:
-
-| Biome | Turing parallel |
-|---|---|
-| Outback Ruins | Raw wilderness — pre-war mathematics |
-| Bushland | Dense complexity — Bletchley Park |
-| Servo | Industrial machinery — the Bombe |
-| Coastline Lighthouse | Signal and noise — Shannon's information theory |
-| Mangroves | Hidden paths — steganography and hidden messages |
-| Blue Mountains | High altitude thinking — abstract computation |
-| Nullarbor | The long plain — the grinding post-war prosecution |
-| Observatory | Looking outward — morphogenesis and artificial life |
-| Tasmania | Sanctuary — posthumous pardon and legacy |
+The nine biomes are set across Australia, each with its own terrain, colour palette, and ambient
+hazards — from the sun-cracked Outback Ruins to the alpine Blue Mountains and the remote
+Tasmanian sanctuary.
 
 ### In the engine
 
@@ -151,11 +134,11 @@ Puzzle content lives in three difficulty files:
 - [web/puzzles/questions-medium.js](web/puzzles/questions-medium.js)
 - [web/puzzles/questions-hard.js](web/puzzles/questions-hard.js)
 
-Each puzzle has: `id` (unique string like `l1_tp01` or legacy numeric), `difficulty`, `type` (`heartPuzzles` / `levelPuzzles` / `treasurePuzzles`).
+Each puzzle has: `id` (numeric), `difficulty`, `type` (`heartPuzzles` / `levelPuzzles` / `treasurePuzzles`).
 
 ### De-duplication
 
-Seen state is **session-scoped** (`sessionStorage`) — clears on page refresh so old IDs never pollute a new run. Cross-pool dedup is enforced via content signatures: if puzzle `17` appears in both `treasurePuzzles` and `levelPuzzles`, showing it in one pool marks it seen in both.
+Seen state is **session-scoped** (`sessionStorage`) — clears on page refresh so old IDs never pollute a new run. Each pool is shuffled into a queue at game-start; puzzles are popped off the front. A shared `sessionShownIds` Set (keyed by `String(puzzle.id)`) prevents cross-pool duplicates — showing puzzle `19` as a treasure case blocks it from appearing again as a level puzzle in the same session.
 
 ### Difficulty progression by level
 
