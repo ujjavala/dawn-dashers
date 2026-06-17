@@ -6690,6 +6690,7 @@
     const rewardFood = Math.max(1, puzzleState.pendingTreasure.foodReward || 1);
     state.foodStocks[selectedCharacter] = (state.foodStocks[selectedCharacter] || 0) + rewardFood;
     puzzleState.pendingTreasure = null;
+    puzzleState.activePuzzle = null;
     sendFlow('PUZZLE_CLOSE');
     state.objective = `Treasure solved in ${regions[state.regionIndex].name}. Supplies secured.`;
     pushMessage(`Case solved! +${rewardFood} food supplies for ${characters[selectedCharacter].name}.`);
@@ -6714,6 +6715,7 @@
     }
 
     puzzleState.pendingAdvance = null;
+    puzzleState.activePuzzle = null;
     const previousLevel = Math.max(0, next.nextLevel - 1);
     const chestCountForPreviousLevel = state.chestCollectsByLevelRun[previousLevel] || 0;
     let specialUnlockedNames = '';
@@ -6747,6 +6749,7 @@
 
     const level = puzzleState.pendingHeartRevive.level;
     puzzleState.pendingHeartRevive = null;
+    puzzleState.activePuzzle = null;
     state.heartReviveUsedByLevel[level] = true;
     state.health = state.maxLives;
     sendFlow('START_RUN');
