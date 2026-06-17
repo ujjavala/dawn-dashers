@@ -94,7 +94,6 @@
   const WALKTHROUGH_KEY = 'dawn_dashers_walkthrough_seen';
   const DIFFICULTY_KEY = 'dawn_dashers_difficulty_v1';
   const PUZZLE_HISTORY_KEY = 'dawn_dashers_puzzle_history_v1';
-  const PUZZLE_SHOWN_SIGNATURES_KEY = 'dawn_dashers_puzzle_shown_signatures_v1';
   const SUPER_MODE_KEY = 'dawn_dashers_super_mode_v1';
   const MUSIC_ENABLED_KEY = 'dawn_dashers_music_enabled_v1';
   const MUSIC_VOLUME_KEY = 'dawn_dashers_music_volume_v1';
@@ -3165,37 +3164,11 @@
     });
   }
 
-  const DASHER_VISUAL_PRESETS = globalThis.DawnDashersCharacterVisualPresets || {
-    emu: { rig: 'birdTall', fast: true, body: 0x8c6c4d, accent: 0x5a3824, glow: 0xf4d6a2, trail: 0xd7c0a2, speed: 8.6, bob: 0.09, hop: 0.06 },
-    wombat: { rig: 'burrower', fast: false, body: 0x8d6f54, accent: 0x5d4028, glow: 0xbfa68e, frameRate: 8, roll: 0.07 },
-    kangaroo: { rig: 'hopper', fast: true, body: 0xa16d54, accent: 0x5b3922, glow: 0xffd28a, trail: 0xe9bd73, speed: 9.8, bob: 0.11, hop: 0.34 },
-    koala: { rig: 'burrower', fast: false, body: 0x8d909a, accent: 0x42464e, glow: 0xd6efff, frameRate: 8, breathe: true },
-    platypus: { rig: 'platypus', fast: false, body: 0xa5754b, accent: 0x2f5265, glow: 0xaee9ff, frameRate: 8, tail: 0x8b6141 },
-    possum: { rig: 'tailClimber', fast: true, body: 0x8b7f6b, accent: 0x594536, glow: 0xffe2a2, trail: 0xcdb86b, speed: 8.9, bob: 0.08, hop: 0.08 },
-    echidna: { rig: 'spine', fast: false, body: 0x72513a, accent: 0x3e2518, glow: 0xc6e8ff, frameRate: 8, roll: 0.08 },
-    cockatoo: { rig: 'birdCrest', fast: true, body: 0xf2eee5, accent: 0xd2ab3f, glow: 0xfff2b4, trail: 0x9fe5ff, speed: 9.1, bob: 0.1, crest: true },
-    dingo: { rig: 'canine', fast: true, body: 0xb37f56, accent: 0x4d311d, glow: 0xeed099, trail: 0xd7ab77, speed: 8.8, bob: 0.09, hop: 0.18 },
-    bilby: { rig: 'burrower', fast: false, body: 0xccad76, accent: 0x6f5330, glow: 0xffefc5, frameRate: 8, ears: true },
-    tasdevil: { rig: 'canine', fast: true, body: 0x261e1e, accent: 0xb8322b, glow: 0xff714f, trail: 0xff7b57, speed: 9.6, bob: 0.11, pulseGlow: true },
-    kookaburra: { rig: 'birdPerch', fast: true, body: 0x80613f, accent: 0x74dbff, glow: 0x95f8ff, trail: 0x7ee9ff, speed: 8.7, bob: 0.09, auroraGlow: true },
-    quokka: { rig: 'burrower', fast: false, body: 0xb89060, accent: 0x6f4d2d, glow: 0xffe0b2, frameRate: 8, breathe: true },
-    numbat: { rig: 'striped', fast: false, body: 0xbf9b66, accent: 0x8d6032, glow: 0xffedb6, frameRate: 8, stripes: true },
-    ibis: { rig: 'birdPerch', fast: true, body: 0xf2f0e8, accent: 0x3a1f16, glow: 0xb7f2e4, trail: 0x8de6cf, speed: 9.0, bob: 0.1 },
-    mudcrab: { rig: 'burrower', fast: false, body: 0x8b3f2b, accent: 0xd98b4f, glow: 0xffc08a, frameRate: 8, roll: 0.04 },
-    jabiru: { rig: 'birdTall', fast: true, body: 0x11161b, accent: 0xd6dbe2, glow: 0x90f0dd, trail: 0x79dfcb, speed: 9.2, bob: 0.1 },
-    lyrebird: { rig: 'birdCrest', fast: true, body: 0x7f6548, accent: 0xc8a56d, glow: 0xb6ddff, trail: 0x96caf4, speed: 9.1, bob: 0.1 },
-    wallaroo: { rig: 'hopper', fast: false, body: 0x9b7654, accent: 0x5b3f2a, glow: 0xe9cba2, frameRate: 8, hop: 0.24 },
-    glider: { rig: 'tailClimber', fast: false, body: 0x9a8674, accent: 0x4c3f35, glow: 0xd8cbbd, frameRate: 8, breathe: true },
-    eagle: { rig: 'birdPerch', fast: true, body: 0x5d4a3a, accent: 0xd6b07a, glow: 0xffd9a0, trail: 0xe8be81, speed: 9.4, bob: 0.11 },
-    thorny: { rig: 'spine', fast: false, body: 0xb27745, accent: 0x7f4d2b, glow: 0xf0c486, frameRate: 8, stripes: true },
-    quoll: { rig: 'canine', fast: true, body: 0x6e5848, accent: 0xd9b87a, glow: 0xf4d2a1, trail: 0xcda56f, speed: 9.3, bob: 0.1 },
-    owl: { rig: 'birdCrest', fast: true, body: 0x6e5e52, accent: 0xcaa56d, glow: 0xcad8ff, trail: 0xaab8ea, speed: 9.0, bob: 0.09 },
-    bandicoot: { rig: 'burrower', fast: false, body: 0x8f775f, accent: 0x5e4a39, glow: 0xe7d1b3, frameRate: 8, breathe: true },
-    cassowary: { rig: 'birdTall', fast: false, body: 0x1d2530, accent: 0x4ca0ff, glow: 0x91d2ff, frameRate: 8, crest: true }
-  };
+  const DASHER_VISUAL_PRESETS = globalThis.DawnDashersCharacterVisualPresets || {};
+  const DEFAULT_DASHER_PRESET = { rig: 'birdTall', fast: true, body: 0x8c6c4d, accent: 0x5a3824, glow: 0xf4d6a2, trail: 0xd7c0a2, speed: 8.6, bob: 0.09, hop: 0.06 };
 
   function getDasherVisualPreset(charKey) {
-    return DASHER_VISUAL_PRESETS[charKey] || DASHER_VISUAL_PRESETS.emu;
+    return DASHER_VISUAL_PRESETS[charKey] || DASHER_VISUAL_PRESETS.emu || DEFAULT_DASHER_PRESET;
   }
 
   function makeDasherTrail(root, colorHex = 0xffffff) {
@@ -4528,6 +4501,8 @@
   }
 
   const state = {
+    flowMode: 'idle',
+    flowLastEvent: 'INIT',
     running: false,
     ended: false,
     score: 0,
@@ -4551,6 +4526,8 @@
     distance: 0,
     regionIndex: 0,
     progressLevel: 0,
+    flowLevelState: 'level_1',
+    maxUnlockedLevel: 0,
     hintsUsed: 0,
     paused: false,
     hungerPaused: false,
@@ -4591,34 +4568,172 @@
     })()
   };
 
-  const defaultCharacters = {
-    emu: { name: 'Enigma Emu', emoji: '🦤', power: 'Dust Sprint', quirk: 'Fast lane weave, moderate hop drain.', unlockAt: 0, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Emu' },
-    wombat: { name: 'Wheeler Wombat', emoji: '🦫', power: 'Burrow Dodge', quirk: 'Cheaper slides in dunes/forest.', unlockAt: 0, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Wombat' },
-    kangaroo: { name: 'Kleene Kangaroo', emoji: '🦘', power: 'Sky Hop', quirk: 'Jumps are most energy-efficient.', unlockAt: 1, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Red_kangaroo' },
-    koala: { name: 'Knuth Koala', emoji: '🐨', power: 'Grip Glide', quirk: 'Balanced and steady movement.', unlockAt: 1, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Koala' },
-    platypus: { name: 'Prefix Platypus', emoji: '🦆', power: 'River Sense', quirk: 'Food restores more and slide is efficient.', unlockAt: 1, role: 'slow', puzzleUnlockLevel: 1, wikiUrl: 'https://en.wikipedia.org/wiki/Platypus' },
-    possum: { name: 'Protocol Possum', emoji: '🌟', power: 'Night Glide', quirk: 'Quick reactions at higher levels.', unlockAt: 2, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Possum' },
-    echidna: { name: 'Epsilon Echidna', emoji: '🦔', power: 'Quill Barrier', quirk: 'Stable lane control with low drift.', unlockAt: 2, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Echidna' },
-    cockatoo: { name: 'Compiler Cockatoo', emoji: '🦜', power: 'Aerial Relay', quirk: 'Great movement efficiency on all actions.', unlockAt: 2, role: 'fast', puzzleUnlockLevel: 2, wikiUrl: 'https://en.wikipedia.org/wiki/Cockatoo' },
-    dingo: { name: 'Digital Dingo', emoji: '🐕', power: 'Tide Dash', quirk: 'Aggressive full-width lane cuts.', unlockAt: 3, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Dingo' },
-    bilby: { name: 'Bit Bilby', emoji: '🐇', power: 'Tunnel Pace', quirk: 'Short lane window, low energy burn.', unlockAt: 3, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Bilby' },
-    tasdevil: { name: 'Turing Tassie Devil', emoji: '😈', power: 'Charge Burst', quirk: 'High movement speed with expensive jumps.', unlockAt: 3, role: 'fast', puzzleUnlockLevel: 3, wikiUrl: 'https://en.wikipedia.org/wiki/Tasmanian_devil' },
-    kookaburra: { name: 'Kernel Kookaburra', emoji: '🐦', power: 'Light Call', quirk: 'Fast top-tier lane traversal.', unlockAt: 4, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Kookaburra' },
-    quokka: { name: 'Quine Quokka', emoji: '🐹', power: 'Calm Climb', quirk: 'Highest efficiency but restricted lanes.', unlockAt: 4, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Quokka' },
-    numbat: { name: 'Null Numbat', emoji: '🦝', power: 'Pattern Focus', quirk: 'Very low move drain and cheap food cost.', unlockAt: 4, role: 'slow', puzzleUnlockLevel: 4, wikiUrl: 'https://en.wikipedia.org/wiki/Numbat' },
-    ibis: { name: 'Index Ibis', emoji: '🕊️', power: 'Marsh Vector', quirk: 'Rapid lane snaps through tight wetland bends.', unlockAt: 5, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Australian_white_ibis' },
-    mudcrab: { name: 'Merge Mud Crab', emoji: '🦀', power: 'Clamp Drift', quirk: 'Stable low-drain movement through slick terrain.', unlockAt: 5, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Mud_crab' },
-    jabiru: { name: 'JIT Jabiru', emoji: '🐤', power: 'Swamp Compile', quirk: 'Fast adaptive paths through tangled mangrove lanes.', unlockAt: 5, role: 'fast', puzzleUnlockLevel: 5, wikiUrl: 'https://en.wikipedia.org/wiki/Black-necked_stork' },
-    lyrebird: { name: 'Loop Lyrebird', emoji: '🐦', power: 'Echo Sprint', quirk: 'High momentum with precise hop recovery windows.', unlockAt: 6, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Superb_lyrebird' },
-    wallaroo: { name: 'Stack Wallaroo', emoji: '🦘', power: 'Ridge Brace', quirk: 'Predictable movement and efficient defensive lanes.', unlockAt: 6, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Wallaroo' },
-    glider: { name: 'Graph Glider', emoji: '🐿️', power: 'Cliff Arc', quirk: 'Long glide windows with efficient mountain recovery.', unlockAt: 6, role: 'slow', puzzleUnlockLevel: 6, wikiUrl: 'https://en.wikipedia.org/wiki/Sugar_glider' },
-    eagle: { name: 'Edge Eagle', emoji: '🦅', power: 'Horizon Cut', quirk: 'Long-range lane commits with high burst demand.', unlockAt: 7, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Wedge-tailed_eagle' },
-    thorny: { name: 'Thread Thorny', emoji: '🦎', power: 'Desert Buffer', quirk: 'Low-energy survival under harsh hazard density.', unlockAt: 7, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Thorny_devil' },
-    quoll: { name: 'Queue Quoll', emoji: '🐺', power: 'Dust Pivot', quirk: 'Predictive pivots through Nullarbor hazard chains.', unlockAt: 7, role: 'fast', puzzleUnlockLevel: 7, wikiUrl: 'https://en.wikipedia.org/wiki/Quoll' },
-    owl: { name: 'Opcode Owl', emoji: '🦉', power: 'Night Parse', quirk: 'Fast interpretation of shifting constellation paths.', unlockAt: 8, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Boobook_owl' },
-    bandicoot: { name: 'Branch Bandicoot', emoji: '🐭', power: 'Root Cache', quirk: 'Conservative movement with excellent energy retention.', unlockAt: 8, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Bandicoot' },
-    cassowary: { name: 'Cache Cassowary', emoji: '🦃', power: 'Orbit Vault', quirk: 'High-pressure observatory routing with stable energy spend.', unlockAt: 8, role: 'slow', puzzleUnlockLevel: 8, wikiUrl: 'https://en.wikipedia.org/wiki/Cassowary' }
-  };
+  const flowStateModule = globalThis.DawnDashersFlowMachine;
+  const flowRuntime = flowStateModule && typeof flowStateModule.create === 'function'
+    ? flowStateModule.create(state)
+    : null;
+  const sendFlow = flowRuntime && typeof flowRuntime.sendFlow === 'function'
+    ? flowRuntime.sendFlow
+    : () => false;
+
+  function syncFlowLevelState(level = state.progressLevel) {
+    sendFlow('LEVEL_SET', { level });
+  }
+
+  syncFlowLevelState(state.progressLevel);
+  const gameUiModule = globalThis.DawnDashersGameUi || {};
+
+  function getGameUiContext() {
+    return {
+      state,
+      HUNGER_MODAL_RESURFACE_DELAY_MS,
+      localStorage,
+      selectedCharacter,
+      characters,
+      scoreEl,
+      startBtn,
+      energyEl,
+      foodEl,
+      fragmentEl,
+      objectiveEl,
+      messageEl,
+      reviveBtn,
+      livesEl,
+      foodShopModal,
+      hungerModal,
+      hungerText,
+      foodShopList,
+      foodCheckoutBtn,
+      foodCartSummary,
+      clueModal,
+      puzzleModal,
+      clueTerrain,
+      clueText,
+      puzzleTerrain,
+      puzzleStatus,
+      settingsModal,
+      pastGamesModal,
+      helpModal,
+      closeClueBtn,
+      closePuzzleBtn,
+      clueHintBtn,
+      clueSolveBtn,
+      landingSettingsBtn,
+      closeSettingsBtn,
+      difficultySelect,
+      difficultyMultipliers,
+      DIFFICULTY_KEY,
+      superModeRow,
+      superModeSelect,
+      superModeAllowed,
+      SUPER_MODE_KEY,
+      terrain3dSelect,
+      TERRAIN_3D_KEY,
+      musicToggleSelect,
+      MUSIC_ENABLED_KEY,
+      musicVolumeRange,
+      MUSIC_VOLUME_KEY,
+      sfxVolumeRange,
+      SFX_VOLUME_KEY,
+      pastGamesBtn,
+      closePastGamesBtn,
+      closeFoodShopBtn,
+      closeHungerBtn,
+      hungerOpenShopBtn,
+      clearFoodCartBtn,
+      landingHelpBtn,
+      closeHelpBtn,
+      walkthroughModal,
+      walkthroughTitle,
+      walkthroughText,
+      walkthroughVisual,
+      walkthroughStep,
+      walkthroughNextBtn,
+      walkthroughBeginBtn,
+      walkthroughSkipBtn,
+      walkthroughSteps,
+      playNowBtn,
+      characterBackBtn,
+      characterStartBtn,
+      lcContinueBtn,
+      levelCompleteOverlay,
+      lcEmoji,
+      lcCongrats,
+      lcTeaser,
+      lcBonus,
+      landingOverlay,
+      hudEl,
+      missionEl,
+      dockEl,
+      mobileMenuBtn,
+      mobileMenuIcon,
+      renderFoodShop,
+      canAffordAnyFood,
+      puzzleState,
+      updateCharacterAvailability,
+      refreshCharacterBio,
+      syncMobileControlVisibility,
+      bindClick,
+      bindSelectChange,
+      bindRangeInput,
+      requestHint,
+      pushMessage,
+      resumeFromPuzzleModal,
+      syncAdminProgressToSelectedCharacter,
+      updateThreeVisibility,
+      ensureAudioStarted,
+      syncAudioToRegion,
+      renderPastGames,
+      checkoutFoodCart,
+      hydrateWalkthroughStep,
+      closeWalkthroughAndStart,
+      setCharacterSelectionOpen,
+      setLanding,
+      setGameplayChrome,
+      isCharacterAvailableForCurrentLevel,
+      syncCharacterStartButtonState,
+      setSelectedCharacter,
+      onStartButtonPressed,
+      launchRunFromStartButton,
+      markWalkthroughSeen,
+      gameDifficulty,
+      setGameDifficulty: (value) => {
+        gameDifficulty = value;
+      },
+      gameDifficultyRef: () => gameDifficulty,
+      superModeEnabledRef: () => superModeEnabled,
+      setSuperModeEnabled: (value) => {
+        superModeEnabled = value;
+      },
+      terrain3dEnabledRef: () => terrain3dEnabled,
+      setTerrain3dEnabled: (value) => {
+        terrain3dEnabled = value;
+      },
+      musicEnabledRef: () => musicEnabled,
+      setMusicEnabled: (value) => {
+        musicEnabled = value;
+      },
+      musicVolumeRef: () => musicVolume,
+      setMusicVolume: (value) => {
+        musicVolume = value;
+      },
+      sfxVolumeRef: () => sfxVolume,
+      setSfxVolume: (value) => {
+        sfxVolume = value;
+      },
+      walkthroughIndexRef: () => walkthroughIndex,
+      setWalkthroughIndex: (value) => {
+        walkthroughIndex = value;
+      },
+      previewCharacterRef: () => previewCharacter,
+      levelCompleteTimerRef: () => levelCompleteTimer,
+      setLevelCompleteTimer: (value) => {
+        levelCompleteTimer = value;
+      }
+    };
+  }
+
+  const defaultCharacters = globalThis.DawnDashersCharacterDefaults || {};
 
   const configuredCharacters = gameData.characters && typeof gameData.characters === 'object'
     ? gameData.characters
@@ -4627,17 +4742,7 @@
     ? configuredCharacters
     : { ...configuredCharacters, ...defaultCharacters };
 
-  const defaultLevelCharacterPairs = {
-    0: { fast: 'emu', slow: 'wombat' },
-    1: { fast: 'kangaroo', slow: 'koala' },
-    2: { fast: 'possum', slow: 'echidna' },
-    3: { fast: 'dingo', slow: 'bilby' },
-    4: { fast: 'kookaburra', slow: 'quokka' },
-    5: { fast: 'ibis', slow: 'mudcrab' },
-    6: { fast: 'lyrebird', slow: 'wallaroo' },
-    7: { fast: 'eagle', slow: 'thorny' },
-    8: { fast: 'owl', slow: 'bandicoot' }
-  };
+  const defaultLevelCharacterPairs = globalThis.DawnDashersLevelCharacterPairsDefaults || {};
   const configuredLevelCharacterPairs = gameData.levelCharacterPairs && typeof gameData.levelCharacterPairs === 'object'
     ? gameData.levelCharacterPairs
     : null;
@@ -4646,34 +4751,7 @@
     ? configuredLevelCharacterPairs
     : defaultLevelCharacterPairs;
 
-  const defaultCharacterFood = {
-    emu: { name: 'Seed Mix', icon: '🌾', cost: 220, restore: 250, moveCost: 50, jumpCost: 68, slideCost: 42 },
-    wombat: { name: 'Root Pack', icon: '🥕', cost: 190, restore: 230, moveCost: 30, jumpCost: 48, slideCost: 24 },
-    kangaroo: { name: 'Grass Bundle', icon: '🥬', cost: 235, restore: 270, moveCost: 48, jumpCost: 60, slideCost: 38 },
-    koala: { name: 'Eucalyptus', icon: '🍃', cost: 200, restore: 250, moveCost: 28, jumpCost: 44, slideCost: 22 },
-    platypus: { name: 'River Cray Pack', icon: '🦐', cost: 205, restore: 285, moveCost: 30, jumpCost: 42, slideCost: 20 },
-    possum: { name: 'Berry Pouch', icon: '🍓', cost: 245, restore: 300, moveCost: 44, jumpCost: 56, slideCost: 34 },
-    echidna: { name: 'Ant Cluster', icon: '🐜', cost: 210, restore: 275, moveCost: 26, jumpCost: 42, slideCost: 20 },
-    cockatoo: { name: 'Wattle Fruit', icon: '🍇', cost: 230, restore: 315, moveCost: 38, jumpCost: 50, slideCost: 28 },
-    dingo: { name: 'Fish Strip', icon: '🐟', cost: 260, restore: 325, moveCost: 42, jumpCost: 54, slideCost: 34 },
-    bilby: { name: 'Herb Bundle', icon: '🥦', cost: 225, restore: 300, moveCost: 24, jumpCost: 40, slideCost: 18 },
-    tasdevil: { name: 'Protein Haunch', icon: '🥩', cost: 285, restore: 360, moveCost: 41, jumpCost: 68, slideCost: 29 },
-    kookaburra: { name: 'Worm Satchel', icon: '🪱', cost: 280, restore: 350, moveCost: 40, jumpCost: 50, slideCost: 30 },
-    quokka: { name: 'Summit Greens', icon: '🥗', cost: 230, restore: 330, moveCost: 22, jumpCost: 36, slideCost: 18 },
-    numbat: { name: 'Termite Trail Mix', icon: '🫘', cost: 210, restore: 345, moveCost: 20, jumpCost: 34, slideCost: 16 },
-    ibis: { name: 'Mangrove Fly Pack', icon: '🦟', cost: 275, restore: 360, moveCost: 40, jumpCost: 54, slideCost: 30 },
-    mudcrab: { name: 'Brine Root Tray', icon: '🪸', cost: 235, restore: 345, moveCost: 23, jumpCost: 38, slideCost: 16 },
-    jabiru: { name: 'Delta Reed Cache', icon: '🪷', cost: 265, restore: 372, moveCost: 36, jumpCost: 48, slideCost: 26 },
-    lyrebird: { name: 'Echo Berry Mix', icon: '🫐', cost: 290, restore: 370, moveCost: 39, jumpCost: 52, slideCost: 28 },
-    wallaroo: { name: 'Ridge Herb Stack', icon: '🌿', cost: 245, restore: 350, moveCost: 24, jumpCost: 38, slideCost: 17 },
-    glider: { name: 'Canopy Nectar', icon: '🍯', cost: 255, restore: 366, moveCost: 25, jumpCost: 34, slideCost: 16 },
-    eagle: { name: 'Thermal Strip', icon: '🍖', cost: 305, restore: 390, moveCost: 42, jumpCost: 58, slideCost: 32 },
-    thorny: { name: 'Dew Capsule', icon: '💧', cost: 240, restore: 355, moveCost: 22, jumpCost: 36, slideCost: 16 },
-    quoll: { name: 'Saltbush Jerky', icon: '🥓', cost: 275, restore: 382, moveCost: 34, jumpCost: 46, slideCost: 24 },
-    owl: { name: 'Starlight Moth Pack', icon: '🦋', cost: 310, restore: 395, moveCost: 41, jumpCost: 56, slideCost: 30 },
-    bandicoot: { name: 'Orbit Root Bundle', icon: '🥔', cost: 250, restore: 360, moveCost: 23, jumpCost: 37, slideCost: 16 },
-    cassowary: { name: 'Meteor Grain Bowl', icon: '🌾', cost: 270, restore: 384, moveCost: 24, jumpCost: 35, slideCost: 16 }
-  };
+  const defaultCharacterFood = globalThis.DawnDashersCharacterFoodDefaults || {};
   const configuredCharacterFood = gameData.characterFood && typeof gameData.characterFood === 'object'
     ? gameData.characterFood
     : null;
@@ -4685,34 +4763,7 @@
     acc[key] = 0;
     return acc;
   }, {});
-  const defaultCharacterRegionMap = {
-    emu: 0,
-    wombat: 0,
-    kangaroo: 1,
-    koala: 1,
-    platypus: 1,
-    possum: 2,
-    echidna: 2,
-    cockatoo: 2,
-    dingo: 3,
-    bilby: 3,
-    tasdevil: 3,
-    kookaburra: 4,
-    quokka: 4,
-    numbat: 4,
-    ibis: 5,
-    mudcrab: 5,
-    jabiru: 5,
-    lyrebird: 6,
-    wallaroo: 6,
-    glider: 6,
-    eagle: 7,
-    thorny: 7,
-    quoll: 7,
-    owl: 8,
-    bandicoot: 8,
-    cassowary: 8
-  };
+  const defaultCharacterRegionMap = globalThis.DawnDashersCharacterRegionMapDefaults || {};
   const configuredCharacterRegionMap = gameData.characterRegionMap && typeof gameData.characterRegionMap === 'object'
     ? gameData.characterRegionMap
     : null;
@@ -4779,21 +4830,10 @@
     }
   })();
 
-  const shownPuzzleSignatures = (() => {
-    try {
-      const raw = globalThis.localStorage.getItem(PUZZLE_SHOWN_SIGNATURES_KEY);
-      if (!raw) {
-        return [];
-      }
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) {
-        return [];
-      }
-      return parsed.filter((entry) => typeof entry === 'string' && entry.length > 0);
-    } catch {
-      return [];
-    }
-  })();
+  const puzzleUtils = globalThis.DawnDashersPuzzleUtils || {};
+  const shownPuzzleSignatures = typeof puzzleUtils.loadShownSignatures === 'function'
+    ? puzzleUtils.loadShownSignatures()
+    : [];
 
   const puzzleData = globalThis.DawnDashersPuzzleData || {};
   const levelPuzzlePools = puzzleData.levelPuzzlePools || {
@@ -4815,16 +4855,20 @@
   const levelPoolsByLevel    = puzzleData.levelPoolsByLevel    || {};
   const treasurePoolsByLevel = puzzleData.treasurePoolsByLevel || {};
 
-  // pickUnseen from puzzle-data.js — marks puzzle.seen = true and returns it
+  // pickUnseen — prefers puzzle-data.js impl, falls back to puzzleUtils module
+  function pickUnseenPuzzleFallback(flatArray, poolIds) {
+    if (typeof puzzleUtils.pickUnseenPuzzle === 'function') {
+      return puzzleUtils.pickUnseenPuzzle(flatArray, poolIds, puzzleState.usedPuzzleSignatures, shownPuzzleSignatures);
+    }
+    for (const id of poolIds) {
+      const p = flatArray[id];
+      if (p && !p.seen) { p.seen = true; return p; }
+    }
+    return null;
+  }
   const pickUnseenPuzzle = typeof puzzleData.pickUnseen === 'function'
     ? puzzleData.pickUnseen
-    : function(flatArray, poolIds) {
-        for (const id of poolIds) {
-          const p = flatArray[id];
-          if (p && !p.seen) { p.seen = true; return p; }
-        }
-        return null;
-      };
+    : pickUnseenPuzzleFallback;
 
   // resetSeen from puzzle-data.js
   const resetSeenPuzzles = typeof puzzleData.resetSeen === 'function'
@@ -4996,9 +5040,7 @@
 
   function resetGame(options = {}) {
     const keepProgress = Boolean(options.keepProgress);
-    state.running = true;
-    state.ended = false;
-    state.paused = false;
+    sendFlow('START_RUN');
     if (!keepProgress) {
       state.score = 0;
       state.heartReviveUsedByLevel = {};
@@ -5020,6 +5062,7 @@
       state.progressLevel = Math.max(0, Math.min(regions.length - 1, state.pendingLevelUnlockTarget));
       state.pendingLevelUnlockTarget = null;
     }
+    state.maxUnlockedLevel = Math.max(state.maxUnlockedLevel || 0, state.progressLevel || 0);
     const tier = Math.max(0, characters[selectedCharacter]?.unlockAt || 0);
     const role = characters[selectedCharacter]?.role || 'fast';
     state.maxEnergy = 1000 + tier * 120 + (role === 'slow' ? 80 : 30);
@@ -5036,6 +5079,7 @@
     state.difficulty = 1 + state.progressLevel * 0.45;
     state.distance = 0;
     state.regionIndex = Math.max(0, Math.min(regions.length - 1, state.progressLevel));
+    syncFlowLevelState(state.progressLevel);
     state.spawnTimer = 0;
     state.spawnPattern = null;
     state.spawnPatternStep = 0;
@@ -5069,56 +5113,27 @@
   }
 
   function syncPlaybackButton() {
-    if (!startBtn) {
-      return;
+    if (typeof gameUiModule.syncPlaybackButton === 'function') {
+      gameUiModule.syncPlaybackButton(getGameUiContext());
     }
-    const shouldShowPlay = !state.running || state.ended || state.paused || state.hungerPaused;
-    startBtn.innerHTML = shouldShowPlay
-      ? '<span class="icon-play"></span>'
-      : '<span class="icon-pause"></span>';
-    startBtn.setAttribute('aria-label', shouldShowPlay ? 'Play run' : 'Pause run');
-    startBtn.title = shouldShowPlay ? 'Play' : 'Pause';
   }
 
   function hydrateWalkthroughStep() {
-    const step = walkthroughSteps[walkthroughIndex];
-    if (!step) {
-      return;
+    if (typeof gameUiModule.hydrateWalkthroughStep === 'function') {
+      gameUiModule.hydrateWalkthroughStep(getGameUiContext());
     }
-    if (walkthroughTitle) walkthroughTitle.textContent = step.title;
-    if (walkthroughText) walkthroughText.textContent = step.text;
-    if (walkthroughVisual) {
-      walkthroughVisual.innerHTML = '';
-      if (Array.isArray(step.visuals) && step.visuals.length) {
-        step.visuals.forEach((visual) => {
-          const chip = document.createElement('div');
-          chip.className = 'walk-chip';
-          chip.innerHTML = `<span class="walk-icon ${visual.kind}">${visual.icon}</span><span>${visual.label}</span>`;
-          walkthroughVisual.appendChild(chip);
-        });
-      }
-    }
-    if (walkthroughStep) walkthroughStep.textContent = `Step ${walkthroughIndex + 1}/${walkthroughSteps.length}`;
-    const onLastStep = walkthroughIndex === walkthroughSteps.length - 1;
-    if (walkthroughNextBtn) walkthroughNextBtn.style.display = onLastStep ? 'none' : '';
-    if (walkthroughBeginBtn) walkthroughBeginBtn.style.display = onLastStep ? '' : 'none';
   }
 
   function openWalkthrough() {
-    walkthroughIndex = 0;
-    hydrateWalkthroughStep();
-    if (!walkthroughModal) {
-      launchRunFromStartButton(false);
-      return;
+    if (typeof gameUiModule.openWalkthrough === 'function') {
+      gameUiModule.openWalkthrough(getGameUiContext());
     }
-    walkthroughModal.classList.add('open');
-    walkthroughModal.setAttribute('aria-hidden', 'false');
   }
 
   function closeWalkthroughAndStart() {
-    closeModal(walkthroughModal);
-    markWalkthroughSeen();
-    launchRunFromStartButton(false);
+    if (typeof gameUiModule.closeWalkthroughAndStart === 'function') {
+      gameUiModule.closeWalkthroughAndStart(getGameUiContext());
+    }
   }
 
   function onStartButtonPressed(keepProgress = false) {
@@ -5140,58 +5155,27 @@
   }
 
   function setLanding(open) {
-    if (!landingOverlay) {
-      return;
+    if (typeof gameUiModule.setLanding === 'function') {
+      gameUiModule.setLanding(getGameUiContext(), open);
     }
-    landingOverlay.classList.toggle('open', open);
-    landingOverlay.setAttribute('aria-hidden', String(!open));
-    syncAudioToRegion();
+    if (open) sendFlow('SHOW_LANDING');
   }
 
   function setGameplayChrome(visible) {
-    const display = visible ? '' : 'none';
-    if (hudEl) hudEl.style.display = display;
-    if (missionEl) missionEl.style.display = display;
-    if (dockEl) dockEl.style.display = display;
-    if (livesEl) livesEl.style.display = display;
-    syncMobileControlVisibility();
+    if (typeof gameUiModule.setGameplayChrome === 'function') {
+      gameUiModule.setGameplayChrome(getGameUiContext(), visible);
+    }
   }
 
   function syncMobileControlVisibility() {
-    if (!dockEl) {
-      return;
+    if (typeof gameUiModule.syncMobileControlVisibility === 'function') {
+      gameUiModule.syncMobileControlVisibility(getGameUiContext());
     }
-    const gameplayVisible = hudEl?.style.display !== 'none';
-    const isMobileViewport = globalThis.matchMedia?.('(max-width: 720px)')?.matches;
-
-    if (!isMobileViewport || !gameplayVisible) {
-      dockEl.classList.remove('mobile-hidden');
-      updateMobileMenuButton(false, false);
-      return;
-    }
-
-    const hideDockDuringRun = state.running && !state.paused && !state.ended;
-    dockEl.classList.toggle('mobile-hidden', hideDockDuringRun);
-    updateMobileMenuButton(hideDockDuringRun, hideDockDuringRun);
   }
 
   function updateMobileMenuButton(visible, runningActive) {
-    if (!mobileMenuBtn) {
-      return;
-    }
-    if (!visible) {
-      mobileMenuBtn.classList.remove('show', 'state-pause', 'state-resume');
-      return;
-    }
-
-    mobileMenuBtn.classList.add('show');
-    mobileMenuBtn.classList.toggle('state-pause', runningActive);
-    mobileMenuBtn.classList.toggle('state-resume', !runningActive);
-    const isResumeState = !runningActive;
-    mobileMenuBtn.setAttribute('aria-label', isResumeState ? 'Resume run' : 'Pause and open menu');
-    mobileMenuBtn.setAttribute('title', isResumeState ? 'Resume run' : 'Pause and open menu');
-    if (mobileMenuIcon) {
-      mobileMenuIcon.textContent = isResumeState ? '▶' : '⏸';
+    if (typeof gameUiModule.updateMobileMenuButton === 'function') {
+      gameUiModule.updateMobileMenuButton(getGameUiContext(), visible, runningActive);
     }
   }
 
@@ -5247,9 +5231,12 @@
       return;
     }
     if (open && !superModeEnabled && !isCharacterAvailableForCurrentLevel(selectedCharacter)) {
-      const pair = getPairForLevel(state.progressLevel);
+      const pair = getPairForLevel(getHighestUnlockedLevel());
       selectedCharacter = pair.fast;
-      state.regionIndex = Math.max(0, Math.min(regions.length - 1, state.progressLevel));
+      const fallbackLevel = Math.max(0, Math.min(getHighestUnlockedLevel(), characters[selectedCharacter]?.unlockAt || 0));
+      state.progressLevel = fallbackLevel;
+      state.regionIndex = fallbackLevel;
+      syncFlowLevelState(state.progressLevel);
     }
     characterPanel.classList.toggle('open', open);
     characterPanel.setAttribute('aria-hidden', String(!open));
@@ -5258,6 +5245,7 @@
       updateCharacterAvailability();
       refreshCharacterBio();
       syncCharacterStartButtonState();
+      sendFlow('SHOW_CHARACTER_SELECT');
     }
     syncAudioToRegion();
   }
@@ -5302,13 +5290,21 @@
         }
         return;
       }
-      const lvl = Math.max(0, Math.min(regions.length - 1, state.progressLevel));
+      const lvl = getHighestUnlockedLevel();
       const pair = levelCharacterPairs[lvl] || levelCharacterPairs[0];
       pushMessage(`Level ${lvl + 1} uses ${characters[pair.fast].name} (fast) or ${characters[pair.slow].name} (slow).`);
       return;
     }
     selectedCharacter = id;
     previewCharacter = null;
+    if (!superModeEnabled) {
+      const unlockedTop = getHighestUnlockedLevel();
+      const characterLevel = getCharacterLevelIndex(id);
+      const targetLevel = Math.max(0, Math.min(unlockedTop, characterLevel));
+      state.progressLevel = targetLevel;
+      state.regionIndex = targetLevel;
+      syncFlowLevelState(state.progressLevel);
+    }
     syncAdminProgressToSelectedCharacter();
     state.regionIndex = Math.max(0, Math.min(regions.length - 1, state.progressLevel));
     applyRegionThreeTheme(regions[state.regionIndex]);
@@ -5409,6 +5405,22 @@
     return levelCharacterPairs[safe] || levelCharacterPairs[0];
   }
 
+  function getHighestUnlockedLevel() {
+    const unlocked = Number.isInteger(state.maxUnlockedLevel) ? state.maxUnlockedLevel : 0;
+    const progress = Number.isInteger(state.progressLevel) ? state.progressLevel : 0;
+    return Math.max(0, Math.min(regions.length - 1, Math.max(unlocked, progress)));
+  }
+
+  function getCharacterLevelIndex(id) {
+    if (Number.isInteger(characterRegionMap[id])) {
+      return Math.max(0, Math.min(regions.length - 1, characterRegionMap[id]));
+    }
+    if (Number.isInteger(characters[id]?.unlockAt)) {
+      return Math.max(0, Math.min(regions.length - 1, characters[id].unlockAt));
+    }
+    return 0;
+  }
+
   function getSpecialUnlockRequirement(puzzleUnlockLevel) {
     if (!Number.isInteger(puzzleUnlockLevel) || puzzleUnlockLevel <= 0) {
       return null;
@@ -5437,18 +5449,13 @@
   }
 
   function isCharacterAvailableForCurrentLevel(id) {
-    const pair = getPairForLevel(state.progressLevel);
-    if (id === pair.fast || id === pair.slow) {
-      return true;
-    }
+    const highestUnlockedLevel = getHighestUnlockedLevel();
+    const unlockAt = Number.isInteger(characters[id]?.unlockAt) ? characters[id].unlockAt : 0;
     const puzzleUnlockLevel = characters[id]?.puzzleUnlockLevel;
-    if (!Number.isInteger(puzzleUnlockLevel)) {
-      return false;
+    if (!Number.isInteger(puzzleUnlockLevel) || puzzleUnlockLevel <= 0) {
+      return highestUnlockedLevel >= unlockAt;
     }
-    if (puzzleUnlockLevel === 0) {
-      return true;
-    }
-    return state.progressLevel >= puzzleUnlockLevel && state.puzzleBankUnlocks[puzzleUnlockLevel];
+    return highestUnlockedLevel >= puzzleUnlockLevel && state.puzzleBankUnlocks[puzzleUnlockLevel];
   }
 
   function persistPuzzleBankUnlocks() {
@@ -5617,42 +5624,24 @@
   }
 
   function openFoodShop() {
-    if (!foodShopModal) {
+    if (typeof gameUiModule.openFoodShop === 'function') {
+      gameUiModule.openFoodShop(getGameUiContext());
       return;
     }
-    hideHungerModal();
-    renderFoodShop();
-    foodShopModal.classList.add('open');
-    foodShopModal.setAttribute('aria-hidden', 'false');
   }
 
   function showHungerModal() {
-    if (!hungerModal) {
+    if (typeof gameUiModule.showHungerModal === 'function') {
+      gameUiModule.showHungerModal(getGameUiContext());
       return;
     }
-    state.hungerModalDismissedUntil = 0;
-    if (hungerText && characters[selectedCharacter]) {
-      const currentName = characters[selectedCharacter].name;
-      const canAfford = canAffordAnyFood();
-      if (canAfford) {
-        hungerText.textContent = `Oho! ${currentName} is hungry. You are out of food and energy is too low. Collect score tokens, open Food Cart, and buy supplies to continue.`;
-      } else {
-        hungerText.textContent = `Oho! ${currentName} is starving! You don't have enough score to buy food. Your dasher will lose a life in ~30 seconds...`;
-      }
-    }
-    hungerModal.classList.add('open');
-    hungerModal.setAttribute('aria-hidden', 'false');
   }
 
   function hideHungerModal(manualDismiss = false) {
-    if (!hungerModal) {
+    if (typeof gameUiModule.hideHungerModal === 'function') {
+      gameUiModule.hideHungerModal(getGameUiContext(), manualDismiss);
       return;
     }
-    if (manualDismiss) {
-      state.hungerModalDismissedUntil = Date.now() + HUNGER_MODAL_RESURFACE_DELAY_MS;
-    }
-    hungerModal.classList.remove('open');
-    hungerModal.setAttribute('aria-hidden', 'true');
   }
 
   function checkoutFoodCart() {
@@ -5840,6 +5829,8 @@
     state.health = Math.max(1, Math.min(state.maxLives, run.health || 3));
     state.regionIndex = Math.max(0, Math.min(regions.length - 1, run.regionIndex || 0));
     state.progressLevel = Math.max(state.progressLevel, Math.min(regions.length - 1, run.progressLevel ?? state.regionIndex));
+    state.maxUnlockedLevel = Math.max(state.maxUnlockedLevel || 0, state.progressLevel || 0);
+    syncFlowLevelState(state.progressLevel);
     state.distance = run.distance || state.regionIndex * 145;
     setSelectedCharacter(run.character || 'emu');
     state.message = 'Resumed previous expedition.';
@@ -5884,40 +5875,16 @@
   }
 
   function syncHud() {
-    scoreEl.textContent = state.score;
-    if (energyEl) {
-      energyEl.textContent = `${Math.round(state.energy)}/${Math.round(state.maxEnergy)}`;
+    if (typeof gameUiModule.syncHud === 'function') {
+      gameUiModule.syncHud(getGameUiContext());
+      return;
     }
-    if (foodEl) {
-      foodEl.textContent = String(state.foodStocks[selectedCharacter] || 0);
-    }
-    fragmentEl.textContent = `${state.fragments}/7`;
-    objectiveEl.textContent = state.objective;
-    messageEl.textContent = state.message;
-    if (reviveBtn) {
-      const canReviveNow = Boolean(state.pendingReviveOffer);
-      reviveBtn.style.display = canReviveNow ? 'grid' : 'none';
-      reviveBtn.disabled = !canReviveNow;
-      reviveBtn.classList.toggle('revive-ready', canReviveNow);
-      reviveBtn.title = canReviveNow ? 'Use revive option' : 'Revive';
-      reviveBtn.setAttribute('aria-label', canReviveNow ? 'Use revive option' : 'Revive unavailable');
-    }
-    renderLives();
-    updateCharacterAvailability();
-    refreshCharacterBio();
-    syncMobileControlVisibility();
   }
 
   function renderLives() {
-    if (!livesEl) {
+    if (typeof gameUiModule.renderLives === 'function') {
+      gameUiModule.renderLives(getGameUiContext());
       return;
-    }
-    livesEl.innerHTML = '';
-    for (let i = 0; i < state.maxLives; i += 1) {
-      const heart = document.createElement('span');
-      heart.className = `heart${i < state.health ? '' : ' off'}`;
-      heart.textContent = '❤';
-      livesEl.appendChild(heart);
     }
   }
 
@@ -5971,7 +5938,6 @@
 
   function endGame(victory = false) {
     saveRunSnapshot();
-    state.paused = false;
     state.pendingReviveOffer = null;
 
     // Hard safety: level-unlock puzzle can only start after collecting all shards.
@@ -5981,8 +5947,7 @@
 
     if (victory && state.progressLevel < regions.length - 1) {
       const nextLevel = state.progressLevel + 1;
-      state.running = false;
-      state.ended = false;
+      sendFlow('PUZZLE_OPEN');
       const levelBonus = getLevelClearBonus(nextLevel);
       const unlockedNames = Object.keys(characters)
         .filter((id) => characters[id].unlockAt === nextLevel && !Number.isInteger(characters[id].puzzleUnlockLevel))
@@ -6000,15 +5965,13 @@
       setGameplayChrome(false);
       setCharacterSelectionOpen(false);
       if (puzzleModal) {
-        puzzleModal.classList.add('open');
-        puzzleModal.setAttribute('aria-hidden', 'false');
-      }
-      if (puzzleTerrain) {
-        puzzleTerrain.textContent = `${regions[nextLevel].name} Unlock Puzzle`;
-      }
-      hydratePuzzlePanel();
-      if (puzzleStatus) {
-        puzzleStatus.textContent = 'Solve this puzzle to unlock the next level.';
+        if (typeof gameUiModule.openPuzzleModal === 'function') {
+          gameUiModule.openPuzzleModal(getGameUiContext(), {
+            terrainLabel: `${regions[nextLevel].name} Unlock Puzzle`,
+            onHydrate: hydratePuzzlePanel,
+            statusText: 'Solve this puzzle to unlock the next level.'
+          });
+        }
       }
       state.message = 'Level clear! Solve the puzzle to continue.';
       syncHud();
@@ -6016,8 +5979,7 @@
       return;
     }
 
-    state.running = false;
-    state.ended = true;
+    sendFlow('GAME_OVER');
     state.objective = victory ? 'Sunrise restored. The expedition is complete.' : 'The night won this run. Try again.';
     state.message = victory ? 'Victory!' : 'Game Over';
     syncHud();
@@ -6147,19 +6109,17 @@
 
   function requestRoadEvent() {
     if (clueModal) {
-      clueModal.classList.add('open');
-      clueModal.setAttribute('aria-hidden', 'false');
-      if (clueTerrain) {
-        clueTerrain.textContent = `${regions[state.regionIndex].name} Clue`;
-      }
-      if (clueText) {
-        clueText.textContent = [
-          'Two ancient stone pillars stand at the Sun Gate. Legend says the gate only opens when both the Dawn and Dusk pillars are lit together. The old keepers\' riddle: "neither alone, but both as one."',
-          'A firefly elder guards the Rune Tree. She whispers: "Only the middle branches remember the old light. The outer ones have forgotten." Two branches. That\'s all you need.',
-          'The Servo pump house has been dry for decades. Someone taped a note to the fuse box: "A is dead — don\'t touch it. Run the relay from B through to F but skip D. In that order." Old electrician wisdom.',
-          'The lighthouse keeper\'s logbook washed ashore. The last entry: "Anchor, skip Buoy (it\'s gone), Coral, Depth, skip Echo, end at Fog. If you read this — please, light the beacon."',
-          'The radio tower\'s signal has looped for 73 years. A Tasmanian physicist taped a diagram to the base: "Four switches break the loop. Skip the ones inside it or you\'ll just restart it. A, then jump to D, E, F."'
-        ][state.regionIndex] || 'Follow the clue and recover the next fragment.';
+      if (typeof gameUiModule.openClueModal === 'function') {
+        gameUiModule.openClueModal(getGameUiContext(), {
+          terrainLabel: `${regions[state.regionIndex].name} Clue`,
+          clueText: [
+            'Two ancient stone pillars stand at the Sun Gate. Legend says the gate only opens when both the Dawn and Dusk pillars are lit together. The old keepers\' riddle: "neither alone, but both as one."',
+            'A firefly elder guards the Rune Tree. She whispers: "Only the middle branches remember the old light. The outer ones have forgotten." Two branches. That\'s all you need.',
+            'The Servo pump house has been dry for decades. Someone taped a note to the fuse box: "A is dead — don\'t touch it. Run the relay from B through to F but skip D. In that order." Old electrician wisdom.',
+            'The lighthouse keeper\'s logbook washed ashore. The last entry: "Anchor, skip Buoy (it\'s gone), Coral, Depth, skip Echo, end at Fog. If you read this — please, light the beacon."',
+            'The radio tower\'s signal has looped for 73 years. A Tasmanian physicist taped a diagram to the base: "Four switches break the loop. Skip the ones inside it or you\'ll just restart it. A, then jump to D, E, F."'
+          ][state.regionIndex] || 'Follow the clue and recover the next fragment.'
+        });
       }
       return;
     }
@@ -6190,12 +6150,12 @@
     };
 
     if (puzzleModal) {
-      puzzleModal.classList.add('open');
-      puzzleModal.setAttribute('aria-hidden', 'false');
-      if (puzzleTerrain) {
-        puzzleTerrain.textContent = getPuzzleTerrainLabel();
+      if (typeof gameUiModule.openPuzzleModal === 'function') {
+        gameUiModule.openPuzzleModal(getGameUiContext(), {
+          terrainLabel: getPuzzleTerrainLabel(),
+          onHydrate: hydratePuzzlePanel
+        });
       }
-      hydratePuzzlePanel();
       return;
     }
 
@@ -6234,18 +6194,16 @@
   }
 
   function resolvePoolLevelKey(poolMap, level) {
+    if (typeof puzzleUtils.resolvePoolLevelKey === 'function') {
+      return puzzleUtils.resolvePoolLevelKey(poolMap, level, regions.length - 1);
+    }
     const keys = Object.keys(poolMap)
       .map((key) => Number.parseInt(key, 10))
       .filter((key) => Number.isInteger(key))
       .sort((a, b) => a - b);
-    if (!keys.length) {
-      return 0;
-    }
+    if (!keys.length) return 0;
     const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
-    if (keys.includes(safeLevel)) {
-      return safeLevel;
-    }
-    return keys[safeLevel % keys.length];
+    return keys.includes(safeLevel) ? safeLevel : keys[safeLevel % keys.length];
   }
 
   function getPuzzlePoolIdsForLevel(level) {
@@ -6275,70 +6233,39 @@
   }
 
   function getPuzzleIdSignature(puzzle) {
-    if (!puzzle || typeof puzzle !== 'object') {
-      return '';
-    }
-    if (typeof puzzle.id === 'string' && puzzle.id.trim()) {
-      return `id:${puzzle.id.trim().toLowerCase()}`;
-    }
-    return '';
+    return typeof puzzleUtils.getPuzzleIdSignature === 'function'
+      ? puzzleUtils.getPuzzleIdSignature(puzzle)
+      : '';
   }
 
   function getPuzzleContentSignature(puzzle) {
-    if (!puzzle || typeof puzzle !== 'object') {
-      return '';
-    }
-    const answers = Array.isArray(puzzle.answers)
-      ? puzzle.answers.join('|')
-      : (puzzle.answer || '');
-    const normalized = [
-      puzzle.title || '',
-      puzzle.instruction || '',
-      puzzle.question || '',
-      answers
-    ]
-      .join('||')
-      .trim()
-      .toLowerCase();
-    return normalized ? `content:${normalized}` : '';
+    return typeof puzzleUtils.getPuzzleContentSignature === 'function'
+      ? puzzleUtils.getPuzzleContentSignature(puzzle)
+      : '';
   }
 
   function getPuzzleSignature(puzzle) {
-    return getPuzzleIdSignature(puzzle) || getPuzzleContentSignature(puzzle);
+    return typeof puzzleUtils.getPuzzleSignature === 'function'
+      ? puzzleUtils.getPuzzleSignature(puzzle)
+      : '';
   }
 
   function getPuzzleTrackerKey(puzzle) {
-    if (!puzzle || typeof puzzle !== 'object') {
-      return '';
-    }
-    if (typeof puzzle.id === 'string' && puzzle.id.trim()) {
-      return puzzle.id.trim();
-    }
-    return getPuzzleSignature(puzzle);
+    return typeof puzzleUtils.getPuzzleTrackerKey === 'function'
+      ? puzzleUtils.getPuzzleTrackerKey(puzzle)
+      : '';
   }
 
   function isPuzzleMarkedShown(puzzle) {
-    const tracker = globalThis.PuzzleTracker;
-    if (!tracker || typeof tracker.hasBeenShown !== 'function') {
-      return false;
-    }
-    const key = getPuzzleTrackerKey(puzzle);
-    if (!key) {
-      return false;
-    }
-    return tracker.hasBeenShown(key);
+    return typeof puzzleUtils.isPuzzleMarkedShown === 'function'
+      ? puzzleUtils.isPuzzleMarkedShown(puzzle)
+      : false;
   }
 
   function markPuzzleAsShown(puzzle) {
-    const tracker = globalThis.PuzzleTracker;
-    if (!tracker || typeof tracker.markAsShown !== 'function') {
-      return;
+    if (typeof puzzleUtils.markPuzzleAsShown === 'function') {
+      puzzleUtils.markPuzzleAsShown(puzzle);
     }
-    const key = getPuzzleTrackerKey(puzzle);
-    if (!key) {
-      return;
-    }
-    tracker.markAsShown(key);
   }
 
   function getPhaseHistorySignature(phase, level) {
@@ -6361,45 +6288,14 @@
   }
 
   function isPuzzleSignatureUsed(puzzle) {
-    const idSignature = getPuzzleIdSignature(puzzle);
-    const contentSignature = getPuzzleContentSignature(puzzle);
-    if (!idSignature && !contentSignature) {
-      return isPuzzleMarkedShown(puzzle);
-    }
-    if (isPuzzleMarkedShown(puzzle)) {
-      return true;
-    }
-    if (idSignature && (puzzleState.usedPuzzleSignatures.includes(idSignature) || shownPuzzleSignatures.includes(idSignature))) {
-      return true;
-    }
-    if (contentSignature && (puzzleState.usedPuzzleSignatures.includes(contentSignature) || shownPuzzleSignatures.includes(contentSignature))) {
-      return true;
-    }
-    return false;
+    return typeof puzzleUtils.isPuzzleSignatureUsed === 'function'
+      ? puzzleUtils.isPuzzleSignatureUsed(puzzle, puzzleState.usedPuzzleSignatures, shownPuzzleSignatures)
+      : false;
   }
 
   function markPuzzleSignatureUsed(puzzle) {
-    const signatures = [getPuzzleIdSignature(puzzle), getPuzzleContentSignature(puzzle)].filter(Boolean);
-    markPuzzleAsShown(puzzle);
-    if (!signatures.length) {
-      return;
-    }
-    let persistShownSignatures = false;
-    signatures.forEach((signature) => {
-      if (!puzzleState.usedPuzzleSignatures.includes(signature)) {
-        puzzleState.usedPuzzleSignatures.push(signature);
-      }
-      if (!shownPuzzleSignatures.includes(signature)) {
-        shownPuzzleSignatures.push(signature);
-        persistShownSignatures = true;
-      }
-    });
-    if (persistShownSignatures) {
-      try {
-        globalThis.localStorage.setItem(PUZZLE_SHOWN_SIGNATURES_KEY, JSON.stringify(shownPuzzleSignatures));
-      } catch {
-        // Ignore localStorage write failures in private mode/quota limits.
-      }
+    if (typeof puzzleUtils.markSignatureUsed === 'function') {
+      puzzleUtils.markSignatureUsed(puzzle, puzzleState.usedPuzzleSignatures, shownPuzzleSignatures);
     }
   }
 
@@ -6410,10 +6306,20 @@
     return puzzleState.solvedByLevel[level];
   }
 
+  function filterUnseenPoolIds(flatArray, poolIds) {
+    const filtered = poolIds.filter((id) => {
+      const p = flatArray[id];
+      return p && !isPuzzleSignatureUsed(p);
+    });
+    // Fall back to full pool if everything is exhausted (avoid returning nothing)
+    return filtered.length > 0 ? filtered : poolIds;
+  }
+
   function pickNextHeartRevivePuzzle(level) {
     const poolLevel = resolvePoolLevelKey(heartPoolsByLevel, level);
     const poolIds = heartPoolsByLevel[poolLevel] || heartPoolsByLevel[0] || [];
-    const puzzle = pickUnseenPuzzle(heartPuzzles, poolIds);
+    const unseenIds = filterUnseenPoolIds(heartPuzzles, poolIds);
+    const puzzle = pickUnseenPuzzle(heartPuzzles, unseenIds);
     if (puzzle) {
       puzzleState.activePuzzle = puzzle;
       markPuzzleSignatureUsed(puzzle);
@@ -6424,7 +6330,8 @@
   function pickNextLevelPuzzle(level) {
     const poolLevel = resolvePoolLevelKey(levelPoolsByLevel, level);
     const poolIds = levelPoolsByLevel[poolLevel] || levelPoolsByLevel[0] || [];
-    const puzzle = pickUnseenPuzzle(levelPuzzles, poolIds);
+    const unseenIds = filterUnseenPoolIds(levelPuzzles, poolIds);
+    const puzzle = pickUnseenPuzzle(levelPuzzles, unseenIds);
     if (puzzle) {
       puzzleState.activePuzzle = puzzle;
       markPuzzleSignatureUsed(puzzle);
@@ -6444,26 +6351,19 @@
     }
 
     state.pendingReviveOffer = null;
-    state.running = true;
-    state.ended = false;
+    sendFlow('PUZZLE_OPEN');
 
     puzzleState.pendingHeartRevive = { level: safeLevel };
     puzzleState.pendingTreasure = null;
     puzzleState.pendingAdvance = null;
     puzzleState.activePuzzle = null;
-    state.paused = true;
-    state.hungerPaused = false;
 
-    if (puzzleModal) {
-      puzzleModal.classList.add('open');
-      puzzleModal.setAttribute('aria-hidden', 'false');
-    }
-    if (puzzleTerrain) {
-      puzzleTerrain.textContent = `${regions[safeLevel].name} Heart Revival Challenge`;
-    }
-    hydratePuzzlePanel();
-    if (puzzleStatus) {
-      puzzleStatus.textContent = 'Hearts depleted. Solve 1 puzzle to revive.';
+    if (typeof gameUiModule.openPuzzleModal === 'function') {
+      gameUiModule.openPuzzleModal(getGameUiContext(), {
+        terrainLabel: `${regions[safeLevel].name} Heart Revival Challenge`,
+        onHydrate: hydratePuzzlePanel,
+        statusText: 'Hearts depleted. Solve 1 puzzle to revive.'
+      });
     }
     state.message = 'Hearts at zero. Solve the heart revival challenge to continue.';
     syncHud();
@@ -6509,7 +6409,8 @@
   function chooseTreasurePuzzle(level) {
     const poolLevel = resolvePoolLevelKey(treasurePoolsByLevel, level);
     const poolIds = treasurePoolsByLevel[poolLevel] || treasurePoolsByLevel[0] || [];
-    const puzzle = pickUnseenPuzzle(treasurePuzzles, poolIds);
+    const unseenIds = filterUnseenPoolIds(treasurePuzzles, poolIds);
+    const puzzle = pickUnseenPuzzle(treasurePuzzles, unseenIds);
     if (puzzle) {
       markPuzzleSignatureUsed(puzzle);
     }
@@ -6539,19 +6440,14 @@
     }
     puzzleState.activePuzzle = treasurePuzzle;
     puzzleState.pendingTreasure = { level, puzzleRef: null, foodReward: rewardFood };
-    state.paused = true;
-    state.hungerPaused = false;
+    sendFlow('PUZZLE_OPEN');
 
-    if (puzzleModal) {
-      puzzleModal.classList.add('open');
-      puzzleModal.setAttribute('aria-hidden', 'false');
-    }
-    if (puzzleTerrain) {
-      puzzleTerrain.textContent = `${regions[level].name} Treasure Case`;
-    }
-    hydratePuzzlePanel();
-    if (puzzleStatus) {
-      puzzleStatus.textContent = 'Treasure chest found. Solve this case to claim food supplies.';
+    if (typeof gameUiModule.openPuzzleModal === 'function') {
+      gameUiModule.openPuzzleModal(getGameUiContext(), {
+        terrainLabel: `${regions[level].name} Treasure Case`,
+        onHydrate: hydratePuzzlePanel,
+        statusText: 'Treasure chest found. Solve this case to claim food supplies.'
+      });
     }
     pushMessage('Treasure chest found! Solve the case to claim supplies.');
     syncPlaybackButton();
@@ -6752,7 +6648,7 @@
     const rewardFood = Math.max(1, puzzleState.pendingTreasure.foodReward || 1);
     state.foodStocks[selectedCharacter] = (state.foodStocks[selectedCharacter] || 0) + rewardFood;
     puzzleState.pendingTreasure = null;
-    state.paused = false;
+    sendFlow('PUZZLE_CLOSE');
     state.objective = `Treasure solved in ${regions[state.regionIndex].name}. Supplies secured.`;
     pushMessage(`Case solved! +${rewardFood} food supplies for ${characters[selectedCharacter].name}.`);
     closeModal(puzzleModal);
@@ -6790,6 +6686,8 @@
     }, {});
     state.pendingLevelUnlockTarget = next.nextLevel;
     state.progressLevel = next.nextLevel;
+    state.maxUnlockedLevel = Math.max(state.maxUnlockedLevel || 0, next.nextLevel);
+    syncFlowLevelState(state.progressLevel);
     state.score += next.levelBonus;
     triggerLevelCelebrate(next.nextLevel, next.levelBonus, allUnlockedNames);
     if (specialUnlockedNames) {
@@ -6809,8 +6707,7 @@
     puzzleState.pendingHeartRevive = null;
     state.heartReviveUsedByLevel[level] = true;
     state.health = state.maxLives;
-    state.paused = false;
-    state.hungerPaused = false;
+    sendFlow('START_RUN');
     state.objective = `Heart revival completed in ${regions[level].name}. Continue the run.`;
     pushMessage(`Heart revival complete. ${state.maxLives} hearts restored.`);
     closeModal(puzzleModal);
@@ -6913,6 +6810,19 @@
     pushMessage('Answer is correct. Press Submit to continue.');
   }
 
+  function resumeFromPuzzleModal() {
+    closeModal(puzzleModal);
+    puzzleState.activePuzzle = null;
+    if (state.flowMode === 'puzzle') {
+      sendFlow('PUZZLE_CLOSE');
+    } else if (state.paused) {
+      // Fallback for any path that set paused directly
+      state.paused = false;
+    }
+    syncHud();
+    syncPlaybackButton();
+  }
+
   function skipPuzzle() {
     if (puzzleState.pendingAdvance) {
       if (puzzleStatus) {
@@ -6947,34 +6857,41 @@
     }, 700);
   }
 
+  function handoffToCharacterSelectionAfterLevelClear() {
+    state.continueFromLevelUnlock = true;
+    setCharacterSelectionOpen(true);
+    setLanding(false);
+    setGameplayChrome(false);
+    state.objective = 'New level unlocked. Pick your dasher for the next run.';
+    state.message = 'Level clear! Select a character to continue.';
+    syncHud();
+  }
+
   function triggerLevelCelebrate(nextLevel, levelBonus, unlockedNames) {
+    sendFlow('LEVEL_TRANSITION_OPEN');
     const tMsg = levelTransitionMsgs[nextLevel];
     const unlockLine = unlockedNames ? `New dashers unlocked: ${unlockedNames}!` : '';
     const levelEmojis = ['', '🌿', '⚡', '🌊', '❄️'];
-    if (lcEmoji) lcEmoji.textContent = levelEmojis[nextLevel] || '🎉';
-    if (lcCongrats) lcCongrats.textContent = tMsg ? tMsg.congrats : `Level ${nextLevel} unlocked! 🎉`;
-    if (lcTeaser) lcTeaser.textContent = tMsg ? tMsg.teaser : `Now entering ${regions[nextLevel].name}.`;
-    if (lcBonus) lcBonus.textContent = `${unlockLine ? unlockLine + '  ' : ''}+${levelBonus} level clear bonus · next level starts at 3 hearts`;
-    if (levelCompleteOverlay) {
-      levelCompleteOverlay.classList.add('open');
-      levelCompleteOverlay.setAttribute('aria-hidden', 'false');
+    const canShowLevelOverlay = Boolean(levelCompleteOverlay) && typeof gameUiModule.openLevelCompleteOverlay === 'function';
+    if (canShowLevelOverlay) {
+      gameUiModule.openLevelCompleteOverlay(getGameUiContext(), {
+        emoji: levelEmojis[nextLevel] || '🎉',
+        congratsText: tMsg ? tMsg.congrats : `Level ${nextLevel} unlocked! 🎉`,
+        teaserText: tMsg ? tMsg.teaser : `Now entering ${regions[nextLevel].name}.`,
+        bonusText: `${unlockLine ? unlockLine + '  ' : ''}+${levelBonus} level clear bonus · next level starts at 3 hearts`
+      });
+    } else {
+      handoffToCharacterSelectionAfterLevelClear();
+      return;
     }
     if (levelCompleteTimer) {
       clearTimeout(levelCompleteTimer);
     }
     levelCompleteTimer = setTimeout(() => {
-      if (levelCompleteOverlay) {
-        levelCompleteOverlay.classList.remove('open');
-        levelCompleteOverlay.setAttribute('aria-hidden', 'true');
+      if (typeof gameUiModule.closeLevelCompleteOverlay === 'function') {
+        gameUiModule.closeLevelCompleteOverlay(getGameUiContext());
       }
-      state.continueFromLevelUnlock = true;
-      setCharacterSelectionOpen(false);
-      setLanding(false);
-      setGameplayChrome(true);
-      state.objective = `Running in ${regions[state.regionIndex].name} · ${getCurrentActDisplayLabel()}`;
-      state.message = 'Next level unlocked! Continuing run.';
-      onStartButtonPressed(true);
-      syncHud();
+      handoffToCharacterSelectionAfterLevelClear();
     }, 2600);
   }
 
@@ -7001,8 +6918,7 @@
 
     const hungryNow = shouldPauseForHunger();
     if (hungryNow && !state.paused) {
-      state.paused = true;
-      state.hungerPaused = true;
+      sendFlow('HUNGER_TRIGGER');
       state.hungerStuckSince = Date.now();
       state.message = 'Out of energy and food. Run paused. Buy food to continue.';
       showHungerModal();
@@ -7015,10 +6931,7 @@
       const stuckDuration = Date.now() - state.hungerStuckSince;
       if (stuckDuration > 30000) {
         state.health = 0;
-        state.running = false;
-        state.ended = true;
-        state.paused = false;
-        state.hungerPaused = false;
+        sendFlow('GAME_OVER');
         state.hungerStuckSince = 0;
         const level = getPuzzleDifficultyLevel();
         if (state.heartReviveUsedByLevel[level]) {
@@ -7042,8 +6955,7 @@
     }
 
     if (state.hungerPaused && !hungryNow) {
-      state.hungerPaused = false;
-      state.paused = false;
+      sendFlow('HUNGER_RECOVER');
       state.hungerModalDismissedUntil = 0;
       state.hungerStuckSince = 0;
       hideHungerModal();
@@ -7054,17 +6966,19 @@
 
     const popupOpen = hasBlockingPopupOpen();
     if (popupOpen && !state.popupPaused) {
-      state.popupPaused = true;
       state.pauseBeforePopup = state.paused;
-      state.paused = true;
+      sendFlow('POPUP_OPEN');
       state.message = 'Game paused while popup is open.';
       syncHud();
       syncPlaybackButton();
     }
     if (!popupOpen && state.popupPaused) {
-      state.popupPaused = false;
+      const resumeToManual = Boolean(state.pauseBeforePopup);
       state.pauseBeforePopup = false;
-      state.paused = state.hungerPaused;
+      sendFlow('POPUP_CLOSE', { resumeToManual });
+      if (state.hungerPaused) {
+        sendFlow('HUNGER_TRIGGER');
+      }
       if (!state.paused) {
         state.message = 'Game resumed.';
       }
@@ -7181,10 +7095,7 @@
         endGame(false);
       } else {
         state.health = 0;
-        state.running = false;
-        state.ended = true;
-        state.paused = false;
-        state.hungerPaused = false;
+        sendFlow('GAME_OVER');
         tryOfferReviveForLevel(
           level,
           'Game over, but one revive is still available for this level.',
@@ -9926,32 +9837,12 @@
   // ─── Vector character sprite system ─────────────────────────────────────────
 
   const CHAR_COLORS = globalThis.DawnDashersCharacterColors || {
-    emu:        { body: '#7a6548', neck: '#8a7558', beak: '#c89040', eye: '#1a0e06', legs: '#6b5438' },
-    kookaburra: { body: '#7a5c18', wings: '#3a2808', beak: '#d09828', eye: '#1a0e06', chest: '#f0e0a0' },
-    cockatoo:   { body: '#f0ece0', wings: '#d8c880', crest: '#ffd000', beak: '#c09048', eye: '#2a1808' },
-    kangaroo:   { body: '#c08050', belly: '#e0b880', ear: '#d09060', eye: '#2a1808' },
-    wombat:     { body: '#5a4030', belly: '#7a6050', eye: '#2a1808', nose: '#321a10' },
-    koala:      { body: '#888080', belly: '#d0c0b8', ear: '#a09090', nose: '#382030', eye: '#281820' },
-    possum:     { body: '#706858', tail: '#605848', belly: '#c0b8a0', eye: '#281820' },
-    echidna:    { body: '#483020', spine: '#a08048', nose: '#3a2018', eye: '#180c08' },
-    platypus:   { body: '#608060', bill: '#c09048', tail: '#406048', eye: '#181008' },
-    dingo:      { body: '#c08840', belly: '#e0c070', muzzle: '#d0a058', eye: '#281808' },
-    bilby:      { body: '#706860', ear: '#e8c0b8', belly: '#c0b0a0', eye: '#281820', nose: '#322020' },
-    tasdevil:   { body: '#201818', chest: '#f0e8e0', jaw: '#302020', eye: '#e02010' },
-    quokka:     { body: '#b08840', belly: '#d0b068', ear: '#c09860', eye: '#281808' },
-    numbat:     { body: '#c08848', stripe: '#381e08', belly: '#e0c080', tail: '#a06828', eye: '#180e08' },
-    ibis:       { body: '#f0ede3', wings: '#2f2a25', beak: '#d79f58', eye: '#20150d' },
-    mudcrab:    { body: '#8f3f2a', belly: '#cb7a42', claw: '#d68e55', eye: '#2a120a' },
-    jabiru:     { body: '#171c22', wings: '#dde2ea', beak: '#21272d', eye: '#9decd8' },
-    lyrebird:   { body: '#86674a', wings: '#6b5039', crest: '#ceb183', beak: '#b9894f', eye: '#21150d' },
-    wallaroo:   { body: '#9c7552', belly: '#d7b58a', ear: '#b48f69', eye: '#2b190d' },
-    glider:     { body: '#998673', belly: '#d7cabc', tail: '#5c4d40', eye: '#1f1610' },
-    eagle:      { body: '#5a493c', wings: '#3e3228', beak: '#d2a45a', eye: '#20140c' },
-    thorny:     { body: '#b17845', spine: '#f1c987', nose: '#4a2916', eye: '#1a0e07' },
-    quoll:      { body: '#6d5747', belly: '#ceb089', tail: '#4b3a2f', eye: '#190f09' },
-    owl:        { body: '#716258', wings: '#544941', beak: '#cda068', eye: '#1a1008' },
-    bandicoot:  { body: '#8f7761', belly: '#d7c1a7', ear: '#ad9278', eye: '#1f140d' },
-    cassowary:  { body: '#1f2b38', neck: '#2d7ecf', beak: '#8bc8ff', eye: '#d0efff' }
+    emu: { body: '#7a6548', neck: '#8a7558', beak: '#c89040', eye: '#1a0e06', legs: '#6b5438' },
+    wombat: { body: '#5a4030', belly: '#7a6050', eye: '#2a1808', nose: '#321a10' },
+    echidna: { body: '#483020', spine: '#a08048', nose: '#3a2018', eye: '#180c08' },
+    thorny: { body: '#b17845', spine: '#f1c987', nose: '#4a2916', eye: '#1a0e07' },
+    dingo: { body: '#c08840', belly: '#e0c070', muzzle: '#d0a058', eye: '#281808' },
+    mudcrab: { body: '#8f3f2a', belly: '#cb7a42', claw: '#d68e55', eye: '#2a120a' }
   };
 
   function drawMudCrabSprite(gait, expression, sliding) {
@@ -11389,11 +11280,10 @@
   }
 
   function closeModal(modal) {
-    if (!modal) {
+    if (typeof gameUiModule.closeModal === 'function') {
+      gameUiModule.closeModal(modal);
       return;
     }
-    modal.classList.remove('open');
-    modal.setAttribute('aria-hidden', 'true');
   }
 
   function getTapAction(touchX, touchY) {
@@ -11486,14 +11376,13 @@
       return;
     }
     if (state.hungerPaused && shouldPauseForHunger()) {
-      state.paused = true;
       state.message = 'Your dasher is still hungry. Buy food to continue.';
       showHungerModal();
       syncHud();
       syncPlaybackButton();
       return;
     }
-    state.paused = !state.paused;
+    sendFlow('MANUAL_TOGGLE');
     state.message = state.paused
       ? 'Game paused. Food shop and puzzles are still available.'
       : 'Game resumed.';
@@ -11587,171 +11476,16 @@
   }
 
   function bindModalControls() {
-    bindClick(closeClueBtn, () => closeModal(clueModal));
-    bindClick(closePuzzleBtn, () => {
-      // Puzzle is already marked seen when shown; clear active cache so reopen picks next unseen.
-      puzzleState.activePuzzle = null;
-      closeModal(puzzleModal);
-    });
-    bindClick(clueHintBtn, requestHint);
-    bindClick(clueSolveBtn, () => {
-      closeModal(clueModal);
-      requestHint();
-    });
-    bindClick(landingSettingsBtn, () => {
-      if (!settingsModal) {
-        return;
-      }
-      settingsModal.classList.add('open');
-      settingsModal.setAttribute('aria-hidden', 'false');
-    });
-    bindClick(closeSettingsBtn, () => closeModal(settingsModal));
-
-    bindSelectChange(difficultySelect, gameDifficulty, () => {
-      const nextDifficulty = difficultySelect.value;
-      gameDifficulty = difficultyMultipliers[nextDifficulty] ? nextDifficulty : 'medium';
-      localStorage.setItem(DIFFICULTY_KEY, gameDifficulty);
-      pushMessage(`Difficulty: ${gameDifficulty[0].toUpperCase()}${gameDifficulty.slice(1)}`);
-    });
-    if (superModeRow) {
-      superModeRow.style.display = superModeAllowed ? '' : 'none';
+    if (typeof gameUiModule.bindModalControls === 'function') {
+      gameUiModule.bindModalControls(getGameUiContext());
+      return;
     }
-    if (superModeSelect && !superModeAllowed) {
-      superModeSelect.value = 'off';
-      superModeSelect.disabled = true;
-    }
-    bindSelectChange(superModeSelect, superModeEnabled ? 'on' : 'off', () => {
-      if (!superModeAllowed) {
-        superModeEnabled = false;
-        if (superModeSelect) {
-          superModeSelect.value = 'off';
-        }
-        localStorage.setItem(SUPER_MODE_KEY, 'off');
-        updateCharacterAvailability();
-        syncHud();
-        return;
-      }
-      superModeEnabled = superModeSelect.value === 'on';
-      localStorage.setItem(SUPER_MODE_KEY, superModeEnabled ? 'on' : 'off');
-      syncAdminProgressToSelectedCharacter();
-      updateCharacterAvailability();
-      syncHud();
-      pushMessage(superModeEnabled
-        ? 'Super Mode enabled: all dashers and terrains unlocked.'
-        : 'Super Mode disabled. Normal unlock rules restored.');
-    });
-    bindSelectChange(terrain3dSelect, terrain3dEnabled ? 'on' : 'off', () => {
-      terrain3dEnabled = terrain3dSelect.value !== 'off';
-      localStorage.setItem(TERRAIN_3D_KEY, terrain3dEnabled ? 'on' : 'off');
-      updateThreeVisibility();
-      pushMessage(`3D Terrain: ${terrain3dEnabled ? 'On' : 'Off'}`);
-    });
-    bindSelectChange(musicToggleSelect, musicEnabled ? 'on' : 'off', () => {
-      musicEnabled = musicToggleSelect.value !== 'off';
-      localStorage.setItem(MUSIC_ENABLED_KEY, musicEnabled ? 'on' : 'off');
-      ensureAudioStarted();
-      syncAudioToRegion();
-      pushMessage(`Music: ${musicEnabled ? 'On' : 'Off'}`);
-    });
-    bindRangeInput(musicVolumeRange, Math.round(musicVolume * 100), () => {
-      musicVolume = Math.max(0, Math.min(1, Number(musicVolumeRange.value) / 100));
-      localStorage.setItem(MUSIC_VOLUME_KEY, String(musicVolume));
-      syncAudioToRegion();
-    });
-    bindRangeInput(sfxVolumeRange, Math.round(sfxVolume * 100), () => {
-      sfxVolume = Math.max(0, Math.min(1, Number(sfxVolumeRange.value) / 100));
-      localStorage.setItem(SFX_VOLUME_KEY, String(sfxVolume));
-      syncAudioToRegion();
-    });
-    bindClick(pastGamesBtn, () => {
-      if (!pastGamesModal) {
-        return;
-      }
-      renderPastGames();
-      pastGamesModal.classList.add('open');
-      pastGamesModal.setAttribute('aria-hidden', 'false');
-    });
-    bindClick(closePastGamesBtn, () => closeModal(pastGamesModal));
-    bindClick(closeFoodShopBtn, () => closeModal(foodShopModal));
-    bindClick(closeHungerBtn, () => hideHungerModal(true));
-    bindClick(foodCheckoutBtn, checkoutFoodCart);
-    bindClick(hungerOpenShopBtn, openFoodShop);
-    bindClick(clearFoodCartBtn, () => {
-      state.foodCartByCharacter[selectedCharacter] = {};
-      renderFoodShop();
-    });
-    bindClick(landingHelpBtn, () => {
-      if (!helpModal) {
-        return;
-      }
-      helpModal.classList.add('open');
-      helpModal.setAttribute('aria-hidden', 'false');
-    });
-    bindClick(closeHelpBtn, () => closeModal(helpModal));
-    bindClick(walkthroughNextBtn, () => {
-      walkthroughIndex = Math.min(walkthroughIndex + 1, walkthroughSteps.length - 1);
-      hydrateWalkthroughStep();
-    });
-    bindClick(walkthroughBeginBtn, closeWalkthroughAndStart);
-    bindClick(walkthroughSkipBtn, closeWalkthroughAndStart);
   }
 
   function bindLandingFlowControls() {
-    if (lcContinueBtn) {
-      lcContinueBtn.addEventListener('click', () => {
-        if (levelCompleteTimer) {
-          clearTimeout(levelCompleteTimer);
-          levelCompleteTimer = null;
-        }
-        if (levelCompleteOverlay) {
-          levelCompleteOverlay.classList.remove('open');
-          levelCompleteOverlay.setAttribute('aria-hidden', 'true');
-        }
-        state.continueFromLevelUnlock = true;
-        setCharacterSelectionOpen(false);
-        setLanding(false);
-        setGameplayChrome(true);
-        state.objective = `Running in ${regions[state.regionIndex].name} · ${getCurrentActDisplayLabel()}`;
-        state.message = 'Next level unlocked! Continuing run.';
-        onStartButtonPressed(true);
-        syncHud();
-      });
-    }
-    if (playNowBtn) {
-      playNowBtn.addEventListener('click', () => {
-        state.continueFromLevelUnlock = false;
-        setLanding(false);
-        setGameplayChrome(false);
-        setCharacterSelectionOpen(true);
-        state.objective = 'Choose your character, then tap Start Run.';
-        state.message = 'Select your dasher power first.';
-        syncHud();
-      });
-    }
-    if (characterBackBtn) {
-      characterBackBtn.addEventListener('click', () => {
-        setCharacterSelectionOpen(false);
-        setLanding(true);
-        setGameplayChrome(false);
-      });
-    }
-    if (characterStartBtn) {
-      characterStartBtn.addEventListener('click', () => {
-        const focusId = previewCharacter || selectedCharacter;
-        if (!superModeEnabled && !isCharacterAvailableForCurrentLevel(focusId)) {
-          refreshCharacterBio();
-          syncCharacterStartButtonState();
-          return;
-        }
-        if (focusId !== selectedCharacter) {
-          setSelectedCharacter(focusId);
-        }
-        const keepProgress = state.continueFromLevelUnlock;
-        state.continueFromLevelUnlock = false;
-        setCharacterSelectionOpen(false);
-        setGameplayChrome(true);
-        onStartButtonPressed(keepProgress);
-      });
+    if (typeof gameUiModule.bindLandingFlowControls === 'function') {
+      gameUiModule.bindLandingFlowControls(getGameUiContext());
+      return;
     }
   }
 

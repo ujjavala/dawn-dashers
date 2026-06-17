@@ -1,6 +1,105 @@
 // @ts-nocheck
 
 (function () {
+  const defaultCharacters = {
+    emu: { name: 'Enigma Emu', emoji: '🦤', power: 'Dust Sprint', quirk: 'Fast lane weave, moderate hop drain.', unlockAt: 0, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Emu' },
+    wombat: { name: 'Wheeler Wombat', emoji: '🦫', power: 'Burrow Dodge', quirk: 'Cheaper slides in dunes/forest.', unlockAt: 0, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Wombat' },
+    kangaroo: { name: 'Kleene Kangaroo', emoji: '🦘', power: 'Sky Hop', quirk: 'Jumps are most energy-efficient.', unlockAt: 1, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Red_kangaroo' },
+    koala: { name: 'Knuth Koala', emoji: '🐨', power: 'Grip Glide', quirk: 'Balanced and steady movement.', unlockAt: 1, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Koala' },
+    platypus: { name: 'Prefix Platypus', emoji: '🦆', power: 'River Sense', quirk: 'Food restores more and slide is efficient.', unlockAt: 1, role: 'slow', puzzleUnlockLevel: 1, wikiUrl: 'https://en.wikipedia.org/wiki/Platypus' },
+    possum: { name: 'Protocol Possum', emoji: '🌟', power: 'Night Glide', quirk: 'Quick reactions at higher levels.', unlockAt: 2, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Possum' },
+    echidna: { name: 'Epsilon Echidna', emoji: '🦔', power: 'Quill Barrier', quirk: 'Stable lane control with low drift.', unlockAt: 2, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Echidna' },
+    cockatoo: { name: 'Compiler Cockatoo', emoji: '🦜', power: 'Aerial Relay', quirk: 'Great movement efficiency on all actions.', unlockAt: 2, role: 'fast', puzzleUnlockLevel: 2, wikiUrl: 'https://en.wikipedia.org/wiki/Cockatoo' },
+    dingo: { name: 'Digital Dingo', emoji: '🐕', power: 'Tide Dash', quirk: 'Aggressive full-width lane cuts.', unlockAt: 3, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Dingo' },
+    bilby: { name: 'Bit Bilby', emoji: '🐇', power: 'Tunnel Pace', quirk: 'Short lane window, low energy burn.', unlockAt: 3, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Bilby' },
+    tasdevil: { name: 'Turing Tassie Devil', emoji: '😈', power: 'Charge Burst', quirk: 'High movement speed with expensive jumps.', unlockAt: 3, role: 'fast', puzzleUnlockLevel: 3, wikiUrl: 'https://en.wikipedia.org/wiki/Tasmanian_devil' },
+    kookaburra: { name: 'Kernel Kookaburra', emoji: '🐦', power: 'Light Call', quirk: 'Fast top-tier lane traversal.', unlockAt: 4, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Kookaburra' },
+    quokka: { name: 'Quine Quokka', emoji: '🐹', power: 'Calm Climb', quirk: 'Highest efficiency but restricted lanes.', unlockAt: 4, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Quokka' },
+    numbat: { name: 'Null Numbat', emoji: '🦝', power: 'Pattern Focus', quirk: 'Very low move drain and cheap food cost.', unlockAt: 4, role: 'slow', puzzleUnlockLevel: 4, wikiUrl: 'https://en.wikipedia.org/wiki/Numbat' },
+    ibis: { name: 'Index Ibis', emoji: '🕊️', power: 'Marsh Vector', quirk: 'Rapid lane snaps through tight wetland bends.', unlockAt: 5, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Australian_white_ibis' },
+    mudcrab: { name: 'Merge Mud Crab', emoji: '🦀', power: 'Clamp Drift', quirk: 'Stable low-drain movement through slick terrain.', unlockAt: 5, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Mud_crab' },
+    jabiru: { name: 'JIT Jabiru', emoji: '🐤', power: 'Swamp Compile', quirk: 'Fast adaptive paths through tangled mangrove lanes.', unlockAt: 5, role: 'fast', puzzleUnlockLevel: 5, wikiUrl: 'https://en.wikipedia.org/wiki/Black-necked_stork' },
+    lyrebird: { name: 'Loop Lyrebird', emoji: '🐦', power: 'Echo Sprint', quirk: 'High momentum with precise hop recovery windows.', unlockAt: 6, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Superb_lyrebird' },
+    wallaroo: { name: 'Stack Wallaroo', emoji: '🦘', power: 'Ridge Brace', quirk: 'Predictable movement and efficient defensive lanes.', unlockAt: 6, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Wallaroo' },
+    glider: { name: 'Graph Glider', emoji: '🐿️', power: 'Cliff Arc', quirk: 'Long glide windows with efficient mountain recovery.', unlockAt: 6, role: 'slow', puzzleUnlockLevel: 6, wikiUrl: 'https://en.wikipedia.org/wiki/Sugar_glider' },
+    eagle: { name: 'Edge Eagle', emoji: '🦅', power: 'Horizon Cut', quirk: 'Long-range lane commits with high burst demand.', unlockAt: 7, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Wedge-tailed_eagle' },
+    thorny: { name: 'Thread Thorny', emoji: '🦎', power: 'Desert Buffer', quirk: 'Low-energy survival under harsh hazard density.', unlockAt: 7, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Thorny_devil' },
+    quoll: { name: 'Queue Quoll', emoji: '🐺', power: 'Dust Pivot', quirk: 'Predictive pivots through Nullarbor hazard chains.', unlockAt: 7, role: 'fast', puzzleUnlockLevel: 7, wikiUrl: 'https://en.wikipedia.org/wiki/Quoll' },
+    owl: { name: 'Opcode Owl', emoji: '🦉', power: 'Night Parse', quirk: 'Fast interpretation of shifting constellation paths.', unlockAt: 8, role: 'fast', wikiUrl: 'https://en.wikipedia.org/wiki/Boobook_owl' },
+    bandicoot: { name: 'Branch Bandicoot', emoji: '🐭', power: 'Root Cache', quirk: 'Conservative movement with excellent energy retention.', unlockAt: 8, role: 'slow', wikiUrl: 'https://en.wikipedia.org/wiki/Bandicoot' },
+    cassowary: { name: 'Cache Cassowary', emoji: '🦃', power: 'Orbit Vault', quirk: 'High-pressure observatory routing with stable energy spend.', unlockAt: 8, role: 'slow', puzzleUnlockLevel: 8, wikiUrl: 'https://en.wikipedia.org/wiki/Cassowary' }
+  };
+
+  const defaultLevelCharacterPairs = {
+    0: { fast: 'emu', slow: 'wombat' },
+    1: { fast: 'kangaroo', slow: 'koala' },
+    2: { fast: 'possum', slow: 'echidna' },
+    3: { fast: 'dingo', slow: 'bilby' },
+    4: { fast: 'kookaburra', slow: 'quokka' },
+    5: { fast: 'ibis', slow: 'mudcrab' },
+    6: { fast: 'lyrebird', slow: 'wallaroo' },
+    7: { fast: 'eagle', slow: 'thorny' },
+    8: { fast: 'owl', slow: 'bandicoot' }
+  };
+
+  const defaultCharacterFood = {
+    emu: { name: 'Seed Mix', icon: '🌾', cost: 220, restore: 250, moveCost: 50, jumpCost: 68, slideCost: 42 },
+    wombat: { name: 'Root Pack', icon: '🥕', cost: 190, restore: 230, moveCost: 30, jumpCost: 48, slideCost: 24 },
+    kangaroo: { name: 'Grass Bundle', icon: '🥬', cost: 235, restore: 270, moveCost: 48, jumpCost: 60, slideCost: 38 },
+    koala: { name: 'Eucalyptus', icon: '🍃', cost: 200, restore: 250, moveCost: 28, jumpCost: 44, slideCost: 22 },
+    platypus: { name: 'River Cray Pack', icon: '🦐', cost: 205, restore: 285, moveCost: 30, jumpCost: 42, slideCost: 20 },
+    possum: { name: 'Berry Pouch', icon: '🍓', cost: 245, restore: 300, moveCost: 44, jumpCost: 56, slideCost: 34 },
+    echidna: { name: 'Ant Cluster', icon: '🐜', cost: 210, restore: 275, moveCost: 26, jumpCost: 42, slideCost: 20 },
+    cockatoo: { name: 'Wattle Fruit', icon: '🍇', cost: 230, restore: 315, moveCost: 38, jumpCost: 50, slideCost: 28 },
+    dingo: { name: 'Fish Strip', icon: '🐟', cost: 260, restore: 325, moveCost: 42, jumpCost: 54, slideCost: 34 },
+    bilby: { name: 'Herb Bundle', icon: '🥦', cost: 225, restore: 300, moveCost: 24, jumpCost: 40, slideCost: 18 },
+    tasdevil: { name: 'Protein Haunch', icon: '🥩', cost: 285, restore: 360, moveCost: 41, jumpCost: 68, slideCost: 29 },
+    kookaburra: { name: 'Worm Satchel', icon: '🪱', cost: 280, restore: 350, moveCost: 40, jumpCost: 50, slideCost: 30 },
+    quokka: { name: 'Summit Greens', icon: '🥗', cost: 230, restore: 330, moveCost: 22, jumpCost: 36, slideCost: 18 },
+    numbat: { name: 'Termite Trail Mix', icon: '🫘', cost: 210, restore: 345, moveCost: 20, jumpCost: 34, slideCost: 16 },
+    ibis: { name: 'Mangrove Fly Pack', icon: '🦟', cost: 275, restore: 360, moveCost: 40, jumpCost: 54, slideCost: 30 },
+    mudcrab: { name: 'Brine Root Tray', icon: '🪸', cost: 235, restore: 345, moveCost: 23, jumpCost: 38, slideCost: 16 },
+    jabiru: { name: 'Delta Reed Cache', icon: '🪷', cost: 265, restore: 372, moveCost: 36, jumpCost: 48, slideCost: 26 },
+    lyrebird: { name: 'Echo Berry Mix', icon: '🫐', cost: 290, restore: 370, moveCost: 39, jumpCost: 52, slideCost: 28 },
+    wallaroo: { name: 'Ridge Herb Stack', icon: '🌿', cost: 245, restore: 350, moveCost: 24, jumpCost: 38, slideCost: 17 },
+    glider: { name: 'Canopy Nectar', icon: '🍯', cost: 255, restore: 366, moveCost: 25, jumpCost: 34, slideCost: 16 },
+    eagle: { name: 'Thermal Strip', icon: '🍖', cost: 305, restore: 390, moveCost: 42, jumpCost: 58, slideCost: 32 },
+    thorny: { name: 'Dew Capsule', icon: '💧', cost: 240, restore: 355, moveCost: 22, jumpCost: 36, slideCost: 16 },
+    quoll: { name: 'Saltbush Jerky', icon: '🥓', cost: 275, restore: 382, moveCost: 34, jumpCost: 46, slideCost: 24 },
+    owl: { name: 'Starlight Moth Pack', icon: '🦋', cost: 310, restore: 395, moveCost: 41, jumpCost: 56, slideCost: 30 },
+    bandicoot: { name: 'Orbit Root Bundle', icon: '🥔', cost: 250, restore: 360, moveCost: 23, jumpCost: 37, slideCost: 16 },
+    cassowary: { name: 'Meteor Grain Bowl', icon: '🌾', cost: 270, restore: 384, moveCost: 24, jumpCost: 35, slideCost: 16 }
+  };
+
+  const defaultCharacterRegionMap = {
+    emu: 0,
+    wombat: 0,
+    kangaroo: 1,
+    koala: 1,
+    platypus: 1,
+    possum: 2,
+    echidna: 2,
+    cockatoo: 2,
+    dingo: 3,
+    bilby: 3,
+    tasdevil: 3,
+    kookaburra: 4,
+    quokka: 4,
+    numbat: 4,
+    ibis: 5,
+    mudcrab: 5,
+    jabiru: 5,
+    lyrebird: 6,
+    wallaroo: 6,
+    glider: 6,
+    eagle: 7,
+    thorny: 7,
+    quoll: 7,
+    owl: 8,
+    bandicoot: 8,
+    cassowary: 8
+  };
+
   const visualPresets = {
     emu: { rig: 'birdTall', fast: true, body: 0x8c6c4d, accent: 0x5a3824, glow: 0xf4d6a2, trail: 0xd7c0a2, speed: 8.6, bob: 0.09, hop: 0.06 },
     wombat: { rig: 'burrower', fast: false, body: 0x8d6f54, accent: 0x5d4028, glow: 0xbfa68e, frameRate: 8, roll: 0.07 },
@@ -92,4 +191,8 @@
   globalThis.DawnDashersCharacterVisualPresets = visualPresets;
   globalThis.DawnDashersCharacterColors = colors;
   globalThis.DawnDashersCharacterSpriteFamilies = spriteFamilies;
+  globalThis.DawnDashersCharacterDefaults = defaultCharacters;
+  globalThis.DawnDashersLevelCharacterPairsDefaults = defaultLevelCharacterPairs;
+  globalThis.DawnDashersCharacterFoodDefaults = defaultCharacterFood;
+  globalThis.DawnDashersCharacterRegionMapDefaults = defaultCharacterRegionMap;
 })();

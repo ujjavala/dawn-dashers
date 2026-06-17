@@ -110,7 +110,8 @@
       if (!normalizedId) {
         return false;
       }
-      return this.getShownPuzzles().includes(normalizedId);
+      // Session-scoped: clears on refresh/new tab so old IDs don't pollute
+      return this.getCurrentGameShown().includes(normalizedId);
     },
 
     /**
@@ -166,4 +167,132 @@
   };
 
   console.log('PuzzleTracker initialized');
+})();
+
+// ─── Puzzle Utilities ─────────────────────────────────────────────────────────
+// Pure helpers for signature generation, de-duplication, and pool resolution.
+// Consumed by game.js via globalThis.DawnDashersPuzzleUtils.
+
+(function initializePuzzleUtils() {
+  const PUZZLE_SHOWN_SIGNATURES_KEY = 'dawn_dashers_puzzle_shown_signatures_v1';
+
+  function getPuzzleIdSignature(puzzle) {
+    if (!puzzle || typeof puzzle !== 'object') return '';
+    if (typeof puzzle.id === 'string' && puzzle.id.trim()) {
+      return `id:${puzzle.id.trim().toLowerCase()}`;
+    }
+    return '';
+  }
+
+  function getPuzzleContentSignature(puzzle) {
+    if (!puzzle || typeof puzzle !== 'object') return '';
+    const answers = Array.isArray(puzzle.answers)
+      ? puzzle.answers.join('|')
+      : (puzzle.answer || '');
+    const normalized = [puzzle.title || '', puzzle.instruction || '', puzzle.question || '', answers]
+      .join('||').trim().toLowerCase();
+    return normalized ? `content:${normalized}` : '';
+  }
+
+  function getPuzzleSignature(puzzle) {
+    return getPuzzleIdSignature(puzzle) || getPuzzleContentSignature(puzzle);
+  }
+
+  function getPuzzleTrackerKey(puzzle) {
+    if (!puzzle || typeof puzzle !== 'object') return '';
+    if (typeof puzzle.id === 'string' && puzzle.id.trim()) return puzzle.id.trim();
+    return getPuzzleSignature(puzzle);
+  }
+
+  function isPuzzleMarkedShown(puzzle) {
+    const tracker = globalThis.PuzzleTracker;
+    if (!tracker || typeof tracker.hasBeenShown !== 'function') return false;
+    const key = getPuzzleTrackerKey(puzzle);
+    return key ? tracker.hasBeenShown(key) : false;
+  }
+
+  function markPuzzleAsShown(puzzle) {
+    const tracker = globalThis.PuzzleTracker;
+    if (!tracker || typeof tracker.markAsShown !== 'function') return;
+    const key = getPuzzleTrackerKey(puzzle);
+    if (key) tracker.markAsShown(key);
+  }
+
+  function loadShownSignatures() {
+    try {
+      // Session-scoped: clears on refresh/new tab
+      const raw = globalThis.sessionStorage?.getItem(PUZZLE_SHOWN_SIGNATURES_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function isPuzzleSignatureUsed(puzzle, usedSignatures, shownSignatures) {
+    const idSig = getPuzzleIdSignature(puzzle);
+    const contentSig = getPuzzleContentSignature(puzzle);
+    if (!idSig && !contentSig) return isPuzzleMarkedShown(puzzle);
+    if (isPuzzleMarkedShown(puzzle)) return true;
+    if (idSig && (usedSignatures.includes(idSig) || shownSignatures.includes(idSig))) return true;
+    if (contentSig && (usedSignatures.includes(contentSig) || shownSignatures.includes(contentSig))) return true;
+    return false;
+  }
+
+  function markSignatureUsed(puzzle, usedSignatures, shownSignatures) {
+    const signatures = [getPuzzleIdSignature(puzzle), getPuzzleContentSignature(puzzle)].filter(Boolean);
+    markPuzzleAsShown(puzzle);
+    if (!signatures.length) return { changed: false };
+    let persistNeeded = false;
+    signatures.forEach((sig) => {
+      if (!usedSignatures.includes(sig)) usedSignatures.push(sig);
+      if (!shownSignatures.includes(sig)) {
+        shownSignatures.push(sig);
+        persistNeeded = true;
+      }
+    });
+    if (persistNeeded) {
+      try {
+        // Session-scoped: clears on refresh/new tab
+        globalThis.sessionStorage?.setItem(PUZZLE_SHOWN_SIGNATURES_KEY, JSON.stringify(shownSignatures));
+      } catch { /* ignore quota/private mode */ }
+    }
+    return { changed: true };
+  }
+
+  function resolvePoolLevelKey(poolMap, level, maxLevel) {
+    const keys = Object.keys(poolMap)
+      .map((k) => Number.parseInt(k, 10))
+      .filter((k) => Number.isInteger(k))
+      .sort((a, b) => a - b);
+    if (!keys.length) return 0;
+    const safe = Math.max(0, Math.min(maxLevel ?? 8, level));
+    if (keys.includes(safe)) return safe;
+    return keys[safe % keys.length];
+  }
+
+  function pickUnseenPuzzle(puzzleArray, poolIds, usedSignatures, shownSignatures) {
+    if (!Array.isArray(puzzleArray) || !Array.isArray(poolIds)) return null;
+    const available = poolIds
+      .map((id) => puzzleArray[id])
+      .filter((p) => p && !isPuzzleSignatureUsed(p, usedSignatures, shownSignatures));
+    if (!available.length) return null;
+    return available[Math.floor(Math.random() * available.length)];
+  }
+
+  globalThis.DawnDashersPuzzleUtils = {
+    getPuzzleIdSignature,
+    getPuzzleContentSignature,
+    getPuzzleSignature,
+    getPuzzleTrackerKey,
+    isPuzzleMarkedShown,
+    markPuzzleAsShown,
+    loadShownSignatures,
+    isPuzzleSignatureUsed,
+    markSignatureUsed,
+    resolvePoolLevelKey,
+    pickUnseenPuzzle,
+    PUZZLE_SHOWN_SIGNATURES_KEY
+  };
 })();
