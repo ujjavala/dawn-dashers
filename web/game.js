@@ -4814,7 +4814,9 @@
     lastTreasureRefKey: null,
     solvedByLevel: {},
     usedCorePuzzleIds: [],
-    usedPuzzleSignatures: []
+    usedPuzzleSignatures: [],
+    puzzleQueues: null,
+    sessionShownIds: new Set()
   };
 
   const puzzleHistory = (() => {
@@ -5052,6 +5054,7 @@
       puzzleState.solvedByLevel = {};
       puzzleState.usedCorePuzzleIds = [];
       puzzleState.usedPuzzleSignatures = [];
+      initPuzzleQueues();
     }
     state.pendingReviveOffer = null;
     state.health = state.maxLives;
@@ -6306,35 +6309,77 @@
     return puzzleState.solvedByLevel[level];
   }
 
-  function filterUnseenPoolIds(flatArray, poolIds) {
-    const filtered = poolIds.filter((id) => {
-      const p = flatArray[id];
-      return p && !isPuzzleSignatureUsed(p);
-    });
-    // Fall back to full pool if everything is exhausted (avoid returning nothing)
-    return filtered.length > 0 ? filtered : poolIds;
+  // ─── Puzzle queue system ───────────────────────────────────────────────────
+  // At game-start each pool is cloned and shuffled into a queue (array).
+  // Puzzles are shifted off the front one at a time. sessionShownIds ensures
+  // cross-pool dedup: showing puzzle 19 as a treasure case prevents it from
+  // appearing again as a level-unlock puzzle in the same session.
+
+  function shuffleArray(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function buildPoolQueue(flatArray, poolIds) {
+    return shuffleArray(poolIds.map((id) => flatArray[id]).filter(Boolean));
+  }
+
+  function initPuzzleQueues() {
+    const queues = { heart: {}, level: {}, treasure: {} };
+    for (const [key, ids] of Object.entries(heartPoolsByLevel)) {
+      queues.heart[key] = buildPoolQueue(heartPuzzles, ids);
+    }
+    for (const [key, ids] of Object.entries(levelPoolsByLevel)) {
+      queues.level[key] = buildPoolQueue(levelPuzzles, ids);
+    }
+    for (const [key, ids] of Object.entries(treasurePoolsByLevel)) {
+      queues.treasure[key] = buildPoolQueue(treasurePuzzles, ids);
+    }
+    puzzleState.puzzleQueues = queues;
+    puzzleState.sessionShownIds = new Set();
+  }
+
+  function popFromQueue(type, level) {
+    if (!puzzleState.puzzleQueues) initPuzzleQueues();
+    const poolMap = type === 'heart' ? heartPoolsByLevel
+      : type === 'treasure' ? treasurePoolsByLevel
+      : levelPoolsByLevel;
+    const poolLevel = String(resolvePoolLevelKey(poolMap, level));
+    const queue = puzzleState.puzzleQueues[type]?.[poolLevel];
+    if (!queue) return null;
+    // Drain until we find one not yet shown this session
+    while (queue.length > 0) {
+      const puzzle = queue.shift();
+      if (!puzzleState.sessionShownIds.has(String(puzzle.id))) {
+        return puzzle;
+      }
+    }
+    return null;
+  }
+
+  function markSessionShown(puzzle) {
+    puzzleState.sessionShownIds.add(String(puzzle.id));
+    markPuzzleSignatureUsed(puzzle); // keep signatures in sync for compatibility
   }
 
   function pickNextHeartRevivePuzzle(level) {
-    const poolLevel = resolvePoolLevelKey(heartPoolsByLevel, level);
-    const poolIds = heartPoolsByLevel[poolLevel] || heartPoolsByLevel[0] || [];
-    const unseenIds = filterUnseenPoolIds(heartPuzzles, poolIds);
-    const puzzle = pickUnseenPuzzle(heartPuzzles, unseenIds);
+    const puzzle = popFromQueue('heart', level);
     if (puzzle) {
       puzzleState.activePuzzle = puzzle;
-      markPuzzleSignatureUsed(puzzle);
+      markSessionShown(puzzle);
     }
     return puzzle;
   }
 
   function pickNextLevelPuzzle(level) {
-    const poolLevel = resolvePoolLevelKey(levelPoolsByLevel, level);
-    const poolIds = levelPoolsByLevel[poolLevel] || levelPoolsByLevel[0] || [];
-    const unseenIds = filterUnseenPoolIds(levelPuzzles, poolIds);
-    const puzzle = pickUnseenPuzzle(levelPuzzles, unseenIds);
+    const puzzle = popFromQueue('level', level);
     if (puzzle) {
       puzzleState.activePuzzle = puzzle;
-      markPuzzleSignatureUsed(puzzle);
+      markSessionShown(puzzle);
     }
     return puzzle;
   }
@@ -6407,12 +6452,9 @@
   }
 
   function chooseTreasurePuzzle(level) {
-    const poolLevel = resolvePoolLevelKey(treasurePoolsByLevel, level);
-    const poolIds = treasurePoolsByLevel[poolLevel] || treasurePoolsByLevel[0] || [];
-    const unseenIds = filterUnseenPoolIds(treasurePuzzles, poolIds);
-    const puzzle = pickUnseenPuzzle(treasurePuzzles, unseenIds);
+    const puzzle = popFromQueue('treasure', level);
     if (puzzle) {
-      markPuzzleSignatureUsed(puzzle);
+      markSessionShown(puzzle);
     }
     return puzzle;
   }
@@ -6813,7 +6855,7 @@
   function resumeFromPuzzleModal() {
     closeModal(puzzleModal);
     puzzleState.activePuzzle = null;
-    if (state.flowMode === 'puzzle') {
+    if (state.flowMode === 'q_puzzle') {
       sendFlow('PUZZLE_CLOSE');
     } else if (state.paused) {
       // Fallback for any path that set paused directly
