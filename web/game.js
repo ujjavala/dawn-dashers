@@ -7063,8 +7063,8 @@
     }
     if (!popupOpen && state.popupPaused) {
       state.popupPaused = false;
-      state.paused = state.pauseBeforePopup || state.hungerPaused;
       state.pauseBeforePopup = false;
+      state.paused = state.hungerPaused;
       if (!state.paused) {
         state.message = 'Game resumed.';
       }
