@@ -4555,6 +4555,9 @@
     paused: false,
     hungerPaused: false,
     hungerModalDismissedUntil: 0,
+    hungerStuckSince: 0,
+    popupPaused: false,
+    pauseBeforePopup: false,
     activeBoostMoves: {
       slowFullWidth: 0,
       fastEfficiency: 0
@@ -4566,11 +4569,13 @@
     lastSpawnLane: laneCenterIndex,
     fragmentTimer: 9,
     continueFromLevelUnlock: false,
+    pendingLevelUnlockTarget: null,
     lastTime: 0,
     swipeStart: null,
     apiOnline: false,
     pendingReviveOffer: null,
     heartReviveUsedByLevel: {},
+    heartReviveOfferedByLevel: {},
     chestCollectsByLevelRun: {},
     puzzleBankUnlocks: (() => {
       try {
@@ -4977,6 +4982,18 @@
     ctx.restore();
   }
 
+  function initializeStartingFood() {
+    // Give starting food based on level: early levels get more, higher levels get less
+    // Level 0-1: 10 food, Level 2: 8 food, Level 3+: 6 food
+    let startingFood = 10;
+    if (state.progressLevel >= 3) {
+      startingFood = 6;
+    } else if (state.progressLevel >= 2) {
+      startingFood = 8;
+    }
+    state.foodStocks[selectedCharacter] = startingFood;
+  }
+
   function resetGame(options = {}) {
     const keepProgress = Boolean(options.keepProgress);
     state.running = true;
@@ -4985,7 +5002,9 @@
     if (!keepProgress) {
       state.score = 0;
       state.heartReviveUsedByLevel = {};
+      state.heartReviveOfferedByLevel = {};
       state.chestCollectsByLevelRun = {};
+      state.pendingLevelUnlockTarget = null;
       puzzleState.seenTreasureRefs = [];
       puzzleState.lastTreasureRefKey = null;
       puzzleState.solvedByLevel = {};
@@ -4995,11 +5014,17 @@
     state.pendingReviveOffer = null;
     state.health = state.maxLives;
     state.fragments = 0;
-    syncAdminProgressToSelectedCharacter();
+    if (!keepProgress) {
+      syncAdminProgressToSelectedCharacter();
+    } else if (Number.isInteger(state.pendingLevelUnlockTarget)) {
+      state.progressLevel = Math.max(0, Math.min(regions.length - 1, state.pendingLevelUnlockTarget));
+      state.pendingLevelUnlockTarget = null;
+    }
     const tier = Math.max(0, characters[selectedCharacter]?.unlockAt || 0);
     const role = characters[selectedCharacter]?.role || 'fast';
     state.maxEnergy = 1000 + tier * 120 + (role === 'slow' ? 80 : 30);
     state.energy = state.maxEnergy;
+    initializeStartingFood();
     state.objective = keepProgress
       ? 'Continue your expedition and recover the next shard set.'
       : 'Traverse the expedition map and collect shards.';
@@ -5608,7 +5633,12 @@
     state.hungerModalDismissedUntil = 0;
     if (hungerText && characters[selectedCharacter]) {
       const currentName = characters[selectedCharacter].name;
-      hungerText.textContent = `Oho! ${currentName} is hungry. You are out of food and energy is too low. Collect score tokens, open Food Cart, and buy supplies to continue.`;
+      const canAfford = canAffordAnyFood();
+      if (canAfford) {
+        hungerText.textContent = `Oho! ${currentName} is hungry. You are out of food and energy is too low. Collect score tokens, open Food Cart, and buy supplies to continue.`;
+      } else {
+        hungerText.textContent = `Oho! ${currentName} is starving! You don't have enough score to buy food. Your dasher will lose a life in ~30 seconds...`;
+      }
     }
     hungerModal.classList.add('open');
     hungerModal.setAttribute('aria-hidden', 'false');
@@ -5658,6 +5688,7 @@
     state.foodCartByCharacter[selectedCharacter] = {};
     renderFoodShop();
     closeModal(foodShopModal);
+    state.hungerStuckSince = 0;
     syncHud();
     const foodCount = state.foodStocks[selectedCharacter] || 0;
     pushMessage(`Purchased. +${purchasedFoodQty} food added (stock ${foodCount}).`);
@@ -5732,6 +5763,12 @@
   function hasEnoughEnergyForAnyAction() {
     const minCost = Math.min(getEnergyCost('move'), getEnergyCost('jump'), getEnergyCost('slide'));
     return state.energy >= minCost;
+  }
+
+  function canAffordAnyFood() {
+    const items = getFoodShopItemsForCharacter();
+    const minCost = Math.min(...items.map(item => item.cost || 0));
+    return state.score >= minCost;
   }
 
   function shouldPauseForHunger() {
@@ -6448,6 +6485,21 @@
     return true;
   }
 
+  function tryOfferReviveForLevel(level, objectiveText, messageText) {
+    const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
+    if (state.heartReviveUsedByLevel[safeLevel] || state.heartReviveOfferedByLevel[safeLevel]) {
+      endGame(false);
+      return false;
+    }
+    state.heartReviveOfferedByLevel[safeLevel] = true;
+    state.pendingReviveOffer = { level: safeLevel };
+    state.objective = objectiveText;
+    state.message = messageText;
+    syncHud();
+    syncPlaybackButton();
+    return true;
+  }
+
   function getTreasureRefPoolForLevel(level) {
     const safeLevel = Math.max(0, Math.min(regions.length - 1, level));
     const pool = levelRolePools[safeLevel] || levelRolePools[0] || { treasureRefs: [] };
@@ -6731,6 +6783,12 @@
       specialUnlockedNames = unlockPuzzleBankCharactersForLevel(next.nextLevel, false);
     }
     const allUnlockedNames = [next.unlockedNames, specialUnlockedNames].filter(Boolean).join(', ');
+    // Reset food stocks for all characters when advancing to next level
+    state.foodStocks = Object.keys(characterFood).reduce((acc, key) => {
+      acc[key] = 0;
+      return acc;
+    }, {});
+    state.pendingLevelUnlockTarget = next.nextLevel;
     state.progressLevel = next.nextLevel;
     state.score += next.levelBonus;
     triggerLevelCelebrate(next.nextLevel, next.levelBonus, allUnlockedNames);
@@ -6920,6 +6978,21 @@
     }, 2600);
   }
 
+  function isOpenModal(modal) {
+    return Boolean(modal && modal.classList.contains('open') && modal.getAttribute('aria-hidden') !== 'true');
+  }
+
+  function hasBlockingPopupOpen() {
+    return isOpenModal(settingsModal)
+      || isOpenModal(pastGamesModal)
+      || isOpenModal(helpModal)
+      || isOpenModal(walkthroughModal)
+      || isOpenModal(clueModal)
+      || isOpenModal(puzzleModal)
+      || isOpenModal(foodShopModal)
+      || isOpenModal(hungerModal);
+  }
+
   function update(dt) {
     if (!state.running) {
       render();
@@ -6930,10 +7003,36 @@
     if (hungryNow && !state.paused) {
       state.paused = true;
       state.hungerPaused = true;
+      state.hungerStuckSince = Date.now();
       state.message = 'Out of energy and food. Run paused. Buy food to continue.';
       showHungerModal();
       syncHud();
       syncPlaybackButton();
+    }
+
+    // Auto-lose a life if stuck in hunger for too long (30 seconds) without being able to afford food
+    if (state.hungerPaused && hungryNow && !canAffordAnyFood()) {
+      const stuckDuration = Date.now() - state.hungerStuckSince;
+      if (stuckDuration > 30000) {
+        state.health = 0;
+        state.running = false;
+        state.ended = true;
+        state.paused = false;
+        state.hungerPaused = false;
+        state.hungerStuckSince = 0;
+        const level = getPuzzleDifficultyLevel();
+        if (state.heartReviveUsedByLevel[level]) {
+          endGame(false);
+        } else {
+          state.health = 0;
+          tryOfferReviveForLevel(
+            level,
+            'Starved! Game over, but one revive is still available for this level.',
+            'Your dasher starved. You have 1 revive left. Tap Revive.'
+          );
+        }
+        hideHungerModal();
+      }
     }
 
     if (state.hungerPaused && hungryNow && hungerModal && !hungerModal.classList.contains('open')
@@ -6946,8 +7045,29 @@
       state.hungerPaused = false;
       state.paused = false;
       state.hungerModalDismissedUntil = 0;
+      state.hungerStuckSince = 0;
       hideHungerModal();
       state.message = 'Food restored. Run resumed.';
+      syncHud();
+      syncPlaybackButton();
+    }
+
+    const popupOpen = hasBlockingPopupOpen();
+    if (popupOpen && !state.popupPaused) {
+      state.popupPaused = true;
+      state.pauseBeforePopup = state.paused;
+      state.paused = true;
+      state.message = 'Game paused while popup is open.';
+      syncHud();
+      syncPlaybackButton();
+    }
+    if (!popupOpen && state.popupPaused) {
+      state.popupPaused = false;
+      state.paused = state.pauseBeforePopup || state.hungerPaused;
+      state.pauseBeforePopup = false;
+      if (!state.paused) {
+        state.message = 'Game resumed.';
+      }
       syncHud();
       syncPlaybackButton();
     }
@@ -7065,11 +7185,11 @@
         state.ended = true;
         state.paused = false;
         state.hungerPaused = false;
-        state.pendingReviveOffer = { level };
-        state.objective = 'Game over, but one revive is still available for this level.';
-        state.message = 'Game over. You have 1 revive option left. Tap Revive.';
-        syncHud();
-        syncPlaybackButton();
+        tryOfferReviveForLevel(
+          level,
+          'Game over, but one revive is still available for this level.',
+          'Game over. You have 1 revive option left. Tap Revive.'
+        );
       }
     }
   }

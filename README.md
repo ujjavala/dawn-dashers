@@ -81,4 +81,3 @@ Compose currently runs a static `web` service only.
 
 - Visual effects degrade gracefully if advanced rendering features are unavailable.
 - Audio starts after first user interaction to satisfy autoplay policies.
-- [deploy/android/README.md](deploy/android/README.md) and [deploy/ios/README.md](deploy/ios/README.md) are legacy placeholders.
