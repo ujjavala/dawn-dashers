@@ -6534,8 +6534,7 @@
     if (level === 3) {
       return `Cryptic clue: ${text.replace(/[aeiou]/gi, '•')}`;
     }
-    const compact = text.split(' ').slice(0, 5).join(' ');
-    return `Elite clue: ${compact}...`;
+    return `Elite clue: ${text}`;
   }
 
   function revealPuzzleHint() {
@@ -6546,6 +6545,18 @@
     }
     const level = getPuzzleDifficultyLevel();
     const hintLimit = getHintLimitForPuzzle(puzzle, level);
+
+    // Re-show the last hint if the player clicks again without advancing
+    if (puzzleState.hintsUsedThisPuzzle > 0 && puzzleState.lastHintText) {
+      if (puzzleStatus) {
+        const remaining = Math.max(0, hintLimit - puzzleState.hintsUsedThisPuzzle);
+        puzzleStatus.textContent = hintLimit === 1
+          ? puzzleState.lastHintText
+          : `${puzzleState.lastHintText} (${formatHintCountLabel(remaining)} left)`;
+      }
+      return;
+    }
+
     if (puzzleState.hintsUsedThisPuzzle >= hintLimit) {
       if (puzzleStatus) {
         puzzleStatus.textContent = `No more hints for this puzzle at level ${level + 1}.`;
@@ -6556,6 +6567,7 @@
 
     const hint = consumePuzzleHint(puzzle, level) || 'Think carefully about the puzzle rules.';
     puzzleState.hintsUsedThisPuzzle += 1;
+    puzzleState.lastHintText = hint;
 
     if (puzzleState.hintsUsedThisPuzzle >= hintLimit && !puzzleState.hintRewardGrantedThisPuzzle) {
       puzzleState.hintRewardGrantedThisPuzzle = true;
@@ -6651,6 +6663,7 @@
     puzzleState.hintIndex = 0;
     puzzleState.hintsUsedThisPuzzle = 0;
     puzzleState.hintRewardGrantedThisPuzzle = false;
+    puzzleState.lastHintText = null;
     if (puzzleTitle) {
       puzzleTitle.textContent = isTreasureCase
         ? `Treasure Case: ${puzzle.title}`
