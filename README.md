@@ -54,6 +54,28 @@ States are labelled `q_*`, input symbols `σ_*`, and every transition is written
 with a head that advances `R`, stays `S`, or — on a level abort — rewinds `L`.
 This isn't just a metaphor: the implementation is a literal δ(q, σ) → (q′, dir) transition table.
 
+### In the corridors — *Turing's Run*
+
+At three points in the expedition the world stops being a runner and becomes a **Turing Machine you
+operate by hand**. The level fades away and you step into a glowing sci-fi **corridor** rendered in
+one-point perspective — a hallway that *is* the tape, charging toward a vanishing-point portal.
+
+The story is told in three chapters, framed as **Alan Turing bypassing three sealed gates**:
+
+| Corridor | Machine | The gate demands |
+|---|---|---|
+| I of III | **Bit Flipper** | Invert every bit until the blank |
+| II of III | **Parity Checker** | Open only for an even number of `1`s |
+| III of III | **Even-Length Protocol** | Accept only an even-length message |
+
+**You are the read/write head.** A symbol drops from the portal — that's what the head *reads*.
+You look up δ(state, read) in the on-screen rule table, decide which symbol to **write**, and run
+to that lane (`0` → left · `B` → middle · `1` → right) before the symbol lands. Stand in the right
+lane and the machine steps forward; miss three times and the gate rejects you. There's no heart
+penalty — corridors are pure bonus, scored at the end (`+100` per correct step, `+750` for a full
+accept). An animated Alan Turing sprite runs the corridor in your place. The corridor experience is
+fully isolated from the level game (separate `q_corridor` FSM state, its own renderer, no level HUD).
+
 ---
 
 ### Architecture
@@ -89,6 +111,10 @@ This isn't just a metaphor: the implementation is a literal δ(q, σ) → (q′,
 │  │        ├── Three.js + Canvas render                           │   │
 │  │        │        └── terrain-styles.js                         │   │
 │  │        │                                                      │   │
+│  │        ├── TM Corridor bonus mode (q_corridor)                │   │
+│  │        │        ├── corridor.js  (logic + perspective render) │   │
+│  │        │        └── corridor-programs.js                      │   │
+│  │        │                                                      │   │
 │  │        └── Config reads                                       │   │
 │  │             ├── character-config.js                           │   │
 │  │             ├── game-data.js                                   │   │
@@ -113,6 +139,8 @@ This isn't just a metaphor: the implementation is a literal δ(q, σ) → (q′,
 |---|---|
 | [web/game.js](web/game.js) | Main game loop, rendering, input, run logic |
 | [web/game-state.js](web/game-state.js) | **Turing Machine** state engine (see below) |
+| [web/corridor.js](web/corridor.js) | **TM Corridor** ("Turing's Run") bonus mode — logic, perspective renderer, animated Turing head |
+| [web/corridor-programs.js](web/corridor-programs.js) | The three corridor Turing-machine programs (Bit Flipper / Parity / Even-Length) |
 | [web/game-ui.js](web/game-ui.js) | All UI helpers — modals, HUD, overlays, chrome |
 | [web/character-config.js](web/character-config.js) | Character definitions, food, visual presets, region map |
 | [web/puzzle-tracker.js](web/puzzle-tracker.js) | Seen-puzzle tracking + `DawnDashersPuzzleUtils` (signature dedup, pool resolution) |
@@ -156,6 +184,7 @@ derived boolean flags (`state.running`, `state.paused`, etc.).
 | Paused (hunger) | `q_hunger` | Food depleted |
 | Puzzle | `q_puzzle` | Puzzle modal open (level, treasure, heart-revive) |
 | Level transition | `q_level_end` | Level-clear overlay showing |
+| TM Corridor | `q_corridor` | Bonus *Turing's Run* corridor active (isolated from the level) |
 | HALT-REJECT | `q_reject` | Game over |
 | HALT-ACCEPT | `q_accept` | Final level complete |
 
@@ -172,6 +201,43 @@ The tape rolls at 256 cells. `σ_level_abort` is the only **L** (left) move —
 the machine rewinds its narrative when a level transition is aborted.
 
 `getTape()` and `getHead()` are exposed on the runtime for debugging.
+
+---
+
+## TM Corridors — *Turing's Run*
+
+Three times per expedition (at progress levels `2`, `4`, and `7`) the runner hands off to a
+standalone bonus mode where the player **enacts a small Turing machine live**. It is implemented in
+[web/corridor.js](web/corridor.js) with its programs in [web/corridor-programs.js](web/corridor-programs.js).
+
+### How it works
+
+- The FSM transitions `q_run → q_corridor`. While in `q_corridor` the **level game is not rendered
+  at all** — `corridor.js` owns the whole screen, the score/heart HUD is hidden, and Three.js is
+  gated off. The corridor is its own world.
+- The corridor is drawn as a **sci-fi tunnel in one-point perspective**: ceiling, floor and walls
+  converge on a glowing **portal** (the vanishing point) with scrolling depth seams, ceiling light
+  bars, neon edge beams and runway chevrons for a charging-forward feel.
+- A tape symbol streaks out of the portal toward the player — that is what the head **reads**.
+- The three lanes represent the symbol you must **write** (`0` left · `B` middle · `1` right). The
+  player looks up δ(state, read) in the on-screen rule table, then runs to the **write** lane before
+  the symbol arrives. Reasoning out the rule *is* the gameplay.
+- An animated **Alan Turing** sprite (the running head) replaces the normal character.
+
+### The three programs
+
+| Progress level | Program | δ summary | Accepts |
+|---|---|---|---|
+| 2 | `corridor_l4_flip` — **Bit Flipper** | one state, writes each bit's complement, moves `R` | reaching the blank |
+| 4 | `corridor_l6_parity` — **Parity Checker** | `q_even`/`q_odd` toggle on every `1` | even count of `1`s |
+| 7 | `corridor_l8_even_length` — **Even-Length Protocol** | `q_A`/`q_B` alternate on every symbol | even-length input |
+
+### Scoring (deferred — pure bonus, no heart risk)
+
+- Each correct step is tracked but **does not** touch the live score mid-corridor.
+- On exit the total is tallied: `correctSteps × 100`, plus a `+750` bonus if the machine **accepts**.
+- Three wrong reads → the machine **rejects**, but earned step points are still awarded and **no
+  hearts are lost**. Corridors are a reward, never a penalty.
 
 ---
 

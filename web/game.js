@@ -62,6 +62,12 @@
   const characterButtons = Array.from(document.querySelectorAll('.character-btn'));
   const clueModal = document.getElementById('clueModal');
   const puzzleModal = document.getElementById('puzzleModal');
+  const corridorModal = document.getElementById('corridorModal');
+  const corridorModalSub = document.getElementById('corridorModalSub');
+  const corridorModalTitle = document.getElementById('corridorModalTitle');
+  const corridorModalBody = document.getElementById('corridorModalBody');
+  const corridorModalTransitions = document.getElementById('corridorModalTransitions');
+  const corridorModalStartBtn = document.getElementById('corridorModalStartBtn');
   const closeClueBtn = document.getElementById('closeClueBtn');
   const closePuzzleBtn = document.getElementById('closePuzzleBtn');
   const puzzleTopHintBtn = document.getElementById('puzzleTopHintBtn');
@@ -4131,6 +4137,15 @@
       title: 'Mission Goal',
       text: 'Score comes only from score tokens and level clear bonuses. Survive, collect shards, and progress terrain levels.',
       visuals: []
+    },
+    {
+      title: '⊢ TM Corridor — You Are The Head',
+      text: 'At levels 4, 6, and 9 a live Turing Machine Corridor activates. Three lanes represent tape symbols 0, B (blank), and 1. A symbol falls down the correct lane — move into that lane to execute the TM transition. Complete the full input to ACCEPT (+750 pts). Each correct read earns +100. Three wrong reads = REJECTED.',
+      visuals: [
+        { kind: 'core', icon: '0', label: 'Left lane: read 0' },
+        { kind: 'core', icon: 'B', label: 'Centre lane: read B' },
+        { kind: 'core', icon: '1', label: 'Right lane: read 1' }
+      ]
     }
   ];
 
@@ -4583,6 +4598,119 @@
   syncFlowLevelState(state.progressLevel);
   const gameUiModule = globalThis.DawnDashersGameUi || {};
 
+  // ── TM Corridor bindings (passed once; corridor.js holds a reference) ──────
+  if (globalThis.DawnDashersCorridor) {
+    globalThis.DawnDashersCorridor.init({
+      getState:         () => state,
+      getCtx:           () => ctx,
+      getCanvas:        () => canvas,
+      sendFlow:         (sym, payload) => sendFlow(sym, payload),
+      pushMessage:      (msg) => pushMessage(msg),
+      addScore:         (n) => addScore(n),
+      syncHud:          () => syncHud(),
+      decrementHealth:  () => { state.health = Math.max(0, state.health - 1); syncHud(); },
+      laneToXNorm:      (i) => laneToXNorm(i),
+      getTrackXNorm:    (base, d) => getTrackXNorm(base, d),
+      openBriefing:     (prog) => openCorridorBriefing(prog),
+    });
+  }
+
+  // Wire corridorModal dismiss button
+  if (corridorModalStartBtn) {
+    corridorModalStartBtn.addEventListener('click', () => {
+      corridorModal.classList.remove('open');
+      corridorModal.setAttribute('aria-hidden', 'true');
+      // Must close popup state BEFORE startAfterBriefing sends σ_corridor_start (needs q_run)
+      sendFlow('POPUP_CLOSE');
+      syncHud();
+      if (corridorModal?._pendingProg && corridorModal?._pendingLevel != null) {
+        globalThis.DawnDashersCorridor?.startAfterBriefing(corridorModal._pendingLevel, corridorModal._pendingProg);
+      }
+    });
+  }
+
+  function openCorridorBriefing(prog) {
+    if (!corridorModal) {
+      globalThis.DawnDashersCorridor?.startAfterBriefing(state.progressLevel, prog);
+      return;
+    }
+    corridorModal._pendingProg  = prog;
+    corridorModal._pendingLevel = state.progressLevel;
+
+    // Pause synchronously now — don't wait for next-frame auto-detection
+    sendFlow('POPUP_OPEN');
+    syncHud();
+    syncPlaybackButton();
+
+    // ── Story beats — Turing's run through the three sealed corridors ──────────
+    // Each corridor is a chapter. The briefing should feel like the next page of
+    // a story, not a lecture: where Alan is, what gate blocks him, what it wants.
+    const CHAPTERS = {
+      corridor_l4_flip: {
+        chapter: 'CORRIDOR I OF III',
+        scene: 'The hum of the first gate',
+        beat: 'Alan steps into the first corridor. The lights stutter, then steady. Ahead, a sealed door — its lock is a strip of glowing bits, waiting to be rewritten.',
+        demand: 'The gate opens only if every bit is inverted. Walk the tape, flip each symbol to its opposite, and keep moving until you reach the blank.',
+      },
+      corridor_l6_parity: {
+        chapter: 'CORRIDOR II OF III',
+        scene: 'The counting gate',
+        beat: 'Deeper in, the second corridor remembers. This gate has been counting the ones that pass through it for decades, and it will not open for an odd number.',
+        demand: 'Carry the count in your head as Alan would. The door yields only when an even number of ones has crossed it.',
+      },
+      corridor_l8_even_length: {
+        chapter: 'CORRIDOR III OF III',
+        scene: 'The final measure',
+        beat: 'The last corridor stretches long. This gate does not care what the symbols say — only how many there are. Alan is close now; the machine is almost free.',
+        demand: 'Every symbol flips the gate\'s mood. It accepts only an even-length message. Reach the blank on the right beat and the way out opens.',
+      },
+    };
+    const story = CHAPTERS[prog.id] || {
+      chapter: '⊢ TURING BONUS CORRIDOR',
+      scene: 'A corridor has opened',
+      beat: 'Alan steps onto the tape. Right now, you are the machine.',
+      demand: prog.description,
+    };
+
+    const transKeys = Object.keys(prog.transitions);
+    const transHTML = transKeys.map((k) => {
+      const r = prog.transitions[k];
+      return `<div style="margin:3px 0"><span style="color:#00e5ff99">δ(${k})</span><span style="color:#ffffff44"> = </span><span style="color:#e0f7ff">(${r.next}, ${r.write}, ${r.dir})</span></div>`;
+    }).join('');
+
+    if (corridorModalSub)   corridorModalSub.textContent   = `⊢ ${story.chapter} · Turing's Run`;
+    if (corridorModalTitle) corridorModalTitle.textContent = prog.name.toUpperCase();
+    if (corridorModalBody)  corridorModalBody.innerHTML    =
+      `<div style="margin:0 0 14px;padding:12px 14px;background:rgba(0,229,255,0.06);border-left:3px solid #00e5ff;border-radius:0 6px 6px 0;">` +
+        `<div style="color:#00e5ff;font-weight:700;font-size:0.95rem;margin-bottom:4px;">${story.scene}</div>` +
+        `<div style="color:#90cfe8;font-size:0.88rem;line-height:1.55;">${story.beat}</div>` +
+      `</div>` +
+      `<div style="margin-bottom:14px;color:#c8eaf8;font-size:0.9rem;line-height:1.6;">` +
+        `<span style="color:#ffb300;font-weight:700;">The gate demands: </span>${story.demand}` +
+      `</div>` +
+      `<div style="display:grid;gap:8px;font-size:0.85rem;">` +
+        `<div style="display:flex;align-items:baseline;gap:8px;">` +
+          `<span style="color:#ffb300;font-weight:700;white-space:nowrap;">The lock reads:</span>` +
+          `<span style="color:#e0f7ff;font-family:monospace;letter-spacing:0.08em;font-size:0.95rem;">[ ${prog.input.slice(0,-1).join('  ')}  B ]</span>` +
+        `</div>` +
+        `<div style="color:#90cfe8;">` +
+          `<span style="color:#ffb300;font-weight:700;">Your move: </span>` +
+          `A symbol drops down the <span style="color:#fff;">centre</span> — that's what Alan <span style="color:#fff;font-family:monospace;">READS</span>. Check your current state in the rules below, see what it tells you to <span style="color:#fff;font-family:monospace;">WRITE</span>, then run to that lane — <span style="color:#fff;font-family:monospace;">0 → left &nbsp;|&nbsp; B → middle &nbsp;|&nbsp; 1 → right</span> — before the symbol lands.` +
+        `</div>` +
+        `<div style="color:#90cfe8;font-size:0.82rem;font-style:italic;">You are the head. The corridor is the tape. Each correct move drives the machine one step closer to the way out.</div>` +
+        `<div style="display:flex;gap:16px;flex-wrap:wrap;padding:8px 0;border-top:1px solid #00e5ff18;margin-top:2px;">` +
+          `<span style="color:#00e676;"><span style="font-size:1rem;">✓</span> Each step: <strong>+100 pts</strong></span>` +
+          `<span style="color:#ffb300;"><span style="font-size:1rem;">⊢</span> Gate opens: <strong>+750 bonus</strong></span>` +
+          `<span style="color:#aaa;font-size:0.8rem;">Stumble 3× → the gate rejects you (but you lose no hearts)</span>` +
+        `</div>` +
+      `</div>`;
+    if (corridorModalTransitions) corridorModalTransitions.innerHTML =
+      `<div style="color:#ffb300;font-family:monospace;font-size:0.75rem;letter-spacing:0.1em;margin-bottom:8px;">⊢ THE GATE'S LOGIC &nbsp;<span style="color:#00e5ff66;">δ(state, read) = (next, write, move)</span></div>` + transHTML;
+
+    corridorModal.classList.add('open');
+    corridorModal.setAttribute('aria-hidden', 'false');
+  }
+
   function getGameUiContext() {
     return {
       state,
@@ -4729,7 +4857,9 @@
       levelCompleteTimerRef: () => levelCompleteTimer,
       setLevelCompleteTimer: (value) => {
         levelCompleteTimer = value;
-      }
+      },
+      tmTapeStrip: document.getElementById('tmTapeStrip'),
+      getTape: () => (flowRuntime && typeof flowRuntime.getTape === 'function' ? flowRuntime.getTape() : [])
     };
   }
 
@@ -5101,6 +5231,9 @@
     syncAudioToRegion();
     syncHud();
     syncPlaybackButton();
+    // Corridor reset + optional activation for trigger levels
+    globalThis.DawnDashersCorridor?.reset();
+    globalThis.DawnDashersCorridor?.tryActivate(state.progressLevel);
   }
 
   function hasSeenWalkthrough() {
@@ -5687,6 +5820,8 @@
   }
 
   function getMovementLaneBounds() {
+    const corridorBounds = globalThis.DawnDashersCorridor?.getCorridorLaneBounds();
+    if (corridorBounds) return corridorBounds;
     return getMovementLaneBoundsForCharacter(selectedCharacter);
   }
 
@@ -5880,7 +6015,9 @@
   function syncHud() {
     if (typeof gameUiModule.syncHud === 'function') {
       gameUiModule.syncHud(getGameUiContext());
-      return;
+    }
+    if (gameUiModule && typeof gameUiModule.updateTapeStrip === 'function') {
+      gameUiModule.updateTapeStrip(getGameUiContext());
     }
   }
 
@@ -5990,6 +6127,8 @@
   }
 
   function spawnItem() {
+    // Suppress normal item spawning while the TM corridor is active
+    if (state.flowMode === 'q_corridor') return;
     const roll = Math.random();
     const lane = getNextSpawnLane();
     const act = getCurrentActProfile();
@@ -6076,6 +6215,35 @@
   }
 
   function shiftLane(dir) {
+    // In a TM corridor the player may only occupy the three discrete WRITE lanes
+    // (left / centre / right). Snap between them instead of stepping one lane at
+    // a time, so the player can't get stuck on an in-between lane that never
+    // matches the expected write lane.
+    const corridorLanes = globalThis.DawnDashersCorridor?.getCorridorLanes?.();
+    if (corridorLanes && corridorLanes.length) {
+      const sorted = corridorLanes.slice().sort((a, b) => a - b);
+      // Find the player's current index among the corridor lanes (nearest).
+      let curIdx = sorted.indexOf(state.player.lane);
+      if (curIdx === -1) {
+        let best = 0, bestDist = Infinity;
+        sorted.forEach((ln, i) => {
+          const d = Math.abs(ln - state.player.lane);
+          if (d < bestDist) { bestDist = d; best = i; }
+        });
+        curIdx = best;
+      }
+      const nextIdx = Math.max(0, Math.min(sorted.length - 1, curIdx + dir));
+      const corridorNextLane = sorted[nextIdx];
+      if (corridorNextLane === state.player.lane) {
+        return;
+      }
+      if (!spendEnergyForAction('move')) {
+        return;
+      }
+      state.player.lane = corridorNextLane;
+      return;
+    }
+
     const [minLane, maxLane] = getMovementLaneBounds();
     const nextLane = Math.max(minLane, Math.min(maxLane, state.player.lane + dir));
     if (nextLane === state.player.lane) {
@@ -6965,7 +7133,8 @@
       || isOpenModal(clueModal)
       || isOpenModal(puzzleModal)
       || isOpenModal(foodShopModal)
-      || isOpenModal(hungerModal);
+      || isOpenModal(hungerModal)
+      || isOpenModal(corridorModal);
   }
 
   function update(dt) {
@@ -6973,6 +7142,7 @@
       render();
       return;
     }
+    globalThis.DawnDashersCorridor?.update(dt);
 
     const hungryNow = shouldPauseForHunger();
     if (hungryNow && !state.paused) {
@@ -7045,6 +7215,13 @@
     }
 
     if (state.paused) {
+      render();
+      return;
+    }
+
+    // During a TM corridor: freeze hazards/spawning but keep player movement alive
+    if (state.flowMode === 'q_corridor') {
+      updatePlayerTimers(dt);
       render();
       return;
     }
@@ -7164,6 +7341,7 @@
   }
 
   function handleCollectedItem(item) {
+    if (globalThis.DawnDashersCorridor?.handleSymbolCollected(item)) return;
     if (item.type === 'fragment') {
       state.fragments += 1;
       setExpression('happy', 0.7);
@@ -11035,6 +11213,11 @@
     const y = h * .15 + (1 - item.z) * h * .65;
     ctx.save();
     ctx.translate(x, y);
+    if (item.type === 'corridorSymbol') {
+      globalThis.DawnDashersCorridor?.drawSymbol(item, ctx, 0, 0);
+      ctx.restore();
+      return;
+    }
     if (item.type === 'fragment') {
       ctx.fillStyle = palette.gold;
       ctx.beginPath();
@@ -11197,9 +11380,42 @@
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
     ctx.clearRect(0, 0, w, h);
+
+    const _inCorridor   = state.flowMode === 'q_corridor';
+    const _anyModalOpen = hasBlockingPopupOpen();
+
+    // Hide score + hearts HUD during corridor — they're unrelated to the TM bonus
+    document.body.classList.toggle('corridor-mode', _inCorridor);
+
+    // When a modal is open: black canvas, nothing else
+    if (_anyModalOpen) {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, w, h);
+      if (reviveBtn) reviveBtn.style.display = 'none';
+      return;
+    }
+
+    // When in corridor: only corridor draws — no level terrain, no regular items
+    if (_inCorridor) {
+      ctx.fillStyle = '#020d1a';
+      ctx.fillRect(0, 0, w, h);
+      globalThis.DawnDashersCorridor?.drawBackground(w, h);
+      state.items.filter(i => i.type === 'corridorSymbol').forEach(drawItem);
+      if (typeof globalThis.DawnDashersCorridor?.drawCharacter === 'function') {
+        globalThis.DawnDashersCorridor.drawCharacter(w, h);
+      } else {
+        drawPlayer();
+      }
+      globalThis.DawnDashersCorridor?.drawForeground(w, h);
+      return;
+    }
+
+    // Normal level game
     drawBackground();
 
-    state.items.forEach(drawItem);
+    if (!state.paused) {
+      state.items.forEach(drawItem);
+    }
     drawPlayer();
 
     if (!state.running && !state.ended) {
@@ -11292,6 +11508,7 @@
         ctx.fillText(`Score ${state.score} | Shards ${state.fragments}/7`, w / 2, finalScoreY);
         ctx.fillText('Revive can be used only once in this run.', w / 2, finalInfoY);
         if (reviveBtn) {
+          reviveBtn.style.display = 'block';
           reviveBtn.style.width = `${btnWidth}px`;
           reviveBtn.style.left = `${btnLeft}px`;
           reviveBtn.style.top = `${btnTop}px`;
@@ -11562,8 +11779,12 @@
     const dt = Math.min((time - state.lastTime) / 1000, .033);
     state.lastTime = time;
     update(dt);
-    updateThreeTerrain(dt);
-    updateAurora(dt);
+    // Skip Three.js terrain animation when corridor is active or any modal is open
+    const _skipThree = state.flowMode === 'q_corridor' || hasBlockingPopupOpen();
+    if (!_skipThree) {
+      updateThreeTerrain(dt);
+      updateAurora(dt);
+    }
     requestAnimationFrame(tick);
   }
 

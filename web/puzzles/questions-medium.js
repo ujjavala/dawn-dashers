@@ -714,6 +714,78 @@
         "learnUrl": "https://en.wikipedia.org/wiki/Prefix_code",
         "seen": false,
         "type": "heartPuzzles"
+    },
+    {
+        "id": 120,
+        "difficulty": "medium",
+        "title": "Mulga Track: Turing Head Trace",
+        "instruction": "The June Solstice expedition pauses at a mulga scrub waypoint in the outback, where a solar-powered Turing Machine panel flickers to life. The machine's transition table reads: δ(q0, 0) = (q1, 1, R). The tape holds a single symbol — 0 — and the head starts in state q0 reading that cell. You must complete one step of the machine to unlock the next trail marker. After the machine executes the transition, what symbol is written on that tape cell?",
+        "answer": "1",
+        "acceptedAnswers": [
+            "1"
+        ],
+        "hints": [
+            "The transition rule tells you exactly what to write: δ(q0, 0) = (q1, 1, R) — the second element of the output triple is the symbol written."
+        ],
+        "rightExplain": "Perfect. The Turing Machine writes 1, moves right, and the outback trail marker unlocks.",
+        "wrongExplain": "Keep going. The transition rule δ(q0, 0) = (q1, 1, R) tells you exactly what to write: the symbol is the second element of the output triple.",
+        "learnUrl": "https://en.wikipedia.org/wiki/Turing_machine",
+        "seen": false,
+        "type": "levelPuzzles"
+    },
+    {
+        "id": 121,
+        "difficulty": "medium",
+        "title": "Red Sand Run: TM Accept or Reject",
+        "instruction": "Under the blazing June Solstice sun, the Dawn Dashers reach a red sand dune station fitted with an early computing relay. The relay runs a Turing Machine that accepts strings over {0,1} containing at least one 1, and rejects all others. The input tape currently holds the string 000. Does the machine accept this input? Answer YES or NO to open the checkpoint gate and continue the expedition.",
+        "answer": "NO",
+        "acceptedAnswers": [
+            "no"
+        ],
+        "hints": [
+            "The machine accepts only strings with at least one 1 — scan the input string and ask whether any 1 appears."
+        ],
+        "rightExplain": "Correct. The string 000 has no 1s, so the machine rejects it and you dash to the next marker.",
+        "wrongExplain": "Almost there. Check whether a 1 appears anywhere in 000 — the machine accepts only if at least one 1 is present.",
+        "learnUrl": "https://en.wikipedia.org/wiki/Turing_machine",
+        "seen": false,
+        "type": "heartPuzzles"
+    },
+    {
+        "id": 122,
+        "difficulty": "medium",
+        "title": "Spinifex Cipher: Regular Language Check",
+        "instruction": "A spinifex-covered rock cache along the solstice route holds a theoretical computing puzzle left by a previous expedition team. The note reads: consider the language L = { 0^n 1^n | n ≥ 1 } — all strings of n zeros followed by exactly n ones. The question is whether a simple finite automaton (regular grammar) can recognise this language. Is L a regular language? Answer YES or NO to retrieve the cache coordinates.",
+        "answer": "NO",
+        "acceptedAnswers": [
+            "no"
+        ],
+        "hints": [
+            "A finite automaton has no memory of how many 0s it has seen — the Pumping Lemma shows this language cannot be regular."
+        ],
+        "rightExplain": "Spot on. The Pumping Lemma proves L is not regular; a Turing Machine is needed to match the counts.",
+        "wrongExplain": "Give it another go. A finite automaton cannot count arbitrarily — the Pumping Lemma shows this language requires more than a regular grammar.",
+        "learnUrl": "https://en.wikipedia.org/wiki/Pumping_lemma_for_regular_languages",
+        "seen": false,
+        "type": "treasurePuzzles"
+    },
+    {
+        "id": 123,
+        "difficulty": "medium",
+        "title": "Opal Flat Sprint: The Halting Problem",
+        "instruction": "At an opal flat under the June Solstice sky, the expedition's computing station poses a landmark question from Alan Turing's 1936 work. The question: can a general algorithm be constructed that, given any arbitrary program and its input, always correctly determines whether that program will eventually halt or run forever? Answer YES or NO to log your answer and move to the next outback waypoint.",
+        "answer": "NO",
+        "acceptedAnswers": [
+            "no"
+        ],
+        "hints": [
+            "Turing proved by diagonalisation that no such general algorithm can exist — the Halting Problem is undecidable."
+        ],
+        "rightExplain": "Exactly right. Turing's 1936 proof shows no algorithm can solve the Halting Problem in general — the trail advances.",
+        "wrongExplain": "Nearly. Turing proved by contradiction that no general halting algorithm can exist for all programs — the answer is NO.",
+        "learnUrl": "https://en.wikipedia.org/wiki/Halting_problem",
+        "seen": false,
+        "type": "levelPuzzles"
     }
   );
 })();

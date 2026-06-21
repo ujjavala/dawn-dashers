@@ -210,6 +210,43 @@ Rules:
 - Do not stall forward momentum for long
 - Should feel like gameplay, not detached exam screens
 
+## TM Corridors — "Turing's Run" (Bonus Mode)
+
+Three times per run (progress levels 2, 4, 7) the runner gives way to a standalone bonus mode where
+the player physically operates a small Turing machine. Implemented in `web/corridor.js` (logic +
+renderer) and `web/corridor-programs.js` (the three machine definitions).
+
+Narrative framing:
+
+- Told as three chapters of **Alan Turing bypassing three sealed gates** ("Corridor I/II/III of III").
+- Each gate is a deterministic Turing machine: Bit Flipper, Parity Checker, Even-Length Protocol.
+- An animated Alan Turing sprite is the running read/write head.
+
+Core mechanic (the reasoning loop):
+
+- A symbol streaks out of a vanishing-point portal down the centre — that is what the head READS.
+- Three lanes represent the symbol to WRITE (`0` left · `B` middle · `1` right).
+- The player reads δ(state, read) from an on-screen rule table, then runs to the WRITE lane before
+  the symbol lands. Looking up and applying the rule IS the gameplay — no answer is highlighted.
+
+Isolation requirements:
+
+- Corridor is a separate FSM state (`q_corridor`); the level game must not render underneath.
+- Score/heart HUD is hidden; Three.js terrain is gated off; only the corridor renderer runs.
+- Any open popup pauses the corridor (universal pause), same as the level game.
+
+Visual direction:
+
+- Sci-fi tunnel in one-point perspective (ceiling/floor/two walls converging on a glowing portal).
+- Scrolling depth seams, ceiling light bars, neon corner edge beams, runway chevrons.
+- Falling symbols carry a comet motion-trail back toward the portal.
+
+Scoring (deferred, pure bonus):
+
+- Correct steps are tracked live but do not change the score mid-corridor.
+- On exit: `correctSteps × 100`, plus `+750` if the machine accepts.
+- Three wrong reads → reject, but earned step points still pay out. No heart penalty, ever.
+
 ## Gameplay Feel Rules
 
 - Always forward motion

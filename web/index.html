@@ -51,6 +51,9 @@
       z-index: 1;
     }
     .stage { position: absolute; inset: 0; }
+    body.corridor-mode .hud,
+    body.corridor-mode .lives-rail,
+    body.corridor-mode .mission { display: none !important; }
     canvas#game {
       position: absolute;
       inset: 0;
@@ -1280,6 +1283,36 @@
         bottom: 170px;
       }
     }
+    .tm-tape-strip {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      height: 28px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: rgba(255, 209, 102, 0.7);
+      background: rgba(0,0,0,0.55);
+      padding: 0 10px;
+      border-top: 1px solid rgba(255, 209, 102, 0.18);
+      overflow: hidden;
+      gap: 4px;
+      user-select: none;
+      pointer-events: none;
+    }
+    .tm-cell {
+      flex-shrink: 0;
+      padding: 2px 6px;
+      border: 1px solid rgba(255, 209, 102, 0.2);
+      border-radius: 3px;
+      color: rgba(255, 209, 102, 0.7);
+      white-space: nowrap;
+    }
+    .tm-cell--current {
+      color: rgba(255, 209, 102, 1);
+      border-color: rgba(255, 209, 102, 0.6);
+      box-shadow: 0 0 6px rgba(255, 209, 102, 0.4);
+    }
   </style>
 </head>
 <body>
@@ -1306,6 +1339,7 @@
         <div class="chip"><strong>Energy</strong><span id="energy">1000</span></div>
         <div class="chip"><strong>Food</strong><span id="food">0</span></div>
       </div>
+      <div id="tmTapeStrip" class="tm-tape-strip" aria-hidden="true" style="display:none"></div>
       <div class="panel mission">
         <p class="title">Dawn Dashers</p>
         <div id="objective" class="small">Race across southern Australia through Outback, Bushland, Servo, Coastline, Mangroves, Blue Mountains, Nullarbor, Observatory, and Tasmania to restore the sunrise.</div>
@@ -1445,6 +1479,25 @@
         </div>
       </div>
 
+      <div id="corridorModal" class="modal" aria-hidden="true">
+        <div class="modal-card" style="background:linear-gradient(160deg,#020d1a 60%,#001a2e 100%);border:1.5px solid #00e5ff66;box-shadow:0 0 60px rgba(0,229,255,0.25),0 0 120px rgba(0,229,255,0.08),0 12px 48px rgba(0,0,0,0.9);color:#e0f7ff;max-width:520px;">
+          <div style="text-align:center;padding:4px 0 12px;border-bottom:1px solid #00e5ff22;margin-bottom:14px;">
+            <div id="corridorModalSub" style="color:#00e5ff;font-family:monospace;font-size:0.7rem;letter-spacing:0.22em;text-transform:uppercase;opacity:0.7;margin-bottom:6px;">⊢ Turing Bonus Corridor</div>
+            <h3 id="corridorModalTitle" style="color:#fff;font-family:monospace;font-size:1.5rem;font-weight:900;text-shadow:0 0 24px #00e5ffaa,0 0 48px #00e5ff44;margin:0;letter-spacing:0.06em;">YOU ARE THE HEAD</h3>
+            <div style="margin-top:8px;display:flex;justify-content:center;gap:6px;">
+              <span style="display:inline-block;width:32px;height:2px;background:linear-gradient(90deg,transparent,#00e5ff);"></span>
+              <span style="color:#00e5ff;font-size:1rem;">⬡</span>
+              <span style="display:inline-block;width:32px;height:2px;background:linear-gradient(90deg,#00e5ff,transparent);"></span>
+            </div>
+          </div>
+          <div id="corridorModalBody" style="padding:0 4px 8px;line-height:1.65;font-size:0.92rem;color:#b0d8e8;"></div>
+          <div id="corridorModalTransitions" style="margin-top:12px;padding:10px 14px;background:rgba(0,229,255,0.04);border:1px solid rgba(0,229,255,0.18);border-radius:8px;font-size:0.78rem;font-family:monospace;color:#00e5ffaa;"></div>
+          <div class="modal-actions" style="margin-top:18px;">
+            <button id="corridorModalStartBtn" style="background:linear-gradient(90deg,#00c8e8,#0077bb);color:#fff;font-weight:900;font-family:monospace;font-size:1.05rem;border:none;border-radius:8px;padding:14px 28px;cursor:pointer;letter-spacing:0.1em;box-shadow:0 0 32px rgba(0,229,255,0.45),0 4px 16px rgba(0,0,0,0.6);width:100%;text-shadow:0 0 12px rgba(0,229,255,0.8);transition:box-shadow 0.2s;">RUN THE MACHINE &nbsp;⊢</button>
+          </div>
+        </div>
+      </div>
+
       <div id="clueModal" class="modal" aria-hidden="true">
         <div class="modal-card">
           <div class="modal-top">
@@ -1570,6 +1623,7 @@
             <div class="panel-item"><span>Energy and Food</span><strong>Move, jump, and slide consume energy. Buy food with score and it auto-uses when energy is low.</strong></div>
             <div class="panel-item"><span>Character Pairs</span><strong>Each level gives 2 core dashers: one fast and one slow. Every biome after the first also has 1 special dasher that stays locked until you collect the level chest and clear into the next biome.</strong></div>
             <div class="panel-item"><span>Controls</span><strong>Arrows/WASD move, Up/Space jump, Down slide, F opens Food Cart.</strong></div>
+            <div class="panel-item"><span>⊢ TM Corridor (Levels 4, 6, 9)</span><strong>At levels 4, 6, and 9 a special Turing Machine Corridor activates. You become the read/write head of a real TM. Tape symbols fall down three lanes labelled 0, B, and 1. Move into the lane that matches the current tape symbol before it reaches you. Each correct read executes a TM transition, advances the head, and earns +100 pts. Three wrong reads and the machine rejects the input. Complete the full input sequence to ACCEPT and earn a +750 bonus. The tape strip and state display at the top show every step in real time.</strong></div>
           </div>
         </div>
       </div>
@@ -1652,8 +1706,10 @@
   <script src="/asset-manifest.js?v=20260611g"></script>
   <script src="/terrain-styles.js?v=20260611y"></script>
   <script src="/character-config.js?v=20260613a"></script>
-  <script src="/game-state.js?v=20260617a"></script>
-  <script src="/game-ui.js?v=20260617a"></script>
-  <script src="/game.js?v=20260613q"></script>
+  <script src="/game-state.js?v=20260621a"></script>
+  <script src="/corridor-programs.js?v=20260621a"></script>
+  <script src="/corridor.js?v=20260621f"></script>
+  <script src="/game-ui.js?v=20260621a"></script>
+  <script src="/game.js?v=20260621e"></script>
 </body>
 </html>

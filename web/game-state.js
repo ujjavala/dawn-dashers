@@ -53,6 +53,12 @@
     LEVEL_TRANSITION_ABORT: 'σ_level_abort',
     LEVEL_SET:              'σ_level_set',
     GAME_OVER:              'σ_reject',
+    // TM Corridor mini-machine events
+    CORRIDOR_START:         'σ_corridor_start',
+    CORRIDOR_STEP:          'σ_corridor_step',
+    CORRIDOR_WRONG:         'σ_corridor_wrong',
+    CORRIDOR_ACCEPT:        'σ_corridor_accept',
+    CORRIDOR_REJECT:        'σ_corridor_reject',
   });
 
   // Reverse map: legacy event name → symbol string
@@ -73,6 +79,7 @@
     GAME_OVER:        'q_reject',   // HALT-REJECT
     ACCEPT:           'q_accept',   // HALT-ACCEPT  (final level cleared)
     IDLE:             'q_land',     // legacy alias
+    CORRIDOR:         'q_corridor', // Player is enacting a TM corridor
   });
 
   const HALT_STATES = new Set(['q_reject', 'q_accept']);
@@ -111,6 +118,17 @@
     // HEAD MOVES LEFT on abort — narrative rewinds to running state
     { from: 'q_level_end', on: 'σ_level_abort', next: 'q_run',     dir: DIR.L },
 
+    // ── TM Corridor (player enacts a mini Turing Machine) ───────────────────
+    // σ_corridor_start: enter corridor from running state
+    // σ_corridor_step:  correct lane read — head moves right (R)
+    // σ_corridor_wrong: wrong lane read  — head rewinds one cell (L)
+    // σ_corridor_accept/reject: corridor halts, return to running
+    { from: 'q_run',      on: 'σ_corridor_start',  next: 'q_corridor', dir: DIR.R },
+    { from: 'q_corridor', on: 'σ_corridor_step',   next: 'q_corridor', dir: DIR.R },
+    { from: 'q_corridor', on: 'σ_corridor_wrong',  next: 'q_corridor', dir: DIR.L },
+    { from: 'q_corridor', on: 'σ_corridor_accept', next: 'q_run',      dir: DIR.R },
+    { from: 'q_corridor', on: 'σ_corridor_reject', next: 'q_run',      dir: DIR.R },
+
     // ── Halt ─────────────────────────────────────────────────────────────────
     { from: '*',        on: 'σ_reject',        next: 'q_reject',    dir: DIR.R },
     { from: '*',        on: 'σ_accept',        next: 'q_accept',    dir: DIR.R },
@@ -148,7 +166,7 @@
     // Derive boolean flags from the current machine state
     function applyModeFlags(mode) {
       state.flowMode     = mode;
-      state.running      = ['q_run','q_pause','q_popup','q_hunger','q_puzzle'].includes(mode);
+      state.running      = ['q_run','q_pause','q_popup','q_hunger','q_puzzle','q_corridor'].includes(mode);
       state.ended        = HALT_STATES.has(mode);
       state.paused       = ['q_pause','q_popup','q_hunger','q_puzzle','q_level_end'].includes(mode);
       state.hungerPaused = mode === 'q_hunger';

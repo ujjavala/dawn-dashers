@@ -234,6 +234,25 @@
     ctx.updateCharacterAvailability();
     ctx.refreshCharacterBio();
     ctx.syncMobileControlVisibility();
+    // Tape strip
+    const tapeStripEl = document.getElementById('tmTapeStrip');
+    if (tapeStripEl) {
+      const fm = globalThis.DawnDashersFlowMachine;
+      if (fm && typeof fm.getTape === 'function' && ctx.state.running) {
+        const tape = fm.getTape();
+        const head = fm.getHead();
+        const recent = tape.slice(Math.max(0, head - 4), head + 1);
+        const cells = recent.map((c, i) => {
+          const isHead = (tape.indexOf(c) === head);
+          const cell = `${c.from}──${c.symbol}──►${c.to}`;
+          return isHead ? `[${cell}]` : cell;
+        }).join('  ');
+        tapeStripEl.textContent = `▶ ${cells}`;
+        tapeStripEl.style.display = 'block';
+      } else {
+        tapeStripEl.style.display = 'none';
+      }
+    }
   }
 
   function bindModalControls(ctx) {
@@ -406,6 +425,28 @@
     }
   }
 
+  function updateTapeStrip(ctx) {
+    const el = ctx && ctx.tmTapeStrip;
+    if (!el) return;
+    const tape = typeof ctx.getTape === 'function' ? ctx.getTape() : [];
+    const cells = tape.slice(-6);
+    el.innerHTML = '';
+    if (cells.length === 0) {
+      el.style.display = 'none';
+      el.setAttribute('aria-hidden', 'true');
+      return;
+    }
+    cells.forEach((cell, i) => {
+      const span = document.createElement('span');
+      span.className = 'tm-cell' + (i === cells.length - 1 ? ' tm-cell--current' : '');
+      const dir = cell.dir || '';
+      span.textContent = (cell.from || '?') + ' ─' + dir + '→ ' + (cell.to || '?');
+      el.appendChild(span);
+    });
+    el.style.display = 'flex';
+    el.setAttribute('aria-hidden', 'false');
+  }
+
   globalThis.DawnDashersGameUi = {
     closeModal,
     openClueModal,
@@ -425,6 +466,7 @@
     hideHungerModal,
     renderLives,
     syncHud,
+    updateTapeStrip,
     bindModalControls,
     bindLandingFlowControls
   };

@@ -718,6 +718,78 @@
         "learnUrl": "https://en.wikipedia.org/wiki/Caesar_cipher",
         "seen": false,
         "type": "treasurePuzzles"
+    },
+    {
+        "id": 116,
+        "difficulty": "hard",
+        "title": "Gorge Descent: Turing Configuration Step",
+        "instruction": "Deep in an outback gorge on the June Solstice, a Turing Machine monument marks a critical checkpoint. The machine is in state q1. Its tape reads a b a and the head sits on cell 1 (0-indexed), currently reading b. The transition rule is δ(q1, b) = (q2, c, R): move to state q2, write c, move the head one cell right. After executing this single transition step, the tape becomes a c a and the head is now on cell 2. What symbol does the head read at its new position? Answer with the single character to unlock the gorge gate.",
+        "answer": "a",
+        "acceptedAnswers": [
+            "a"
+        ],
+        "hints": [
+            "After writing c on cell 1 and moving right, the head lands on cell 2 — look at what was already on cell 2 in the original tape."
+        ],
+        "rightExplain": "Correct. The head moved right to cell 2, which held a unchanged. The gorge gate opens.",
+        "wrongExplain": "Close. The transition writes c on cell 1 and moves right; cell 2 was never modified, so read the original tape at that position.",
+        "learnUrl": "https://en.wikipedia.org/wiki/Turing_machine",
+        "seen": false,
+        "type": "treasurePuzzles"
+    },
+    {
+        "id": 117,
+        "difficulty": "hard",
+        "title": "Solstice Summit: Church-Turing Thesis",
+        "instruction": "At the highest summit of the June Solstice expedition route in central Australia, a brass plaque commemorates a foundational idea in theoretical computer science. It states: according to the Church-Turing thesis, any function that can be computed by a systematic, step-by-step effective procedure can also be computed by one particular abstract machine model — the same one Turing described in 1936. What is this abstract machine? Name it to claim the summit waypoint and continue the dawn dash.",
+        "answer": "Turing machine",
+        "acceptedAnswers": [
+            "turing machine"
+        ],
+        "hints": [
+            "The thesis is named after both Alonzo Church and Alan Turing — the machine is named after one of them."
+        ],
+        "rightExplain": "Brilliant. The Church-Turing thesis states any effectively computable function can be computed by a Turing machine. Summit cleared.",
+        "wrongExplain": "Keep pushing. The thesis bears Turing's name — the answer is the abstract computing model he invented in 1936.",
+        "learnUrl": "https://en.wikipedia.org/wiki/Church%E2%80%93Turing_thesis",
+        "seen": false,
+        "type": "heartPuzzles"
+    },
+    {
+        "id": 118,
+        "difficulty": "hard",
+        "title": "Saltpan Crossing: Decidability Challenge",
+        "instruction": "Crossing a vast white saltpan under the June Solstice glare, the expedition team encounters a rusted computing terminal left by a 1960s field researcher. The terminal asks: is the Halting Problem decidable? A decidable problem is one for which a Turing Machine always halts and returns a correct YES or NO answer for every input. Answer YES or NO — your response is logged to the outback relay and the next sector unlocks.",
+        "answer": "NO",
+        "acceptedAnswers": [
+            "no"
+        ],
+        "hints": [
+            "Turing proved in 1936 that no Turing Machine can always correctly decide whether an arbitrary program halts — the Halting Problem is undecidable."
+        ],
+        "rightExplain": "Exactly. The Halting Problem is undecidable — Turing's diagonalisation proof is one of the most important results in computer science.",
+        "wrongExplain": "Not quite. Turing's 1936 proof shows no algorithm can always decide the Halting Problem — it is fundamentally undecidable.",
+        "learnUrl": "https://en.wikipedia.org/wiki/Decidability_(logic)",
+        "seen": false,
+        "type": "levelPuzzles"
+    },
+    {
+        "id": 119,
+        "difficulty": "hard",
+        "title": "Billabong Cache: Busy Beaver Σ(1)",
+        "instruction": "Beside a remote billabong at golden June Solstice hour, a waterproof cache contains a puzzle about the Busy Beaver function — one of the most mind-bending problems in computability theory. The Busy Beaver function Σ(n) gives the maximum number of 1s a halting n-state Turing Machine (working on an initially blank tape over {0,1}) can write before halting. The simplest case: what is Σ(1), the maximum 1s written by a halting 1-state Turing Machine? Enter a number to claim the billabong cache.",
+        "answer": "1",
+        "acceptedAnswers": [
+            "1"
+        ],
+        "hints": [
+            "A 1-state machine can write at most one 1 before halting — any attempt to write more would require looping, preventing a halt."
+        ],
+        "rightExplain": "Correct. Σ(1) = 1: a 1-state busy beaver can write exactly one 1 before halting. The billabong cache is yours.",
+        "wrongExplain": "Almost. A 1-state machine on a blank tape writes at most one 1 before it must halt — Σ(1) = 1.",
+        "learnUrl": "https://en.wikipedia.org/wiki/Busy_beaver",
+        "seen": false,
+        "type": "treasurePuzzles"
     }
   );
 })();
